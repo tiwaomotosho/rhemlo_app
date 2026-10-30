@@ -8,19 +8,19 @@ export type Pace = 'light' | 'steady' | 'focused'
 export interface Profile { name: string; handle: string; goal: Goal; pace: Pace; glim: string }
 export interface SessionSpec {
   kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart'; manual: ManualCode; lessons: string[]; count: number
-  focus?: string[]; title: string; ranked?: boolean; only?: string[]
+  focus?: string[]; title: string; ranked?: boolean; only?: string[]; attemptId?: string
 }
 export interface Draft {
   id: string; spec: SessionSpec; queue: string[]; index: number; right: number; startedAt: number
-  misses: SittingRecord['misses']; again: string[]; answered: string[]
+  misses: SittingRecord['misses']; again: string[]; answered: string[]; rankedAnswers?: { u: string; value: string; ms: number }[]
 }
 export interface Ladder { q27?: boolean; q28?: boolean; q06?: boolean; q04?: boolean }
 export interface Prefs {
   textScale: number; reduceMotion: boolean; mapWorld: 'theme' | 'day' | 'night'
   notif: { study: boolean; due: boolean; circle: boolean; quiz: boolean; league: boolean }; quiet: [string, string]; channel: 'inapp' | 'push' | 'email'
-  keepPrivate: boolean; leagues: boolean; planDays: number; remindAt: string
+  keepPrivate: boolean; leagues: boolean; planDays: number; remindAt: string; sound: boolean
 }
-export const DEFAULT_PREFS: Prefs = { textScale: 1, reduceMotion: false, mapWorld: 'theme', notif: { study: true, due: true, circle: false, quiz: false, league: false }, quiet: ['22:00', '07:00'], channel: 'inapp', keepPrivate: true, leagues: false, planDays: 5, remindAt: '18:30' }
+export const DEFAULT_PREFS: Prefs = { textScale: 1, reduceMotion: false, mapWorld: 'theme', notif: { study: true, due: true, circle: false, quiz: false, league: false }, quiet: ['22:00', '07:00'], channel: 'inapp', keepPrivate: true, leagues: false, planDays: 5, remindAt: '18:30', sound: false }
 
 export const day = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const DAY = 86400000
@@ -32,6 +32,7 @@ interface State {
   history: SittingRecord[]; points: number; activeDays: string[]; arenaOptIn: boolean; reminders: boolean
   draft: Draft | null; seenIds: Record<string, true>
   prefs: Prefs; lastActive: number; prevActive: number; readings: Record<string, true>; joined: number; downloads: string[]
+  account: { email: string; userId: string; role: string; lastSync: number } | null; inbox: { id: string; at: number; title: string; body: string }[]; askedPush: boolean
   set: (p: Partial<State>) => void
   finishOnboarding: (p: Profile, manual: ManualCode) => void
   recordAnswer: (manual: ManualCode, item: Item, correct: boolean, assisted: boolean) => void
@@ -45,6 +46,7 @@ const initial = {
   manual: 'AD2627' as ManualCode, theme: 'system' as Theme, sessionSize: 20, cards: {}, done: {}, ladder: {}, history: [],
   points: 0, activeDays: [], arenaOptIn: false, reminders: false, draft: null, seenIds: {},
   prefs: DEFAULT_PREFS, lastActive: 0, prevActive: 0, readings: {}, joined: 0, downloads: [] as string[],
+  account: null as State['account'], inbox: [] as State['inbox'], askedPush: false,
 }
 export const useStore = create<State>()(persist((set, get) => ({
   ...initial,
@@ -95,3 +97,7 @@ export function streakInfo(days: string[]) {
   for (let i = 0; i < 400; i++) { const d = day(t.getTime() - i * DAY); if (set.has(d)) streak++; else if (i === 0) continue; else break }
   return { streak, today: set.has(day()) }
 }
+
+/** The part of the state that syncs to the account (never the session or draft). */
+export const SYNC_KEYS = ['profile', 'manual', 'theme', 'sessionSize', 'cards', 'done', 'ladder', 'history', 'points', 'activeDays', 'prefs', 'readings', 'joined', 'arenaOptIn'] as const
+export const snapshotOf = () => { const s = useStore.getState() as unknown as Record<string, unknown>; return Object.fromEntries(SYNC_KEYS.map(k => [k, s[k]])) }

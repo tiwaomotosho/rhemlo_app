@@ -6,6 +6,10 @@ import { gradeItem, normText, typedRefs, type Grade } from '@/lib/grade'
 import { useStore, type Draft, type SessionSpec } from '@/lib/store'
 import type { Item, Manual, Response, SittingRecord } from '@/lib/types'
 import { ContextSheet, Glim, Icon, Sheet, StateCard, asset } from '@/ui/bits'
+import { api } from '@/lib/backend'
+import { play } from '@/lib/sound'
+import { askPermission, canNotify } from '@/lib/notify'
+import { syncNow } from '@/lib/sync'
 
 const OFF = { autoComplete: 'off', autoCorrect: 'off', autoCapitalize: 'off', spellCheck: false, 'data-lpignore': 'true', 'data-1p-ignore': 'true', 'data-form-type': 'other' } as const
 const STANDING = 'Spelling and hyphens count. Capitals and punctuation do not.'
@@ -78,8 +82,8 @@ function FieldBox({ id, label: lab, value, onChange, state, inputRef, onFocus, .
     <input id={id} ref={inputRef} className="field" value={value} readOnly={state !== undefined} onFocus={onFocus} onChange={e => onChange(e.target.value)} {...OFF} {...rest} /></div></div>
 }
 
-function Answer({ item, a, setA, mcq, grade, setCur, titleToN }: { item: Item; a: AState; setA: (f: (a: AState) => AState) => void; mcq: boolean; grade: Grade | null; setCur: (n: number) => void; titleToN: (t: string) => number | undefined }) {
-  const k = item.p.input.kind, locked = !!grade, n = item.p.input.count ?? 1
+function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold }: { item: Item; a: AState; setA: (f: (a: AState) => AState) => void; mcq: boolean; grade: Grade | null; setCur: (n: number) => void; titleToN: (t: string) => number | undefined; hold?: boolean }) {
+  const k = item.p.input.kind, locked = !!grade || !!hold, n = item.p.input.count ?? 1
   const refs = useRef<(HTMLInputElement | HTMLTextAreaElement | null)[]>([])
   useEffect(() => { if (!locked && matchMedia('(min-width:640px)').matches) refs.current[0]?.focus({ preventScroll: true }) }, [item.u, mcq]) // eslint-disable-line
   const options = useMemo(() => shuffleSeed([item.a.text ?? '', ...item.d].filter(Boolean), item.u), [item])
@@ -217,10 +221,11 @@ export default function Session() {
   const check = useCallback(() => {
     if (!item || !resp || grade || !draft) return
     const g = gradeItem(item, resp); setGrade(g)
+    if (!draft.spec.ranked) play(g.correct ? 'correct' : 'wrong')
     S.recordAnswer(draft.spec.manual, item, g.correct, forced)
     if (g.correct && ['Q27', 'Q28', 'Q04', 'Q06'].includes(item.t) && (item.t !== 'Q06' || draft.spec.kind === 'ladder')) S.markLadder(draft.spec.manual, lessonOfKey(item.s), item.t.toLowerCase() as 'q27')
-    const retry = !g.correct && !draft.again.includes(item.u)
-    save({ ...draft, right: draft.right + (g.correct ? 1 : 0), queue: retry ? [...draft.queue, item.u] : draft.queue, again: retry ? [...draft.again, item.u] : draft.again, answered: [...draft.answered, item.u],
+    const retry = !g.correct && !draft.again.includes(item.u) && !draft.spec.ranked
+    save({ ...draft, right: draft.right + (g.correct ? 1 : 0), queue: retry ? [...draft.queue, item.u] : draft.queue, again: retry ? [...draft.again, item.u] : draft.again, answered: [...draft.answered, item.u], rankedAnswers: draft.spec.ranked ? [...(draft.rankedAnswers ?? []), { u: item.u, value: JSON.stringify(resp), ms: Date.now() - draft.startedAt }] : draft.rankedAnswers,
       misses: g.correct ? draft.misses : [...draft.misses, { u: item.u, wrote: g.wrote.join(' · '), expected: g.expected.join(' · '), t: item.t }] })
   }, [item, resp, grade, draft, forced]) // eslint-disable-line
 
@@ -232,7 +237,10 @@ export default function Session() {
       const missed = new Set(d.misses.map(m => m.u))
       const rec: SittingRecord = { id: d.id, at: Date.now(), manual: d.spec.manual, kind: d.spec.kind, lesson: d.spec.lessons.length === 1 ? d.spec.lessons[0] : undefined, title: d.spec.title,
         total, right: firstTry.filter(u => !missed.has(u)).length, misses: d.misses, minutes: Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)) }
-      S.completeSitting(rec); nav(`/practice/done/${d.id}`, { replace: true, state: { spec: d.spec } })
+      S.completeSitting(rec); void syncNow()
+      if (d.spec.ranked && d.spec.attemptId) {
+        const its = items!; api.submit_challenge(d.spec.attemptId, d.rankedAnswers ?? [], (u, v) => { const it = its.get(u); return !!it && gradeItem(it, JSON.parse(v)).correct }).finally(() => nav('/arena/challenge', { replace: true }))
+      } else nav(`/practice/done/${d.id}`, { replace: true, state: { spec: d.spec } })
     } else save({ ...d, index: d.index + 1 })
   }, [grade]) // eslint-disable-line
 
@@ -264,7 +272,7 @@ export default function Session() {
 
   const total = draft.queue.length, retrying = draft.queue.indexOf(item.u) < draft.index
   const refs = item.a.refs?.map(r => r.key) ?? (item.p.ref ? [item.p.ref] : [])
-  const ladder = draft.spec.kind === 'ladder'
+  const ladder = draft.spec.kind === 'ladder', ranked = !!draft.spec.ranked
   const ctxText = ladder ? `Memory ladder · ${item.p.ref ?? ''}` : `${ctxShort(item.p.context) || draft.spec.title}${S.prefs.keepPrivate ? ' · Private practice' : ''}`
   const single = !!grade && !grade.correct && !grade.parts && grade.wrote.length === 1 && grade.expected.length === 1
   const near = single && item.p.input.kind !== 'reference' && lev1(normText(grade!.wrote[0]), normText(grade!.expected[0]))
@@ -282,11 +290,12 @@ export default function Session() {
       <h1 className="qtitle">{item.p.instruction}</h1>
       {(item.t === 'Q27' || item.t === 'Q25') && <p className="qsub">{item.t === 'Q27' ? 'Extra words are not part of the verse.' : 'Drag, or use Move up and Move down.'}</p>}
       <Prompt item={item} cur={cur} lessonsN={n => `L${n}`} />
-      <Answer key={`${item.u}${draft.index}${forced}`} item={item} a={a} setA={setA} mcq={mcq} grade={grade} setCur={setCur} titleToN={titleToN} />
-      {!grade && !forced && item.f.includes('mcq') && item.f.includes('typed') && item.d.length > 0 && <div className="row wrap gap8"><button className="chip lg plain" onClick={() => setForced(true)}><Icon n="listn" />Switch to choices</button><span className="tiny muted">for this item only · counts as assisted</span></div>}
+      <Answer key={`${item.u}${draft.index}${forced}`} item={item} a={a} setA={setA} mcq={mcq} grade={ranked ? null : grade} hold={ranked && !!grade} setCur={setCur} titleToN={titleToN} />
+      {!grade && !forced && !ranked && item.f.includes('mcq') && item.f.includes('typed') && item.d.length > 0 && <div className="row wrap gap8"><button className="chip lg plain" onClick={() => setForced(true)}><Icon n="listn" />Switch to choices</button><span className="tiny muted">for this item only · counts as assisted</span></div>}
       <div className="shortcuts"><span><span className="kbd">Tab</span>next blank</span><span><span className="kbd">Enter</span>check</span><span><span className="kbd">Esc</span>save &amp; leave</span>{mcq && <span><span className="kbd">1–4</span>choose</span>}</div>
     </div>
-    {!grade ? <div className="fbar"><div className="in">
+    {grade && ranked ? <div className="fb" style={{ background: 'var(--rh-surface2)', borderColor: 'var(--rh-line2)' }} role="status" aria-live="polite"><div className="in"><div className="head"><Icon n="lock" className="hic" style={{ color: 'var(--rh-action)' }} /><h3 style={{ color: 'var(--rh-text)' }}>Answer accepted.</h3></div><p className="small muted mt8">Ranked attempt: results and explanations appear after you finish.</p><button className="btn block mt16" onClick={next} autoFocus>{draft.index + 1 >= total ? 'Submit attempt' : 'Next question'}</button></div></div> :
+    !grade ? <div className="fbar"><div className="in">
       {item.t === 'Q04' && <button className="btn sec" onClick={stepBack}>Step back</button>}
       <button className="btn" disabled={!resp} onClick={check}>Check answer</button></div></div> :
       <div className={`fb ${grade.correct ? 'good' : 'bad'}`} role="status" aria-live="polite"><div className="in">
@@ -314,9 +323,9 @@ function useAnswerFor(item?: Item) {
 
 function ReportSheet({ item, onClose }: { item: Item; onClose: () => void }) {
   const [why, setWhy] = useState(''); const [note, setNote] = useState(''); const [sent, setSent] = useState(false)
-  const submit = () => { try { const r = JSON.parse(localStorage.getItem('rhemlo.reports') ?? '[]'); r.push({ u: item.u, s: item.s, why, note, at: Date.now() }); localStorage.setItem('rhemlo.reports', JSON.stringify(r)) } catch { /* */ } setSent(true) }
+  const submit = () => { try { const r = JSON.parse(localStorage.getItem('rhemlo.reports') ?? '[]'); r.push({ u: item.u, s: item.s, why, note, at: Date.now() }); localStorage.setItem('rhemlo.reports', JSON.stringify(r)) } catch { /* */ } if (api.session()) void api.report('content', item.u, why, note); setSent(true) }
   return <Sheet label="Report a content error" onClose={onClose}>{sent ? <div className="col center" style={{ alignItems: 'center' }}><img src={asset('illustrations/states/state-sent-256.webp')} width={120} alt="" /><h2>Thank you</h2>
-    <p className="muted">Saved on this device as report {item.u.slice(2, 8).toUpperCase()}. It reaches the content stewards when the Rhemlo server is connected. A report never changes a grade.</p><button className="btn block" onClick={onClose}>Close</button></div>
+    <p className="muted">Report {item.u.slice(2, 8).toUpperCase()} reaches the content stewards. A report never changes a grade.</p><button className="btn block" onClick={onClose}>Close</button></div>
     : <div className="col"><h2>Report a content error</h2><p className="small muted">What looks wrong with this question?</p>
       {['The expected answer is wrong', 'The question is unclear', 'A typo in the question', 'Something else'].map(w => <button key={w} className={`opt ${why === w ? 'sel' : ''}`} onClick={() => setWhy(w)}><span className="grow">{w}</span></button>)}
       <label className="lbl" htmlFor="rn">Details (optional)</label><textarea id="rn" className="field" rows={3} value={note} onChange={e => setNote(e.target.value)} />
@@ -326,7 +335,8 @@ function ReportSheet({ item, onClose }: { item: Item; onClose: () => void }) {
 // ---- Sitting complete (R24) -------------------------------------------------------------------------
 const RET: Record<string, string> = { Q26: 'Spelling', Q05: 'Reference', Q09: 'Reference', Q12: 'Reference', Q24: 'Reference', Q01: 'Missing word', Q02: 'Missing words', Q06: 'Missing word', Q28: 'Fade', Q27: 'Build', Q04: 'Full verse', Q07: 'Outline', Q13: 'List', Q25: 'Order' }
 export function Done() {
-  const { id } = useParams(); const nav = useNavigate(); const loc = useLocation(); const { history, done } = useStore()
+  const { id } = useParams(); const nav = useNavigate(); const loc = useLocation(); const { history, done, account, askedPush, set, prefs } = useStore()
+  useEffect(() => { play('complete') }, [])
   const rec = history.find(h => h.id === id)
   if (!rec) return <Navigate to="/journey" replace />
   const spec = (loc.state as { spec?: SessionSpec } | null)?.spec
@@ -349,7 +359,9 @@ export function Done() {
         {cleared && <div className="card row"><img src={asset('emblems/badges/badge-chapter-128.webp')} width={44} height={44} alt="" /><div><b>Lesson cleared</b><div className="tiny muted">The next stop on your map is open</div></div></div>}
         {uniq.length > 0 && <div className="card col gap8"><p className="eyebrow">Your misses</p>{uniq.slice(0, 6).map(m => { const t = m.t ?? ''; return <div key={m.u} className="row small" style={{ alignItems: 'flex-start' }}>
           <Icon n="x" className="s" style={{ color: 'var(--rh-incorrect)', marginTop: 2 }} /><span className="grow" style={{ overflowWrap: 'anywhere' }}>{(m.wrote || '—').slice(0, 60)} → <b>{m.expected.slice(0, 60)}</b></span><span className="tiny muted" style={{ whiteSpace: 'nowrap' }}>{RET[t] ?? 'Recall'} · returns today</span></div> })}</div>}
-        <div className="row wrap gap8"><span className="chip ok"><Icon n="check" />Saved on this device</span><span className="chip">Private · not ranked</span></div>
+        <div className="row wrap gap8"><span className="chip ok"><Icon n={account ? 'cloud' : 'check'} />{account ? `Synced · ${new Date(account.lastSync).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : 'Saved on this device'}</span><span className="chip">Private · not ranked</span></div>
+        {canNotify() && !askedPush && Notification.permission === 'default' && <div className="card row"><img src={asset('illustrations/states/state-notify-256.webp')} width={56} height={56} alt="" /><div className="grow"><b>Want a gentle reminder?</b><div className="tiny muted">One nudge a day at {prefs.remindAt}. Quiet hours respected.</div></div>
+          <div className="col gap8"><button className="btn xs" onClick={async () => { set({ askedPush: true }); await askPermission() }}>Turn on</button><button className="btn link" style={{ minHeight: 32 }} onClick={() => set({ askedPush: true })}>Not now</button></div></div>}
         <div className="row wrap gap8"><button className="btn" onClick={() => nav('/journey')}>Done for now</button><button className="btn sec" disabled={!uniq.length} onClick={again}>Review my misses</button><button className="btn link" onClick={() => nav('/journey')}>Back to journey</button></div>
       </div>
     </div>

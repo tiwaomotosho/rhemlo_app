@@ -6,7 +6,11 @@ import { Welcome, Account, Goal, ManualPick, Pace } from '@/pages/Onboarding'
 import Journey, { Readings, StageCountdown, MasteryCheck } from '@/pages/Journey'
 import Practice, { TargetBuilder, MemoryLadder } from '@/pages/Practice'
 import Session, { Done } from '@/pages/Session'
-import { Arena, ArenaRules, DailyChallenge, QuizNight, FriendlyMatch, Circle } from '@/pages/Social'
+import { Arena, ArenaRules, DailyChallenge, FriendlyMatch, LeagueView, MatchPlay, QuizNight, QuizNightPlay } from '@/pages/Arena'
+import Circle, { CircleChat, CircleHome } from '@/pages/Circle'
+import { Coach, CoachHost, Steward } from '@/pages/Roles'
+import { isDemo } from '@/lib/backend'
+import { startReminders } from '@/lib/notify'
 import You, { Appearance, Notifications, Downloads, Access } from '@/pages/You'
 import Progress, { Planner } from '@/pages/Progress'
 import { Library, Reader } from '@/pages/Library'
@@ -14,10 +18,10 @@ import { Library, Reader } from '@/pages/Library'
 const TABS = [['journey', 'Journey'], ['practice', 'Practice'], ['arena', 'Arena'], ['circle', 'Circle'], ['you', 'You']] as const
 
 function Shell() {
-  const { pathname } = useLocation(); const m = useManualData(); const cw = useStore(s => s.profile.glim)
+  const { pathname } = useLocation(); const m = useManualData(); const cw = useStore(s => s.profile.glim); const role = useStore(s => s.account?.role)
   const top = pathname.split('/')[1]
   const active = top === 'library' ? 'journey' : top
-  const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : ''
+  const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : pathname.startsWith('/coach') ? 'coach' : pathname.startsWith('/steward') ? 'steward' : ''
   return <div className="shell">
     <nav className="nav" aria-label="Main">
       <div className="brand"><GlimHead cw={cw} size={40} /><span className="word">Rhemlo</span></div>
@@ -25,6 +29,9 @@ function Shell() {
       <div className="navsep" /><p className="eyebrow sub">Journey</p>
       {([['library', 'Library', 'book', '/library'], ['planner', 'Planner', 'calendar', '/journey/planner'], ['progress', 'Progress', 'chart', '/journey/progress']] as const).map(([k, l, ic, to]) =>
         <NavLink key={k} to={to} className={`nl sub2 ${sub === k ? 'on' : ''}`} style={{ display: undefined }}><span className="ic"><Icon n={ic} /></span>{l}</NavLink>)}
+      {(role === 'coach' || role === 'steward') && <><div className="navsep" /><p className="eyebrow sub">Workspace</p>
+        <NavLink to={role === 'coach' ? '/coach' : '/steward'} className={`nl sub2 ${sub === role ? 'on' : ''}`}><span className="ic"><Icon n={role === 'coach' ? 'people' : 'shield'} /></span>{role === 'coach' ? 'Coach' : 'Content studio'}</NavLink></>}
+      {isDemo && <span className="chip pend demochip" title="Demo server: other people and their activity are simulated">Demo server</span>}
       <NavLink to="/you/access" className="navfoot"><Glim pose="read" size={52} still /><div><b className="disp" style={{ fontSize: 14 }}>{m?.short.replace('–20', '–') ?? 'Manual'}</b><div className="tiny muted">{m ? `${m.lessons.length} lessons · ${m.bible}` : ''}</div></div></NavLink>
     </nav>
     <main className="main" id="main"><Outlet /></main>
@@ -43,6 +50,7 @@ export default function App() {
   }, [theme, prefs.textScale, prefs.reduceMotion])
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  useEffect(() => startReminders(), [])
 
   if (!onboarded) return <Routes>
     <Route path="/welcome" element={<Welcome />} />
@@ -71,6 +79,14 @@ export default function App() {
       <Route path="/arena/rules" element={<ArenaRules />} />
       <Route path="/arena/challenge" element={<DailyChallenge />} />
       <Route path="/arena/quiz-night" element={<QuizNight />} />
+      <Route path="/arena/quiz-night/:room" element={<QuizNightPlay />} />
+      <Route path="/arena/league" element={<LeagueView />} />
+      <Route path="/arena/match/:id" element={<MatchPlay />} />
+      <Route path="/circle/:id" element={<CircleHome />} />
+      <Route path="/circle/:id/chat" element={<CircleChat />} />
+      <Route path="/coach" element={<Coach />} />
+      <Route path="/coach/host" element={<CoachHost />} />
+      <Route path="/steward" element={<Steward />} />
       <Route path="/arena/match" element={<FriendlyMatch />} />
       <Route path="/circle" element={<Circle />} />
       <Route path="/you" element={<You />} />

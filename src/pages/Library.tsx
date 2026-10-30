@@ -6,6 +6,7 @@ import { typedRefs } from '@/lib/grade'
 import { lessonStats, useStore } from '@/lib/store'
 import type { Card, Lesson, Manual, ManualCode } from '@/lib/types'
 import { ContextSheet, Icon, Loading, Sheet, useManualData } from '@/ui/bits'
+import { api } from '@/lib/backend'
 import { useStart, verseRef } from './Journey'
 
 export function masteryChip(cards: Record<string, Card>, m: Manual, id: string): [string, string] {
@@ -121,8 +122,8 @@ export function Reader() {
 
 function ReportForm({ lesson, onClose }: { lesson: string; onClose: () => void }) {
   const [txt, setTxt] = useState(''); const [sent, setSent] = useState(false)
-  if (sent) return <div className="col"><h2>Thank you</h2><p className="muted">Saved on this device. It reaches the content stewards when the Rhemlo server is connected. Reports never change grades.</p><button className="btn block" onClick={onClose}>Close</button></div>
+  if (sent) return <div className="col"><h2>Thank you</h2><p className="muted">It reaches the content stewards, who check it against the printed manual. Reports never change grades.</p><button className="btn block" onClick={onClose}>Close</button></div>
   return <div className="col"><h2>Report a content error</h2><p className="small muted">Quote what looks wrong and where. A steward checks it against the printed manual.</p>
     <textarea className="field" rows={4} value={txt} onChange={e => setTxt(e.target.value)} aria-label="What looks wrong" />
-    <button className="btn block" disabled={!txt.trim()} onClick={() => { try { const r = JSON.parse(localStorage.getItem('rhemlo.reports') ?? '[]'); r.push({ lesson, note: txt, at: Date.now() }); localStorage.setItem('rhemlo.reports', JSON.stringify(r)) } catch { /* */ } setSent(true) }}>Send report</button></div>
+    <button className="btn block" disabled={!txt.trim()} onClick={() => { try { const r = JSON.parse(localStorage.getItem('rhemlo.reports') ?? '[]'); r.push({ lesson, note: txt, at: Date.now() }); localStorage.setItem('rhemlo.reports', JSON.stringify(r)) } catch { /* */ } if (api.session()) void api.report('content', lesson, 'Content error', txt); setSent(true) }}>Send report</button></div>
 }

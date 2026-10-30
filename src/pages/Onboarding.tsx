@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { DEFAULT_PREFS, useStore, type Goal as GoalT, type Pace as PaceT } from '@/lib/store'
 import type { ManualCode } from '@/lib/types'
 import { Glim, Icon, Sheet, Toggle, asset } from '@/ui/bits'
+import { api, isDemo } from '@/lib/backend'
+import { signIn, signUp, syncNow } from '@/lib/sync'
 
 // The answers given during onboarding live here until the last step commits them.
-type Draft = { goal: GoalT; name: string; handle: string; manual: ManualCode; size: number; keepPrivate: boolean; leagues: boolean }
+type Draft = { goal: GoalT; name: string; handle: string; manual: ManualCode; size: number; keepPrivate: boolean; leagues: boolean; account?: boolean }
 const KEY = 'rhemlo.join'
 const read = (): Draft => { try { return { goal: 'recall', name: '', handle: '', manual: 'AD2627', size: 20, keepPrivate: true, leagues: false, ...JSON.parse(sessionStorage.getItem(KEY) ?? '{}') } } catch { return { goal: 'recall', name: '', handle: '', manual: 'AD2627', size: 20, keepPrivate: true, leagues: false } } }
 const save = (d: Partial<Draft>) => { try { sessionStorage.setItem(KEY, JSON.stringify({ ...read(), ...d })) } catch { /* private mode */ } }
@@ -59,7 +61,7 @@ export function Welcome() {
         <Glim pose="wave" motion="wave" once size={300} cw="classic" style={{ position: 'absolute', left: '38%', bottom: 0 }} />
       </div>
     </div>
-    {restore && <RestoreSheet onClose={() => setRestore(false)} />}
+    {restore && <SignInSheet onClose={() => setRestore(false)} />}
   </div>
 }
 
@@ -87,19 +89,57 @@ export function Goal() {
   </div>
 }
 
+export function SignInSheet({ onClose }: { onClose: () => void }) {
+  const nav = useNavigate(); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false)
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [restore, setRestore] = useState(false)
+  const go = async (e?: string, p?: string) => {
+    setBusy(true); setErr('')
+    try { await signIn(e ?? email, p ?? pw); nav('/journey', { replace: true }) } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
+  }
+  if (restore) return <RestoreSheet onClose={onClose} />
+  return <Sheet label="Sign in" onClose={onClose}><form className="col" onSubmit={e => { e.preventDefault(); go() }}>
+    <div className="row"><Glim pose="peek" size={72} /><div><h2>Welcome back</h2><p className="small muted">Your progress follows your account.</p></div></div>
+    <div><label className="lbl" htmlFor="si-e">Email</label><input id="si-e" className="field" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+    <div><label className="lbl" htmlFor="si-p">Password</label><div className="fwrap"><input id="si-p" className="field" type={show ? 'text' : 'password'} autoComplete="current-password" value={pw} onChange={e => setPw(e.target.value)} required style={{ paddingRight: 52 }} />
+      <button type="button" className="iconbtn" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)} style={{ position: 'absolute', right: 2, top: 2 }}><Icon n={show ? 'eyeoff' : 'eye'} /></button></div></div>
+    {err && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{err}</p>}
+    <button className="btn block" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+    {isDemo && <div className="card lav col gap8"><div className="row between"><b className="small">Demo accounts</b><span className="chip pend">Demo</span></div>
+      {api.demoAccounts().map(a => <button key={a.email} type="button" className="li row" style={{ border: 0, background: 'transparent', textAlign: 'left', color: 'inherit', padding: '6px 0' }} disabled={busy} onClick={() => go(a.email, a.password)}>
+        <span className="grow"><b className="small">{a.email}</b><span className="tiny muted" style={{ display: 'block' }}>{a.who}</span></span><span className="btn sec xs">Use</span></button>)}
+      <p className="tiny muted">Password for all demo accounts: <b>{api.demoAccounts()[0]?.password}</b>. Demo people and their activity are simulated.</p></div>}
+    <button type="button" className="btn link" onClick={() => setRestore(true)}>Restore a backup file instead</button>
+  </form></Sheet>
+}
+
 export function Account() {
   const nav = useNavigate(); const d = read(); const [name, setName] = useState(d.name); const [handle, setHandle] = useState(d.handle)
+  const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [signin, setSignin] = useState(false)
   const clean = (h: string) => h.toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20)
+  const create = async () => {
+    setBusy(true); setErr('')
+    try { await signUp(email, pw, clean(handle) || name.toLowerCase().replace(/[^a-z0-9]/g, ''), name.trim()); save({ name: name.trim(), handle: clean(handle), account: true }); nav('/join/manual') }
+    catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
+  }
   return <div className="ob">
-    <div className="topbar"><button className="iconbtn" aria-label="Back" onClick={() => nav('/join/goal')}><Icon n="back" /></button></div>
-    <div className="row" style={{ alignItems: 'flex-end', marginBottom: 18 }}><Glim pose="read" size={92} /><div><h1>Create your profile</h1><p className="small muted">Glim will greet you by name.</p></div></div>
-    <form className="col gap16" onSubmit={e => { e.preventDefault(); save({ name: name.trim(), handle: clean(handle) }); nav('/join/manual') }}>
+    <div className="topbar"><button className="iconbtn" aria-label="Back" onClick={() => nav('/join/goal')}><Icon n="back" /></button>{isDemo && <span className="chip pend" style={{ marginLeft: 'auto' }}>Demo server</span>}</div>
+    <div className="row" style={{ alignItems: 'flex-end', marginBottom: 18 }}><Glim pose="read" size={92} /><div><h1>Create your account</h1><p className="small muted">Keep your progress on every device.</p></div></div>
+    <form className="col gap16" onSubmit={e => { e.preventDefault(); create() }}>
       <div><label className="lbl" htmlFor="nm">First name</label><input id="nm" className="field" value={name} onChange={e => setName(e.target.value)} autoComplete="given-name" maxLength={30} required /></div>
+      <div><label className="lbl" htmlFor="em">Email</label><input id="em" className="field" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required /></div>
+      <div><label className="lbl" htmlFor="pw">Password</label><div className="fwrap"><input id="pw" className="field" type={show ? 'text' : 'password'} value={pw} minLength={8} onChange={e => setPw(e.target.value)} autoComplete="new-password" required style={{ paddingRight: 52 }} />
+        <button type="button" className="iconbtn" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)} style={{ position: 'absolute', right: 2, top: 2 }}><Icon n={show ? 'eyeoff' : 'eye'} /></button></div>
+        <p className="tiny muted mt8"><Icon n="key" className="s" style={{ verticalAlign: 'middle' }} /> Password managers and paste work here. At least 8 characters.</p></div>
       <div><label className="lbl" htmlFor="hd">Public handle (optional)</label><input id="hd" className="field" value={handle} onChange={e => setHandle(clean(e.target.value))} autoComplete="nickname" placeholder="e.g. tiwa_lamp" />
         <p className="tiny muted mt8">Never your email, phone or church.</p></div>
-      <p className="hint"><Icon n="lock" />Email sign-in and sync open when the Rhemlo server is connected. Until then your progress is saved on this device, and you can export a backup any time.</p>
-      <div className="foot" style={{ marginTop: 8 }}><button className="btn block" type="submit">Continue</button></div>
+      {err && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{err}</p>}
+      <button className="btn block" type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
+      <div className="row gap8"><span className="grow" style={{ height: 1, background: 'var(--rh-line)' }} /><span className="tiny muted">or</span><span className="grow" style={{ height: 1, background: 'var(--rh-line)' }} /></div>
+      <button type="button" className="btn sec block" onClick={() => setSignin(true)}>I already have an account</button>
+      <button type="button" className="btn link" onClick={() => { if (!name.trim()) { setErr('Add your first name so Glim can greet you.'); return } save({ name: name.trim(), handle: clean(handle) }); nav('/join/manual') }}>Continue without an account</button>
+      <p className="tiny faint center">Without an account, progress stays on this device. You can create one later in You.</p>
     </form>
+    {signin && <SignInSheet onClose={() => setSignin(false)} />}
   </div>
 }
 
@@ -127,8 +167,10 @@ export function Pace() {
   const go = () => {
     const x = read(); const name = x.name || 'Friend'
     set({ sessionSize: size, prefs: { ...DEFAULT_PREFS, keepPrivate: priv, leagues: lg }, arenaOptIn: lg })
-    finish({ name, handle: x.handle || name.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 14), goal: x.goal, pace: size <= 10 ? 'light' : size >= 40 ? 'focused' : 'steady', glim: 'classic' }, x.manual)
+    const acct = useStore.getState().account
+    finish({ name, handle: (acct ? api.session()?.user.handle : '') || x.handle || name.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 14), goal: x.goal, pace: size <= 10 ? 'light' : size >= 40 ? 'focused' : 'steady', glim: 'classic' }, x.manual)
     try { sessionStorage.removeItem(KEY) } catch { /* ignore */ }
+    void syncNow()
     nav('/practice/session', { replace: true, state: { spec: { kind: 'quest', manual: x.manual, lessons: ['L01'], count: size, title: 'Lesson 1 · Recall' } } })
   }
   return <div className="ob">

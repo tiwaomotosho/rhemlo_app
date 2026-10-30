@@ -4,6 +4,11 @@ import { loadManual } from '@/lib/data'
 import { masteryOf, streakInfo, useStore, type Theme } from '@/lib/store'
 import type { ManualCode } from '@/lib/types'
 import { BackBar, CW, Glim, Icon, Loading, Sheet, StatPills, Toggle, asset, useManualData, useToast } from '@/ui/bits'
+import { api, isDemo, type Outbox } from '@/lib/backend'
+import { askPermission, canNotify, show } from '@/lib/notify'
+import { signOut, syncNow } from '@/lib/sync'
+import { play } from '@/lib/sound'
+import { SignInSheet } from './Onboarding'
 
 // ---- earned cosmetics (personal, never points or correctness) --------------------------------------
 export function useBadges() {
@@ -35,13 +40,17 @@ export function useStyles() {
 
 export default function You() {
   const S = useStore(); const nav = useNavigate(); const badges = useBadges(); const styles = useStyles(); const [toast, say] = useToast()
-  const [data, setData] = useState(false)
+  const [data, setData] = useState(false); const [signin, setSignin] = useState(false); const [busy, setBusy] = useState(false)
   const secure = Object.values(S.cards).filter(c => masteryOf(c) === 'secure').length
   return <div className="page col gap16" style={{ maxWidth: 760 }}>
     <div className="pagehead"><h1>You</h1><StatPills /></div>
     <div className="row gap16"><span className="card lav" style={{ padding: 6, borderRadius: 24 }}><Glim pose="wave" size={96} /></span>
       <div className="grow"><h2>{S.profile.handle || S.profile.name}</h2><p className="tiny muted">Joined {new Date(S.joined || Date.now()).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} · {S.prefs.keepPrivate ? 'Private profile' : 'Shared with friends'}</p>
         <span className="chip plain mt8"><img src={asset('emblems/tiers/tier-bronze-128.webp')} width={16} height={18} alt="" />{S.arenaOptIn ? 'League pending' : 'No league'}</span></div></div>
+    {S.account ? <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">{S.account.email}</b><div className="tiny muted">{S.account.role === 'learner' ? 'Learner' : S.account.role === 'coach' ? 'Coach' : 'Content steward'} · synced {new Date(S.account.lastSync).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}{isDemo ? ' · demo server' : ''}</div></div>
+      <div className="col gap4"><button className="btn sec xs" disabled={busy} onClick={async () => { setBusy(true); await syncNow(); setBusy(false); say('Synced.') }}>Sync now</button><button className="btn link" style={{ minHeight: 30 }} onClick={async () => { await signOut(); nav('/', { replace: true }) }}>Sign out</button></div></div>
+      : <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">No account yet</b><div className="tiny muted">Progress is saved on this device only. Sign in to keep it on every device.</div></div><button className="btn xs" onClick={() => setSignin(true)}>Sign in</button></div>}
+    {S.account && S.account.role !== 'learner' && <Link to={S.account.role === 'coach' ? '/coach' : '/steward'} className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n={S.account.role === 'coach' ? 'people' : 'shield'} /></span><div className="grow"><b>{S.account.role === 'coach' ? 'Coach workspace' : 'Content studio'}</b><div className="tiny muted">{S.account.role === 'coach' ? 'Your circle, assignments and Quiz Night hosting' : 'Item review, reports and the manual pipeline'}</div></div><Icon n="chev" className="faint" /></Link>}
     <div className="grid3"><div className="stat center"><div className="v">{S.points.toLocaleString()}</div><div className="d">personal XP</div></div><div className="stat center"><div className="v">{secure}</div><div className="d">Secure items</div></div><div className="stat center"><div className="v">{S.activeDays.length}</div><div className="d">study days</div></div></div>
     <p className="eyebrow">Glim style</p>
     <div className="stylepick">{styles.map(s => <button key={s.cw} className={`${S.profile.glim === s.cw ? 'on' : ''} ${s.got ? '' : 'lock'}`} aria-pressed={S.profile.glim === s.cw} aria-label={`${s.cw}${s.got ? '' : ', locked: ' + s.how}`}
@@ -58,6 +67,7 @@ export default function You() {
         <div className="seg" style={{ width: 170 }}>{[10, 20, 40].map(n => <button key={n} className={S.sessionSize === n ? 'on' : ''} onClick={() => S.set({ sessionSize: n })}>{n}</button>)}</div></div>
       <button className="li" onClick={() => setData(true)}><span className="tile" style={{ width: 38, height: 38 }}><Icon n="cloud" className="s" /></span><span className="grow"><b className="small">Your data</b><span className="tiny muted" style={{ display: 'block' }}>Export, restore or erase what is on this device</span></span><Icon n="chev" className="faint" /></button>
     </div>
+    {signin && <SignInSheet onClose={() => setSignin(false)} />}
     {data && <DataSheet onClose={() => setData(false)} onErase={() => nav('/', { replace: true })} />}
     {toast}
   </div>
@@ -96,28 +106,34 @@ export function Appearance() {
       <div className="li" style={{ flexWrap: 'wrap' }}><div className="grow"><b className="small">Map world</b><div className="tiny muted">Which painting the Journey shows</div></div>
         <div className="seg" style={{ width: '100%' }}>{([['theme', 'Follow theme'], ['day', 'Always day'], ['night', 'Always night']] as const).map(([k, t]) => <button key={k} className={p.mapWorld === k ? 'on' : ''} onClick={() => setP({ mapWorld: k })}>{t}</button>)}</div></div>
     </div>
-    <p className="tiny muted">Sounds are off and stay off: Rhemlo never uses sound as the only signal.</p>
+    <div className="card list" style={{ padding: '2px 16px' }}><div className="li"><div className="grow"><b className="small">Sounds</b><div className="tiny muted">Never the only signal · off until you choose</div></div><Toggle on={p.sound} onChange={v => { setP({ sound: v }); if (v) setTimeout(() => play('correct'), 50) }} label="Sounds" /></div></div>
   </div>
 }
 
 // ---- Notifications (R48) -------------------------------------------------------------------------
 export function Notifications() {
   const S = useStore(); const nav = useNavigate(); const p = S.prefs; const n = p.notif; const setN = (k: keyof typeof n, v: boolean) => S.set({ prefs: { ...p, notif: { ...n, [k]: v } } })
-  const [edit, setEdit] = useState(false); const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const [edit, setEdit] = useState(false); const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; const [msg, setMsg] = useState(''); const [out, setOut] = useState<Outbox[]>([])
+  useEffect(() => { if (S.account) api.outbox().then(setOut).catch(() => {}) }, [S.account])
   return <div className="page col gap16" style={{ maxWidth: 560 }}>
     <BackBar title="Notifications" onBack={() => nav('/you')} />
     <div className="row"><img src={asset('illustrations/states/state-notify-256.webp')} width={84} height={84} alt="" /><p className="small muted">Gentle nudges only. Nothing here can block learning.</p></div>
     <div className="card list" style={{ padding: '2px 16px' }}>
       <div className="li"><div className="grow"><b className="small">Study reminder</b><div className="tiny muted">Daily at <input type="time" value={p.remindAt} onChange={e => S.set({ prefs: { ...p, remindAt: e.target.value } })} style={{ border: 0, background: 'transparent', font: 'inherit', color: 'inherit' }} aria-label="Reminder time" /> · {tz}</div></div><Toggle on={n.study} onChange={v => setN('study', v)} label="Study reminder" /></div>
       <div className="li"><div className="grow"><b className="small">Due review ready</b><div className="tiny muted">At most once a day</div></div><Toggle on={n.due} onChange={v => setN('due', v)} label="Due review ready" /></div>
-      <div className="li"><div className="grow"><b className="small">Circle activity</b><div className="tiny muted">Daily digest only · opens with circles</div></div><Toggle on={n.circle} onChange={v => setN('circle', v)} label="Circle activity" /></div>
-      <div className="li"><div className="grow"><b className="small">Quiz Night starting</b><div className="tiny muted">15 minutes before · opens with Quiz Night</div></div><Toggle on={n.quiz} onChange={v => setN('quiz', v)} label="Quiz Night starting" /></div>
+      <div className="li"><div className="grow"><b className="small">Circle activity</b><div className="tiny muted">Daily digest only</div></div><Toggle on={n.circle} onChange={v => setN('circle', v)} label="Circle activity" /></div>
+      <div className="li"><div className="grow"><b className="small">Quiz Night starting</b><div className="tiny muted">15 minutes before</div></div><Toggle on={n.quiz} onChange={v => setN('quiz', v)} label="Quiz Night starting" /></div>
       <div className="li"><div className="grow"><b className="small">League updates</b><div className="tiny muted">Weekly result only</div></div><Toggle on={n.league} onChange={v => setN('league', v)} label="League updates" /></div></div>
     <div className="card row"><Glim pose="sleep" size={56} still /><div className="grow"><b>Quiet hours</b><div className="tiny muted">{p.quiet[0]} – {p.quiet[1]}</div></div><button className="btn sec xs" onClick={() => setEdit(!edit)}>{edit ? 'Done' : 'Edit'}</button></div>
     {edit && <div className="row gap8"><input type="time" className="field" value={p.quiet[0]} onChange={e => S.set({ prefs: { ...p, quiet: [e.target.value, p.quiet[1]] } })} aria-label="Quiet from" /><input type="time" className="field" value={p.quiet[1]} onChange={e => S.set({ prefs: { ...p, quiet: [p.quiet[0], e.target.value] } })} aria-label="Quiet until" /></div>}
     <p className="eyebrow">Channel</p>
-    <div className="seg">{([['inapp', 'In-app'], ['push', 'Browser push'], ['email', 'Email']] as const).map(([k, t]) => <button key={k} className={p.channel === k ? 'on' : ''} disabled={k !== 'inapp'} onClick={() => S.set({ prefs: { ...p, channel: k } })}>{t}</button>)}</div>
-    <p className="tiny muted">In-app reminders show on your Journey. Browser push and email need the Rhemlo server, so they stay off for now.</p>
+    <div className="seg">{([['inapp', 'In-app'], ['push', 'Browser push'], ['email', 'Email']] as const).map(([k, t]) => <button key={k} className={p.channel === k ? 'on' : ''} disabled={(k === 'push' && !canNotify()) || (k === 'email' && !S.account)}
+      onClick={async () => { if (k === 'push') { const ok = await askPermission(); if (!ok) setMsg('Notifications are blocked in this browser. Allow them in the site settings, or keep in-app reminders.'); return } S.set({ prefs: { ...p, channel: k } }) }}>{t}</button>)}</div>
+    <p className="tiny muted">{p.channel === 'push' ? 'Reminders arrive as browser notifications, even when Rhemlo is in another tab.' : p.channel === 'email' ? (isDemo ? 'Demo server: emails land in the outbox below instead of a real inbox.' : 'Reminders arrive by email.') : 'Reminders appear in the list below while Rhemlo is open.'}{!S.account && ' Email needs an account.'}</p>
+    {msg && <p className="small" role="alert">{msg}</p>}
+    <button className="btn sec" onClick={async () => { if (p.channel === 'push' && Notification.permission === 'granted') await show('Rhemlo', 'Your next little quest is ready.', 'test'); else if (p.channel === 'email' && S.account) { await api.email('Your next little quest is ready', 'A short sitting keeps your verses bright. Open Rhemlo when you are ready.'); setOut(await api.outbox()) } else S.set({ inbox: [{ id: crypto.randomUUID(), at: Date.now(), title: 'Rhemlo', body: 'Your next little quest is ready.' }, ...S.inbox] }) }}>Send a test reminder</button>
+    {S.inbox.length > 0 && <><p className="eyebrow">In-app reminders</p><div className="card list" style={{ padding: '2px 14px' }}>{S.inbox.slice(0, 6).map(n => <div key={n.id} className="li"><Icon n="bell" className="s" /><span className="grow small"><b>{n.title}</b> · {n.body}</span><span className="tiny muted">{new Date(n.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span></div>)}</div></>}
+    {out.length > 0 && <><p className="eyebrow">{isDemo ? 'Demo outbox' : 'Sent emails'}</p><div className="card list" style={{ padding: '2px 14px' }}>{out.slice(0, 6).map(o => <div key={o.id} className="li" style={{ alignItems: 'flex-start' }}><Icon n="send" className="s" /><span className="grow small"><b>{o.subject}</b><span className="tiny muted" style={{ display: 'block' }}>To {S.account?.email} · {o.body}</span></span></div>)}</div></>}
   </div>
 }
 
@@ -134,7 +150,7 @@ export function Downloads() {
   return <div className="page col gap16" style={{ maxWidth: 560 }}>
     <BackBar title="Downloads" onBack={() => nav('/you')} />
     {!online && <div className="card row" style={{ background: 'var(--rh-warning-bg)', borderColor: 'transparent' }}><img src={asset('illustrations/states/state-offline-256.webp')} width={64} height={64} alt="" /><div><b>No signal. Still your journey.</b><div className="tiny muted">Downloaded private practice works offline.</div></div></div>}
-    <div className="card col gap8"><div className="row between"><b>Everything is saved on this device</b><span className="chip ok"><Icon n="check" />Saved</span></div><p className="tiny muted">Sync to other devices starts when accounts open. Until then, export a backup from You → Your data.</p></div>
+    <SyncCard />
     <p className="eyebrow">Download for private practice</p>
     {'caches' in window ? packs.map(p => <div key={p.id} className="card row"><span className="tile green"><Icon n="book" /></span><div className="grow"><b className="small">{p.title}</b><div className="tiny muted">{p.questions.toLocaleString()} questions · lesson text · KJV for context</div></div>
       {state[p.id] === 'ok' ? <button className="iconbtn" aria-label={`Remove ${p.title}`} onClick={() => drop(p)}><Icon n="trash" /></button> : <button className="btn sec xs" disabled={state[p.id] === 'busy'} onClick={() => get(p)}>{state[p.id] === 'busy' ? 'Saving…' : 'Download'}</button>}</div>)
@@ -155,6 +171,13 @@ export function Access() {
     {(['AD2627', 'EN2627'] as ManualCode[]).map(c => <div key={c} className="card row"><span className="spine" style={{ background: c === 'AD2627' ? '#7041D9' : '#FFAA72' }}><Icon n="book" /></span>
       <div className="grow"><b>{c === 'AD2627' ? 'Adult 2026–2027' : 'YAYA 2026–2027'}</b><div className="tiny muted">{titles[c] ?? c}</div><span className="chip ok mt8">Available</span></div>
       {S.manual === c ? <span className="chip">In use</span> : <button className="btn sec xs" onClick={() => S.set({ manual: c })}>Switch</button>}</div>)}
-    <p className="hint"><Icon n="info" />Both manuals are open to everyone on this device. Publisher permission is recorded; organisation access and retired seasons appear here when accounts open. Joining a circle never grants manual access.</p>
+    <p className="hint"><Icon n="info" />Both manuals are open to everyone on this device. Publisher permission is recorded. Organisation-provided and retired manuals appear here with who grants them. Joining a circle never grants manual access.</p>
   </div>
+}
+
+function SyncCard() {
+  const { account } = useStore(); const [busy, setBusy] = useState(false)
+  if (!account) return <div className="card col gap8"><div className="row between"><b>Saved on this device</b><span className="chip ok"><Icon n="check" />Saved</span></div><p className="tiny muted">Sign in from You to keep your progress on every device.</p></div>
+  return <div className="card col gap8"><div className="row between"><b>Up to date</b><button className="btn xs" disabled={busy || !navigator.onLine} onClick={async () => { setBusy(true); await syncNow(); setBusy(false) }}>{navigator.onLine ? 'Retry sync' : 'Offline'}</button></div>
+    <p className="tiny muted">Saved on this device · last synced {new Date(account.lastSync).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}{isDemo ? ' · demo server' : ''}</p></div>
 }
