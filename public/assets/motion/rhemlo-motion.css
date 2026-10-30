@@ -1,0 +1,45 @@
+/* Rhemlo motion v1.0
+   Tier 1  .glim .glim--<motion>   whole-character motion on any static pose image
+   Tier 2  <rhemlo-glim rig>       TRUE rig: per-part motion driven by motion/motions.json
+   Reduced motion disables everything (bottom of file). */
+.glim{display:inline-block;transform-origin:50% 98%;will-change:transform;user-select:none;-webkit-user-drag:none}
+@keyframes glim-breathe{0%,100%{transform:scale(1,1) translateY(0)}50%{transform:scale(.988,1.026) translateY(-2px)}}
+.glim--breathe{animation:glim-breathe 2.0s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-sleep{0%,100%{transform:scale(1,1)}50%{transform:scale(1.016,.968)}}
+.glim--sleep{animation:glim-sleep 2.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-sway{0%,100%{transform:rotate(0)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
+.glim--sway{animation:glim-sway 1.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-tilt{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.glim--tilt{animation:glim-tilt 2.2s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-float{0%,100%{transform:translateY(-5px)}25%{transform:translateY(-15px) rotate(2deg)}75%{transform:translateY(5px) rotate(-2deg)}}
+.glim--float{animation:glim-float 2.4s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-nudge{0%,50%,100%{transform:translateX(0)}12%,37%{transform:translateX(9px) rotate(3deg)}25%{transform:translateX(0)}}
+.glim--nudge{animation:glim-nudge 1.4s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-pop{0%,35%,100%{transform:scale(1)}17%{transform:scale(1.09) translateY(-7px)}}
+.glim--pop{animation:glim-pop 1.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-bounce{0%,50%,100%{transform:translateY(0) scale(1.07,.93)}25%,75%{transform:translateY(-18px) scale(1,1)}}
+.glim--bounce{animation:glim-bounce 1.0s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-run{0%,50%,100%{transform:translateY(0)}25%{transform:translateY(-9px) rotate(3deg)}75%{transform:translateY(-9px) rotate(-3deg)}}
+.glim--run{animation:glim-run 0.8s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-walk{0%,50%,100%{transform:translateY(0)}25%{transform:translateY(-4px) rotate(2deg)}75%{transform:translateY(-4px) rotate(-2deg)}}
+.glim--walk{animation:glim-walk 1.0s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-wave{0%,100%{transform:rotate(0)}50%{transform:rotate(3deg)}}
+.glim--wave{animation:glim-wave 1.2s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-jump{0%{transform:scale(1,1)}11%{transform:scale(1.09,.89)}38%{transform:translateY(-52px) scale(.96,1.07)}62%{transform:translateY(0)}70%{transform:scale(1.08,.91)}78%,100%{transform:scale(1,1)}}
+.glim--jump{animation:glim-jump 1.4s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-cheer{0%,100%{transform:translateY(0)}25%{transform:translateY(-8px) rotate(4deg)}75%{transform:translateY(-8px) rotate(-4deg)}}
+.glim--cheer{animation:glim-cheer 1.2s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes glim-flicker{0%,100%{transform:scale(1,1)}50%{transform:scale(1.003,1.006)}}
+.glim--flicker{animation:glim-flicker 1.8s cubic-bezier(.45,0,.55,1) infinite}
+.glim--once{animation-iteration-count:1}
+.glim-rig{position:relative;display:inline-block}
+.glim-rig img{position:absolute;left:0;top:0;width:100%;height:100%;will-change:transform}
+@keyframes glim-glow{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.9;transform:scale(1.08)}}
+.glim-stage{position:relative;display:inline-grid;place-items:end center}
+.glim-stage::before{content:"";position:absolute;inset:12% 8% 4%;border-radius:50%;background:radial-gradient(circle,rgba(255,170,114,.55),rgba(255,170,114,0) 68%);animation:glim-glow 2.4s ease-in-out infinite;z-index:-1}
+@keyframes glim-enter{from{opacity:0;transform:translateY(24px) scale(.9)}to{opacity:1;transform:none}}
+.glim--enter{animation:glim-enter .5s var(--rh-ease-spring,cubic-bezier(.34,1.56,.64,1)) both}
+.glim-sprite{width:128px;height:128px;background-repeat:no-repeat;background-size:auto 100%;animation:glim-sprite var(--glim-dur,1s) steps(var(--glim-frames,20)) infinite}
+@keyframes glim-sprite{to{background-position:calc(var(--glim-frames,20) * -128px) 0}}
+.glim-rig [data-part^="lid"]{visibility:hidden}
+@media (prefers-reduced-motion: reduce){.glim,.glim-sprite,.glim-rig img,.glim-stage::before{animation:none!important;transition:none!important}}

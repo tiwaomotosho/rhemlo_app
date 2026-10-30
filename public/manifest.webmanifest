@@ -1,0 +1,27 @@
+{
+ "name": "Rhemlo",
+ "short_name": "Rhemlo",
+ "description": "Little quests. Lasting light.",
+ "start_url": "/journey",
+ "display": "standalone",
+ "background_color": "#FFF8EE",
+ "theme_color": "#7041D9",
+ "icons": [
+  {
+   "src": "/assets/brand/app-icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "/assets/brand/app-icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "/assets/brand/app-icons/icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

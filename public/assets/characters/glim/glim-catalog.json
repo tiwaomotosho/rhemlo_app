@@ -1,0 +1,3420 @@
+{
+ "version": "1.1",
+ "canvas": "square-padded, feet at 98% height, centred",
+ "colorways": [
+  "classic",
+  "twilight",
+  "meadow",
+  "rosewood",
+  "midnight",
+  "ocean"
+ ],
+ "motions": {
+  "breathe": {
+   "duration_s": 2.0
+  },
+  "sleep": {
+   "duration_s": 2.6
+  },
+  "sway": {
+   "duration_s": 1.6
+  },
+  "tilt": {
+   "duration_s": 2.2
+  },
+  "float": {
+   "duration_s": 2.4
+  },
+  "nudge": {
+   "duration_s": 1.4
+  },
+  "pop": {
+   "duration_s": 1.6
+  },
+  "bounce": {
+   "duration_s": 1.0
+  },
+  "run": {
+   "duration_s": 0.8
+  },
+  "jump": {
+   "duration_s": 1.4
+  },
+  "cheer": {
+   "duration_s": 1.2
+  },
+  "flicker": {
+   "duration_s": 1.8
+  },
+  "wave": {
+   "duration_s": 1.2
+  },
+  "walk": {
+   "duration_s": 1.0
+  }
+ },
+ "expressions": [
+  "happy",
+  "laugh",
+  "calm",
+  "curious",
+  "focused",
+  "surprised",
+  "sleepy",
+  "wink",
+  "warm",
+  "proud",
+  "listening",
+  "cheer",
+  "prayer"
+ ],
+ "paths": {
+  "pose_png": "characters/glim/poses/png/glim-{pose}.png",
+  "pose_square": "characters/glim/poses/square-{size}/glim-{pose}.webp",
+  "colorway": "characters/glim/colorways/{colorway}/glim-{pose}-{size}.webp",
+  "colorway_expression": "characters/glim/colorways/{colorway}/glim-expr-{expression}-256.webp",
+  "expression_full": "characters/glim/expressions/full/glim-expr-{expression}-{size}.webp",
+  "expression_head": "characters/glim/expressions/heads/{colorway}/head-{expression}-{size}.png",
+  "avatar": "characters/glim/avatars/avatar-{colorway}-{size}.png",
+  "anim_webp": "characters/glim/animated/webp/glim-{pose}-{motion}.webp",
+  "anim_lottie": "characters/glim/animated/lottie/glim-{pose}-{motion}.json",
+  "sprite": "characters/glim/animated/sprites/glim-{pose}-{motion}-sprite.png",
+  "rig_layer": "characters/glim/rig/{pose}/{part}.webp",
+  "rig_layer_colorway": "characters/glim/rig-colorways/{colorway}/{pose}/{part}.webp",
+  "anim_lottie_colorway": "characters/glim/animated/lottie/{colorway}/glim-{pose}-{motion}.json",
+  "anim_gif": "characters/glim/animated/gif/glim-{pose}-{motion}-{background}.gif",
+  "rig_index": "characters/glim/rig/rig-index.json",
+  "turnaround_webp": "characters/glim/animated/webp/glim-turnaround.webp",
+  "turnaround_lottie": "characters/glim/animated/lottie/glim-turnaround.json",
+  "turnaround_sprite": "characters/glim/animated/sprites/glim-turnaround-sprite.png"
+ },
+ "poses": {
+  "idle": {
+   "category": "core",
+   "use": "Default standing pose, rig master, hero placements",
+   "motion": "breathe",
+   "animations": [
+    "bounce",
+    "breathe",
+    "cheer",
+    "flicker",
+    "jump",
+    "run",
+    "walk",
+    "wave"
+   ],
+   "rig": {
+    "size": [
+     459,
+     600
+    ],
+    "bbox": [
+     1,
+     1,
+     457,
+     598
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      230.69093948034072,
+      598.0
+     ],
+     "flame": [
+      238.668055736424,
+      117.0
+     ],
+     "arm0": [
+      66.0,
+      391.0
+     ],
+     "arm1": [
+      391.0,
+      397.0
+     ],
+     "leg0": [
+      139.72222222222223,
+      515.0
+     ],
+     "leg1": [
+      314.7142857142857,
+      515.0
+     ],
+     "lid0": [
+      160.5,
+      234.23298
+     ],
+     "lid1": [
+      303.5,
+      234.23298
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     1.0,
+     1.0
+    ],
+    "leg": 1.0,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "wave": {
+   "category": "core",
+   "use": "Welcome, sign-in, first visit",
+   "motion": "wave",
+   "animations": [
+    "breathe",
+    "wave"
+   ],
+   "rig": {
+    "size": [
+     456,
+     569
+    ],
+    "bbox": [
+     2,
+     2,
+     453,
+     566
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      251.4897309194028,
+      566.0
+     ],
+     "flame": [
+      268.2877571500251,
+      112.0
+     ],
+     "arm0": [
+      104.0,
+      294.0
+     ],
+     "arm1": [
+      391.0,
+      387.0
+     ],
+     "leg0": [
+      167.3913043478261,
+      478.0
+     ],
+     "leg1": [
+      335.625,
+      477.0
+     ],
+     "lid0": [
+      196.0,
+      210.13432
+     ],
+     "lid1": [
+      323.0,
+      203.95011749963402
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     1.0,
+     0.15
+    ],
+    "leg": 0.8,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "point": {
+   "category": "core",
+   "use": "Point to the next action, current map node",
+   "motion": "nudge",
+   "animations": [
+    "breathe",
+    "nudge"
+   ],
+   "rig": {
+    "size": [
+     502,
+     570
+    ],
+    "bbox": [
+     2,
+     2,
+     499,
+     567
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      209.4972218443605,
+      567.0
+     ],
+     "flame": [
+      220.0323762981063,
+      114.0
+     ],
+     "arm0": [
+      69.0,
+      386.0
+     ],
+     "arm1": [
+      377.0,
+      323.0
+     ],
+     "leg0": [
+      123.0,
+      476.0
+     ],
+     "leg1": [
+      297.2,
+      475.0
+     ],
+     "lid0": [
+      148.0,
+      210.49112097342578
+     ],
+     "lid1": [
+      277.0,
+      208.3323212281577
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.25,
+     0.5
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "celebrate": {
+   "category": "core",
+   "use": "Quest complete",
+   "motion": "jump",
+   "animations": [
+    "breathe",
+    "jump"
+   ],
+   "rig": {
+    "size": [
+     467,
+     558
+    ],
+    "bbox": [
+     2,
+     2,
+     464,
+     515
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1"
+    ],
+    "pivots": {
+     "body": [
+      234.30515051740358,
+      515.0
+     ],
+     "flame": [
+      254.9147192186955,
+      93.0
+     ],
+     "arm0": [
+      95.0,
+      216.0
+     ],
+     "arm1": [
+      375.0,
+      216.0
+     ],
+     "leg0": [
+      108.23214285714286,
+      390.0
+     ],
+     "leg1": [
+      315.27777777777777,
+      422.0
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 0
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.8,
+     0.8
+    ],
+    "leg": 0.9,
+    "flame": 1.2
+   },
+   "blink": false,
+   "blink_note": "eyes already closed",
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "read": {
+   "category": "core",
+   "use": "Reader, Library, further readings",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     367,
+     545
+    ],
+    "bbox": [
+     2,
+     2,
+     364,
+     542
+    ],
+    "layers": [
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      189.27275832205024,
+      542.0
+     ],
+     "flame": [
+      207.785201058868,
+      111.0
+     ],
+     "leg0": [
+      73.9090909090909,
+      341.0
+     ],
+     "leg1": [
+      302.3333333333333,
+      342.0
+     ],
+     "lid0": [
+      127.5,
+      204.13432
+     ],
+     "lid1": [
+      254.5,
+      210.71179999999998
+     ]
+    },
+    "arms": 0,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.4,
+    "flame": 0.8
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "think": {
+   "category": "core",
+   "use": "Goal picker, hints, curious moments",
+   "motion": "tilt",
+   "animations": [
+    "breathe",
+    "tilt"
+   ],
+   "rig": {
+    "size": [
+     361,
+     585
+    ],
+    "bbox": [
+     2,
+     2,
+     358,
+     582
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      172.0976767686397,
+      582.0
+     ],
+     "flame": [
+      218.58769422001242,
+      113.0
+     ],
+     "arm0": [
+      146.0,
+      337.0
+     ],
+     "arm1": [
+      300.0,
+      418.0
+     ],
+     "leg0": [
+      96.25,
+      499.0
+     ],
+     "leg1": [
+      260.2,
+      498.0
+     ],
+     "lid0": [
+      109.0,
+      211.50054
+     ],
+     "lid1": [
+      239.5,
+      224.07801999999998
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.3,
+     0.2
+    ],
+    "leg": 0.5,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "thumbs": {
+   "category": "core",
+   "use": "Correct answer, daily quests",
+   "motion": "pop",
+   "animations": [
+    "breathe",
+    "pop"
+   ],
+   "rig": {
+    "size": [
+     469,
+     584
+    ],
+    "bbox": [
+     2,
+     2,
+     466,
+     581
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      208.4443164473116,
+      581.0
+     ],
+     "flame": [
+      225.7811734364926,
+      115.0
+     ],
+     "arm0": [
+      67.0,
+      409.0
+     ],
+     "arm1": [
+      358.0,
+      356.0
+     ],
+     "leg0": [
+      118.9,
+      499.0
+     ],
+     "leg1": [
+      286.25,
+      497.0
+     ],
+     "lid0": [
+      141.0,
+      208.3449186338438
+     ],
+     "lid1": [
+      272.5,
+      214.88966281457132
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.4,
+     0.0
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "sleep": {
+   "category": "core",
+   "use": "Offline, quiet hours, retired manual",
+   "motion": "sleep",
+   "animations": [
+    "breathe",
+    "sleep"
+   ],
+   "rig": {
+    "size": [
+     952,
+     633
+    ],
+    "bbox": [
+     8,
+     9,
+     942,
+     624
+    ],
+    "layers": [
+     "body",
+     "flame",
+     "leg0",
+     "leg1"
+    ],
+    "pivots": {
+     "body": [
+      369.979006019601,
+      624.0
+     ],
+     "flame": [
+      503.22032288698955,
+      40.0
+     ],
+     "leg0": [
+      46.276595744680854,
+      460.0
+     ],
+     "leg1": [
+      845.0769230769231,
+      357.0
+     ]
+    },
+    "arms": 0,
+    "legs": 2,
+    "props": 0,
+    "lids": 0
+   },
+   "rig_amplitude": {
+    "arm": [
+     0,
+     0
+    ],
+    "leg": 0.2,
+    "flame": 0.6
+   },
+   "blink": false,
+   "blink_note": "eyes already closed",
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "trophy": {
+   "category": "core",
+   "use": "Arena, daily challenge",
+   "motion": "bounce",
+   "animations": [
+    "bounce",
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     504,
+     555
+    ],
+    "bbox": [
+     2,
+     2,
+     501,
+     552
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      236.600245004718,
+      552.0
+     ],
+     "flame": [
+      416.55131004366814,
+      70.0
+     ],
+     "arm0": [
+      83.0,
+      393.0
+     ],
+     "arm1": [
+      383.0,
+      259.0
+     ],
+     "leg0": [
+      105.5,
+      462.0
+     ],
+     "leg1": [
+      275.85,
+      462.0
+     ],
+     "lid0": [
+      134.5,
+      200.15817759146648
+     ],
+     "lid1": [
+      258.5,
+      190.8551002556481
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.15,
+     0.0
+    ],
+    "leg": 0.7,
+    "flame": 1.1
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "highfive": {
+   "category": "core",
+   "use": "Co-op, circles, friends",
+   "motion": "sway",
+   "animations": [
+    "breathe",
+    "sway"
+   ],
+   "rig": {
+    "size": [
+     462,
+     570
+    ],
+    "bbox": [
+     2,
+     2,
+     459,
+     567
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      245.7753743588685,
+      567.0
+     ],
+     "flame": [
+      256.9386617100372,
+      101.0
+     ],
+     "arm0": [
+      105.0,
+      274.0
+     ],
+     "arm1": [
+      380.0,
+      407.0
+     ],
+     "leg0": [
+      152.0952380952381,
+      464.0
+     ],
+     "leg1": [
+      328.3478260869565,
+      470.0
+     ],
+     "lid0": [
+      188.5,
+      198.34557999999998
+     ],
+     "lid1": [
+      316.5,
+      201.92306
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.7,
+     0.3
+    ],
+    "leg": 0.7,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": true,
+   "has_flame_layer": true
+  },
+  "run": {
+   "category": "action",
+   "use": "Loading, map travel, streaks",
+   "motion": "run",
+   "animations": [
+    "breathe",
+    "run"
+   ],
+   "rig": {
+    "size": [
+     458,
+     592
+    ],
+    "bbox": [
+     2,
+     2,
+     455,
+     589
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      233.98861310264667,
+      589.0
+     ],
+     "flame": [
+      246.35110606920023,
+      102.0
+     ],
+     "arm0": [
+      92.0,
+      349.0
+     ],
+     "arm1": [
+      373.0,
+      362.0
+     ],
+     "leg0": [
+      100.33333333333333,
+      423.0
+     ],
+     "leg1": [
+      258.7692307692308,
+      478.0
+     ],
+     "lid0": [
+      212.5,
+      203.71179999999998
+     ],
+     "lid1": [
+      339.0,
+      208.71179999999998
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.9,
+     0.9
+    ],
+    "leg": 1.0,
+    "flame": 1.2
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "lantern": {
+   "category": "action",
+   "use": "Night world, dark-mode hero, guiding",
+   "motion": "flicker",
+   "animations": [
+    "breathe",
+    "flicker"
+   ],
+   "rig": {
+    "size": [
+     460,
+     553
+    ],
+    "bbox": [
+     2,
+     2,
+     457,
+     550
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      215.42931972461605,
+      550.0
+     ],
+     "flame": [
+      218.05251176202762,
+      99.0
+     ],
+     "arm0": [
+      97.0,
+      187.0
+     ],
+     "arm1": [
+      376.0,
+      378.0
+     ],
+     "leg0": [
+      151.38095238095238,
+      447.0
+     ],
+     "leg1": [
+      327.94117647058823,
+      447.0
+     ],
+     "lid0": [
+      180.5,
+      188.55684
+     ],
+     "lid1": [
+      306.0,
+      177.55684
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.35
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "goodbye": {
+   "category": "action",
+   "use": "Done for now, sign-out, leaving a circle",
+   "motion": "sway",
+   "animations": [
+    "breathe",
+    "sway"
+   ],
+   "rig": {
+    "size": [
+     390,
+     579
+    ],
+    "bbox": [
+     2,
+     2,
+     387,
+     576
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      216.01868013908012,
+      576.0
+     ],
+     "flame": [
+      246.74385113268607,
+      96.0
+     ],
+     "arm0": [
+      97.0,
+      276.0
+     ],
+     "arm1": [
+      322.0,
+      401.0
+     ],
+     "leg0": [
+      116.10526315789474,
+      461.0
+     ],
+     "leg1": [
+      253.44444444444446,
+      467.0
+     ],
+     "lid0": [
+      209.5,
+      192.34557999999998
+     ],
+     "lid1": [
+      319.5,
+      212.7681
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.9,
+     0.2
+    ],
+    "leg": 0.8,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "surprised": {
+   "category": "action",
+   "use": "Promotion reveal, new badge",
+   "motion": "pop",
+   "animations": [
+    "breathe",
+    "pop"
+   ],
+   "rig": {
+    "size": [
+     340,
+     578
+    ],
+    "bbox": [
+     2,
+     2,
+     337,
+     575
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      168.27211464968153,
+      575.0
+     ],
+     "flame": [
+      181.25728500355365,
+      115.0
+     ],
+     "arm0": [
+      86.0,
+      316.0
+     ],
+     "arm1": [
+      250.0,
+      313.0
+     ],
+     "leg0": [
+      91.05882352941177,
+      479.0
+     ],
+     "leg1": [
+      252.0,
+      476.0
+     ],
+     "lid0": [
+      102.5,
+      202.07801999999998
+     ],
+     "lid1": [
+      218.37229190421894,
+      207.99400684150515
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.3,
+     0.3
+    ],
+    "leg": 0.5,
+    "flame": 1.3
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "listen": {
+   "category": "action",
+   "use": "Listening questions (Q24), audio settings",
+   "motion": "sway",
+   "animations": [
+    "breathe",
+    "sway"
+   ],
+   "rig": {
+    "size": [
+     421,
+     580
+    ],
+    "bbox": [
+     2,
+     2,
+     418,
+     577
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1"
+    ],
+    "pivots": {
+     "body": [
+      211.97933084400816,
+      577.0
+     ],
+     "flame": [
+      233.89591033742698,
+      116.0
+     ],
+     "arm0": [
+      73.0,
+      331.0
+     ],
+     "arm1": [
+      342.0,
+      306.0
+     ],
+     "leg0": [
+      135.0,
+      484.0
+     ],
+     "leg1": [
+      286.27777777777777,
+      481.0
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 0
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.5,
+    "flame": 0.9
+   },
+   "blink": false,
+   "blink_note": "eyes already closed",
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "write": {
+   "category": "action",
+   "use": "Typed answers, notes, report form",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     369,
+     582
+    ],
+    "bbox": [
+     2,
+     1,
+     367,
+     579
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      170.05053188832844,
+      579.0
+     ],
+     "flame": [
+      200.42779783393502,
+      113.0
+     ],
+     "arm0": [
+      136.0,
+      363.0
+     ],
+     "arm1": [
+      282.0,
+      398.0
+     ],
+     "leg0": [
+      83.6,
+      481.0
+     ],
+     "leg1": [
+      248.9375,
+      483.0
+     ],
+     "lid0": [
+      119.5,
+      206.92306
+     ],
+     "lid1": [
+      247.0,
+      220.92306
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.4,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "map": {
+   "category": "action",
+   "use": "Journey intro, planner, chapter sheet",
+   "motion": "tilt",
+   "animations": [
+    "breathe",
+    "tilt"
+   ],
+   "rig": {
+    "size": [
+     444,
+     580
+    ],
+    "bbox": [
+     2,
+     1,
+     441,
+     577
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      214.36199639206254,
+      577.0
+     ],
+     "flame": [
+      191.24462574462575,
+      109.0
+     ],
+     "arm0": [
+      90.0,
+      381.0
+     ],
+     "arm1": [
+      383.0,
+      367.0
+     ],
+     "leg0": [
+      107.5,
+      487.0
+     ],
+     "leg1": [
+      276.875,
+      483.0
+     ],
+     "lid0": [
+      147.5,
+      215.34557999999998
+     ],
+     "lid1": [
+      270.0,
+      215.55684
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.5,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "clap": {
+   "category": "action",
+   "use": "Milestones, match result",
+   "motion": "bounce",
+   "animations": [
+    "bounce",
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     389,
+     589
+    ],
+    "bbox": [
+     2,
+     2,
+     386,
+     586
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      227.13462645332106,
+      586.0
+     ],
+     "flame": [
+      228.73632501327668,
+      113.0
+     ],
+     "arm0": [
+      224.0,
+      328.0
+     ],
+     "arm1": [
+      240.0,
+      330.0
+     ],
+     "leg0": [
+      141.76,
+      498.0
+     ],
+     "leg1": [
+      323.29411764705884,
+      495.0
+     ],
+     "lid0": [
+      162.5,
+      210.55684
+     ],
+     "lid1": [
+      295.0,
+      199.55684
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.06,
+     0.06
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "hug": {
+   "category": "action",
+   "use": "Memory verse secured, welcome back",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     349,
+     586
+    ],
+    "bbox": [
+     2,
+     2,
+     346,
+     583
+    ],
+    "layers": [
+     "arm0",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      178.62934601289848,
+      583.0
+     ],
+     "flame": [
+      188.78060344827585,
+      109.0
+     ],
+     "arm0": [
+      213.0,
+      362.0
+     ],
+     "leg0": [
+      88.25,
+      494.0
+     ],
+     "leg1": [
+      260.29411764705884,
+      495.0
+     ],
+     "lid0": [
+      107.5,
+      207.13432
+     ],
+     "lid1": [
+      242.0,
+      207.92306
+     ]
+    },
+    "arms": 1,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.04,
+     0.04
+    ],
+    "leg": 0.4,
+    "flame": 0.8
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "search": {
+   "category": "scene",
+   "use": "Search, no results, practice builder",
+   "motion": "tilt",
+   "animations": [
+    "breathe",
+    "tilt"
+   ],
+   "rig": {
+    "size": [
+     456,
+     582
+    ],
+    "bbox": [
+     2,
+     2,
+     453,
+     575
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      219.75654376583168,
+      575.0
+     ],
+     "flame": [
+      274.17743848206345,
+      102.0
+     ],
+     "arm0": [
+      106.0,
+      343.0
+     ],
+     "arm1": [
+      374.0,
+      403.0
+     ],
+     "leg0": [
+      113.61290322580645,
+      460.0
+     ],
+     "leg1": [
+      311.0,
+      486.0
+     ],
+     "lid0": [
+      140.5,
+      179.38794
+     ],
+     "lid1": [
+      302.0,
+      215.50054
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.35
+    ],
+    "leg": 0.5,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "shield": {
+   "category": "scene",
+   "use": "Safety, fair play, verification",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     435,
+     573
+    ],
+    "bbox": [
+     2,
+     1,
+     432,
+     570
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      225.5556397014544,
+      570.0
+     ],
+     "flame": [
+      199.324966442953,
+      112.0
+     ],
+     "arm0": [
+      107.0,
+      380.0
+     ],
+     "arm1": [
+      278.0,
+      350.0
+     ],
+     "leg0": [
+      109.17647058823529,
+      473.0
+     ],
+     "leg1": [
+      275.4,
+      477.0
+     ],
+     "lid0": [
+      131.5,
+      211.55684
+     ],
+     "lid1": [
+      264.5,
+      205.55684
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.3,
+     0.0
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "travel": {
+   "category": "scene",
+   "use": "Onboarding steps, new quarter or world",
+   "motion": "walk",
+   "animations": [
+    "breathe",
+    "walk"
+   ],
+   "rig": {
+    "size": [
+     420,
+     594
+    ],
+    "bbox": [
+     2,
+     2,
+     417,
+     591
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      226.742422545536,
+      591.0
+     ],
+     "flame": [
+      254.96180215475025,
+      108.0
+     ],
+     "arm0": [
+      133.0,
+      330.0
+     ],
+     "arm1": [
+      343.0,
+      368.0
+     ],
+     "leg0": [
+      33.32,
+      383.0
+     ],
+     "leg1": [
+      299.90909090909093,
+      490.0
+     ],
+     "lid0": [
+      182.0,
+      196.71179999999998
+     ],
+     "lid1": [
+      309.5,
+      212.28928
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.4,
+     0.0
+    ],
+    "leg": 0.9,
+    "flame": 1.1
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "announce": {
+   "category": "scene",
+   "use": "Quiz Night host, announcements",
+   "motion": "nudge",
+   "animations": [
+    "breathe",
+    "nudge"
+   ],
+   "rig": {
+    "size": [
+     561,
+     569
+    ],
+    "bbox": [
+     2,
+     1,
+     558,
+     567
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      246.29244645287946,
+      567.0
+     ],
+     "flame": [
+      221.8164183300534,
+      109.0
+     ],
+     "arm0": [
+      73.0,
+      371.0
+     ],
+     "arm1": [
+      319.0,
+      314.0
+     ],
+     "leg0": [
+      124.33333333333333,
+      470.0
+     ],
+     "leg1": [
+      291.7142857142857,
+      467.0
+     ],
+     "lid0": [
+      148.5,
+      204.92306
+     ],
+     "lid1": [
+      272.5,
+      207.97833625538453
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.4
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "pointup": {
+   "category": "scene",
+   "use": "Tips, look above, tooltips",
+   "motion": "nudge",
+   "animations": [
+    "breathe",
+    "nudge"
+   ],
+   "rig": {
+    "size": [
+     429,
+     572
+    ],
+    "bbox": [
+     2,
+     1,
+     426,
+     570
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      218.1430734693013,
+      570.0
+     ],
+     "flame": [
+      242.66244144392394,
+      111.0
+     ],
+     "arm0": [
+      87.0,
+      265.0
+     ],
+     "arm1": [
+      358.0,
+      370.0
+     ],
+     "leg0": [
+      141.4848484848485,
+      474.0
+     ],
+     "leg1": [
+      316.3333333333333,
+      464.0
+     ],
+     "lid0": [
+      162.0,
+      200.71179999999998
+     ],
+     "lid1": [
+      288.5,
+      208.50054
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.3,
+     0.5
+    ],
+    "leg": 0.6,
+    "flame": 1.1
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "peek": {
+   "category": "scene",
+   "use": "Empty library, shy empty states",
+   "motion": "tilt",
+   "animations": [
+    "breathe",
+    "tilt"
+   ],
+   "rig": {
+    "size": [
+     497,
+     541
+    ],
+    "bbox": [
+     2,
+     2,
+     494,
+     537
+    ],
+    "layers": [
+     "arm0",
+     "body",
+     "flame",
+     "leg0",
+     "lid0",
+     "lid1",
+     "prop0",
+     "prop1",
+     "prop2",
+     "prop3"
+    ],
+    "pivots": {
+     "body": [
+      176.3191936694969,
+      537.0
+     ],
+     "flame": [
+      109.07064601435587,
+      115.0
+     ],
+     "arm0": [
+      187.0,
+      337.0
+     ],
+     "leg0": [
+      98.80392156862744,
+      459.0
+     ],
+     "prop0": [
+      383.21958456973294,
+      198.81602373887242
+     ],
+     "prop1": [
+      470.55054625916193,
+      333.98105379615544
+     ],
+     "prop2": [
+      381.60951645729523,
+      310.11860481437293
+     ],
+     "prop3": [
+      394.4962308998302,
+      429.5985738539898
+     ],
+     "lid0": [
+      89.5,
+      224.71179999999998
+     ],
+     "lid1": [
+      198.5,
+      189.13432
+     ]
+    },
+    "arms": 1,
+    "legs": 1,
+    "props": 4,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.0,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "float": {
+   "category": "scene",
+   "use": "Unlocks, weightless joy",
+   "motion": "float",
+   "animations": [
+    "breathe",
+    "float"
+   ],
+   "rig": {
+    "size": [
+     499,
+     575
+    ],
+    "bbox": [
+     2,
+     1,
+     496,
+     541
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      244.70330366252682,
+      541.0
+     ],
+     "flame": [
+      275.1714501510574,
+      105.0
+     ],
+     "arm0": [
+      103.0,
+      266.0
+     ],
+     "arm1": [
+      390.0,
+      294.0
+     ],
+     "leg0": [
+      153.83333333333334,
+      409.0
+     ],
+     "leg1": [
+      314.35483870967744,
+      435.0
+     ],
+     "lid0": [
+      191.0,
+      184.92399234975426
+     ],
+     "lid1": [
+      308.0,
+      197.8807
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.7,
+     0.7
+    ],
+    "leg": 0.8,
+    "flame": 1.1
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "letter": {
+   "category": "scene",
+   "use": "Invites, messages, notification opt-in",
+   "motion": "bounce",
+   "animations": [
+    "bounce",
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     328,
+     590
+    ],
+    "bbox": [
+     2,
+     2,
+     325,
+     587
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1",
+     "prop0"
+    ],
+    "pivots": {
+     "body": [
+      164.63704114527366,
+      587.0
+     ],
+     "flame": [
+      171.88187937178301,
+      114.0
+     ],
+     "arm0": [
+      107.0,
+      384.0
+     ],
+     "arm1": [
+      224.0,
+      381.0
+     ],
+     "leg0": [
+      78.9090909090909,
+      495.0
+     ],
+     "leg1": [
+      250.75,
+      494.0
+     ],
+     "prop0": [
+      69.37431048069345,
+      308.6461780929866
+     ],
+     "lid0": [
+      99.5,
+      212.50054
+     ],
+     "lid1": [
+      228.5,
+      212.50054
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 1,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.5,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "medal": {
+   "category": "scene",
+   "use": "Badges, achievements, stage results",
+   "motion": "pop",
+   "animations": [
+    "breathe",
+    "pop"
+   ],
+   "rig": {
+    "size": [
+     395,
+     580
+    ],
+    "bbox": [
+     2,
+     1,
+     392,
+     577
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1",
+     "prop0",
+     "prop1"
+    ],
+    "pivots": {
+     "body": [
+      196.94675126159515,
+      577.0
+     ],
+     "flame": [
+      211.5775385922674,
+      105.0
+     ],
+     "arm0": [
+      80.0,
+      384.0
+     ],
+     "arm1": [
+      314.0,
+      385.0
+     ],
+     "leg0": [
+      112.81818181818181,
+      483.0
+     ],
+     "leg1": [
+      280.1081081081081,
+      484.0
+     ],
+     "prop0": [
+      128.92418888531964,
+      355.9302923225185
+     ],
+     "prop1": [
+      262.5527272727273,
+      356.9685950413223
+     ],
+     "lid0": [
+      131.5,
+      203.13432
+     ],
+     "lid1": [
+      261.0,
+      200.4483294153771
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 2,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.3,
+     0.3
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "pray": {
+   "category": "devotion",
+   "use": "Further readings, prayer moments, reflection cards",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     614,
+     1220
+    ],
+    "bbox": [
+     8,
+     9,
+     605,
+     1210
+    ],
+    "layers": [
+     "arm0",
+     "body",
+     "flame",
+     "leg0",
+     "leg1"
+    ],
+    "pivots": {
+     "body": [
+      308.13714755879175,
+      1210.0
+     ],
+     "flame": [
+      326.0208049835193,
+      227.0
+     ],
+     "arm0": [
+      308.0,
+      636.0
+     ],
+     "leg0": [
+      186.44444444444446,
+      1008.0
+     ],
+     "leg1": [
+      437.9,
+      1007.0
+     ]
+    },
+    "arms": 1,
+    "legs": 2,
+    "props": 0,
+    "lids": 0
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.3,
+    "flame": 0.8
+   },
+   "blink": false,
+   "blink_note": "eyes already closed",
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "study": {
+   "category": "devotion",
+   "use": "Planner, study session, coach assignment",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     834,
+     1253
+    ],
+    "bbox": [
+     8,
+     9,
+     824,
+     1243
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      416.52543982780315,
+      1243.0
+     ],
+     "flame": [
+      502.528434946909,
+      243.0
+     ],
+     "arm0": [
+      282.0,
+      707.0
+     ],
+     "arm1": [
+      440.0,
+      798.0
+     ],
+     "leg0": [
+      252.96296296296296,
+      986.0
+     ],
+     "leg1": [
+      583.0370370370371,
+      989.0
+     ],
+     "lid0": [
+      313.0,
+      421.77921452410976
+     ],
+     "lid1": [
+      540.5,
+      453.90280194103224
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.0,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "pointleft": {
+   "category": "devotion",
+   "use": "Point left (mirror of point), back navigation hints",
+   "motion": "nudge",
+   "animations": [
+    "breathe",
+    "nudge"
+   ],
+   "rig": {
+    "size": [
+     926,
+     1227
+    ],
+    "bbox": [
+     9,
+     8,
+     916,
+     1217
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      535.7854832960863,
+      1217.0
+     ],
+     "flame": [
+      617.3419111794981,
+      239.0
+     ],
+     "arm0": [
+      232.0,
+      626.0
+     ],
+     "arm1": [
+      773.0,
+      881.0
+     ],
+     "leg0": [
+      357.0,
+      981.0
+     ],
+     "leg1": [
+      697.8333333333334,
+      986.0
+     ],
+     "lid0": [
+      414.0,
+      376.12872192862056
+     ],
+     "lid1": [
+      662.5,
+      435.61368
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.5,
+     0.25
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "confident": {
+   "category": "devotion",
+   "use": "Ready for a challenge, stage countdown",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     608,
+     1214
+    ],
+    "bbox": [
+     8,
+     8,
+     598,
+     1205
+    ],
+    "layers": [
+     "arm0",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      303.65918612445535,
+      1205.0
+     ],
+     "flame": [
+      349.4556222797642,
+      239.0
+     ],
+     "arm0": [
+      294.0,
+      665.0
+     ],
+     "leg0": [
+      241.83928571428572,
+      990.0
+     ],
+     "leg1": [
+      445.6,
+      997.0
+     ],
+     "lid0": [
+      202.7538918597742,
+      416.43257100415923
+     ],
+     "lid1": [
+      421.3838140007623,
+      438.2645854402235
+     ]
+    },
+    "arms": 1,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.5,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "shrug": {
+   "category": "devotion",
+   "use": "No results, unknown state, small pool",
+   "motion": "tilt",
+   "animations": [
+    "breathe",
+    "tilt"
+   ],
+   "rig": {
+    "size": [
+     896,
+     1207
+    ],
+    "bbox": [
+     9,
+     8,
+     887,
+     1197
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      449.7793090385849,
+      1197.0
+     ],
+     "flame": [
+      511.0783712649017,
+      228.0
+     ],
+     "arm0": [
+      227.0,
+      696.0
+     ],
+     "arm1": [
+      679.0,
+      700.0
+     ],
+     "leg0": [
+      278.8,
+      968.0
+     ],
+     "leg1": [
+      608.5294117647059,
+      984.0
+     ],
+     "lid0": [
+      336.0,
+      386.17141761743983
+     ],
+     "lid1": [
+      569.0,
+      421.73963123740543
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.6,
+     0.6
+    ],
+    "leg": 0.5,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "heart": {
+   "category": "devotion",
+   "use": "Encouragement, kudos, friends milestones",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     616,
+     1214
+    ],
+    "bbox": [
+     8,
+     8,
+     606,
+     1205
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      309.5993466176988,
+      1205.0
+     ],
+     "flame": [
+      349.0737879196239,
+      229.0
+     ],
+     "arm0": [
+      233.0,
+      678.0
+     ],
+     "arm1": [
+      393.0,
+      682.0
+     ],
+     "leg0": [
+      177.42857142857142,
+      986.0
+     ],
+     "leg1": [
+      436.125,
+      986.0
+     ],
+     "lid0": [
+      199.79342265529843,
+      401.38260048721077
+     ],
+     "lid1": [
+      431.64228162169076,
+      416.17373500447627
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.5,
+    "flame": 0.9
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "stopwatch": {
+   "category": "devotion",
+   "use": "Timed match, countdown, reconnect window",
+   "motion": "tilt",
+   "animations": [
+    "breathe",
+    "tilt"
+   ],
+   "rig": {
+    "size": [
+     854,
+     1210
+    ],
+    "bbox": [
+     8,
+     9,
+     845,
+     1200
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      463.1187068000107,
+      1200.0
+     ],
+     "flame": [
+      527.7677853137203,
+      230.0
+     ],
+     "arm0": [
+      216.0,
+      566.0
+     ],
+     "arm1": [
+      668.0,
+      777.0
+     ],
+     "leg0": [
+      297.125,
+      977.0
+     ],
+     "leg1": [
+      661.1538461538462,
+      977.0
+     ],
+     "lid0": [
+      367.0,
+      412.24746
+     ],
+     "lid1": [
+      606.5,
+      427.5509086101577
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.4
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "cheer": {
+   "category": "devotion",
+   "use": "Big wins, promotion, Quiz Night finale",
+   "motion": "cheer",
+   "animations": [
+    "breathe",
+    "cheer"
+   ],
+   "rig": {
+    "size": [
+     944,
+     1210
+    ],
+    "bbox": [
+     8,
+     8,
+     934,
+     1200
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1"
+    ],
+    "pivots": {
+     "body": [
+      458.46431725939215,
+      1200.0
+     ],
+     "flame": [
+      522.2366262424807,
+      227.0
+     ],
+     "arm0": [
+      195.0,
+      507.0
+     ],
+     "arm1": [
+      733.0,
+      557.0
+     ],
+     "leg0": [
+      263.7325581395349,
+      892.0
+     ],
+     "leg1": [
+      591.6896551724138,
+      970.0
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 0
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.9,
+     0.9
+    ],
+    "leg": 0.9,
+    "flame": 1.2
+   },
+   "blink": false,
+   "blink_note": "eyes already closed",
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "champion": {
+   "category": "devotion",
+   "use": "Stage result, Lantern tier, season champion",
+   "motion": "bounce",
+   "animations": [
+    "bounce",
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     954,
+     1254
+    ],
+    "bbox": [
+     8,
+     8,
+     944,
+     1244
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      500.8507397233575,
+      1244.0
+     ],
+     "flame": [
+      368.3044442419272,
+      245.0
+     ],
+     "arm0": [
+      185.0,
+      734.0
+     ],
+     "arm1": [
+      707.0,
+      488.0
+     ],
+     "leg0": [
+      301.2325581395349,
+      938.0
+     ],
+     "leg1": [
+      621.2777777777778,
+      988.0
+     ],
+     "lid0": [
+      283.0,
+      448.65603999999996
+     ],
+     "lid1": [
+      554.5,
+      399.811
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.0,
+     0.0
+    ],
+    "leg": 0.8,
+    "flame": 0.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "stand": {
+   "category": "turnaround",
+   "use": "Front view, model sheet, neutral placements",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     430,
+     582
+    ],
+    "bbox": [
+     2,
+     2,
+     427,
+     579
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      214.95257509380176,
+      579.0
+     ],
+     "flame": [
+      227.7372421281216,
+      111.0
+     ],
+     "arm0": [
+      76.0,
+      389.0
+     ],
+     "arm1": [
+      353.0,
+      390.0
+     ],
+     "leg0": [
+      128.45454545454547,
+      483.0
+     ],
+     "leg1": [
+      300.57142857142856,
+      483.0
+     ],
+     "lid0": [
+      149.5,
+      208.92306
+     ],
+     "lid1": [
+      278.0,
+      208.92306
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.8,
+     0.8
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "turn34left": {
+   "category": "turnaround",
+   "use": "Three-quarter view facing left, walking onto the map, side panels",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     406,
+     570
+    ],
+    "bbox": [
+     2,
+     2,
+     403,
+     567
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      202.76660572177423,
+      567.0
+     ],
+     "flame": [
+      236.82470541506686,
+      114.0
+     ],
+     "arm0": [
+      56.0,
+      397.0
+     ],
+     "arm1": [
+      325.0,
+      414.0
+     ],
+     "leg0": [
+      108.25,
+      473.0
+     ],
+     "leg1": [
+      276.44776119402985,
+      498.0
+     ],
+     "lid0": [
+      103.5,
+      206.55684
+     ],
+     "lid1": [
+      207.5,
+      210.18478551503767
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.6,
+     0.6
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "turn34right": {
+   "category": "turnaround",
+   "use": "Three-quarter view facing right, looking toward content",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     405,
+     557
+    ],
+    "bbox": [
+     2,
+     2,
+     402,
+     554
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0",
+     "lid1"
+    ],
+    "pivots": {
+     "body": [
+      206.3576688660561,
+      554.0
+     ],
+     "flame": [
+      193.71811978771797,
+      107.0
+     ],
+     "arm0": [
+      82.0,
+      391.0
+     ],
+     "arm1": [
+      344.0,
+      393.0
+     ],
+     "leg0": [
+      124.44444444444444,
+      457.0
+     ],
+     "leg1": [
+      286.4736842105263,
+      465.0
+     ],
+     "lid0": [
+      203.0,
+      195.6984362035982
+     ],
+     "lid1": [
+      308.5,
+      200.7681
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 2
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.6,
+     0.6
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "profile": {
+   "category": "turnaround",
+   "use": "Side view, map travel, progress bars, walk cycles",
+   "motion": "walk",
+   "animations": [
+    "breathe",
+    "walk"
+   ],
+   "rig": {
+    "size": [
+     335,
+     591
+    ],
+    "bbox": [
+     11,
+     2,
+     332,
+     578
+    ],
+    "layers": [
+     "arm0",
+     "body",
+     "flame",
+     "leg0",
+     "leg1",
+     "lid0"
+    ],
+    "pivots": {
+     "body": [
+      164.80470207457688,
+      578.0
+     ],
+     "flame": [
+      171.68525843881858,
+      121.0
+     ],
+     "arm0": [
+      134.0,
+      381.0
+     ],
+     "leg0": [
+      55.84615384615385,
+      477.0
+     ],
+     "leg1": [
+      292.2037037037037,
+      497.0
+     ],
+     "lid0": [
+      267.1361003861004,
+      226.92383011583013
+     ]
+    },
+    "arms": 1,
+    "legs": 2,
+    "props": 0,
+    "lids": 1
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.8,
+     0.8
+    ],
+    "leg": 1.0,
+    "flame": 1.0
+   },
+   "blink": true,
+   "gif": false,
+   "has_flame_layer": true
+  },
+  "back": {
+   "category": "turnaround",
+   "use": "Back view, heading into a world, leaving a screen",
+   "motion": "breathe",
+   "animations": [
+    "breathe"
+   ],
+   "rig": {
+    "size": [
+     415,
+     554
+    ],
+    "bbox": [
+     2,
+     1,
+     412,
+     551
+    ],
+    "layers": [
+     "arm0",
+     "arm1",
+     "body",
+     "flame",
+     "leg0",
+     "leg1"
+    ],
+    "pivots": {
+     "body": [
+      206.67305458126336,
+      551.0
+     ],
+     "flame": [
+      211.38712333278445,
+      99.0
+     ],
+     "arm0": [
+      73.0,
+      388.0
+     ],
+     "arm1": [
+      340.0,
+      388.0
+     ],
+     "leg0": [
+      124.17647058823529,
+      454.0
+     ],
+     "leg1": [
+      290.04761904761904,
+      453.0
+     ]
+    },
+    "arms": 2,
+    "legs": 2,
+    "props": 0,
+    "lids": 0
+   },
+   "rig_amplitude": {
+    "arm": [
+     0.6,
+     0.6
+    ],
+    "leg": 0.6,
+    "flame": 1.0
+   },
+   "blink": false,
+   "blink_note": "no face visible",
+   "gif": false,
+   "has_flame_layer": true
+  }
+ },
+ "draw_order": [
+  "leg*",
+  "flame",
+  "body",
+  "lid*",
+  "arm*",
+  "prop*"
+ ],
+ "blink": {
+  "frames": [
+   0.6,
+   1,
+   1,
+   0.6
+  ],
+  "at_loop_fraction": 0.6,
+  "min_loop_s": 1.3,
+  "note": "lid layers are shown for 4 frames per loop, scaled on Y about the lid pivot"
+ },
+ "sequences": {
+  "profile-walk": {
+   "pose": "profile",
+   "motion": "walk",
+   "loop_s": 1.0,
+   "use": "Map travel, progress bars, walking onto a screen",
+   "webp": "characters/glim/animated/webp/glim-profile-walk.webp",
+   "lottie": "characters/glim/animated/lottie/glim-profile-walk.json"
+  },
+  "turnaround": {
+   "views": [
+    "stand",
+    "turn34right",
+    "profile",
+    "back",
+    "turn34left",
+    "stand"
+   ],
+   "seconds_per_view": 0.25,
+   "fps": 24,
+   "frames": 36,
+   "crossfade_frames": 2,
+   "squash_sy": 0.97,
+   "use": "Model sheet, turning toward content, back view when entering a world",
+   "webp": "characters/glim/animated/webp/glim-turnaround.webp",
+   "lottie": "characters/glim/animated/lottie/glim-turnaround.json"
+  }
+ }
+}

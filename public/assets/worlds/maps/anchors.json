@@ -1,0 +1,610 @@
+{
+ "meadow-day": {
+  "source_size": 1254,
+  "use": "Quarter 1 \u00b7 light",
+  "theme": "light",
+  "painted": true,
+  "nodes_px": [
+   [
+    600,
+    1200
+   ],
+   [
+    670,
+    1060
+   ],
+   [
+    545,
+    900
+   ],
+   [
+    700,
+    740
+   ],
+   [
+    420,
+    580
+   ],
+   [
+    780,
+    440
+   ],
+   [
+    630,
+    320
+   ],
+   [
+    720,
+    190
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.4785,
+    0.9569
+   ],
+   [
+    0.5343,
+    0.8453
+   ],
+   [
+    0.4346,
+    0.7177
+   ],
+   [
+    0.5582,
+    0.5901
+   ],
+   [
+    0.3349,
+    0.4625
+   ],
+   [
+    0.622,
+    0.3509
+   ],
+   [
+    0.5024,
+    0.2552
+   ],
+   [
+    0.5742,
+    0.1515
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "meadow-night": {
+  "source_size": 1254,
+  "use": "Quarter 1 \u00b7 dark",
+  "theme": "dark",
+  "painted": true,
+  "nodes_px": [
+   [
+    640,
+    1180
+   ],
+   [
+    625,
+    1080
+   ],
+   [
+    745,
+    960
+   ],
+   [
+    640,
+    820
+   ],
+   [
+    785,
+    690
+   ],
+   [
+    560,
+    530
+   ],
+   [
+    700,
+    380
+   ],
+   [
+    820,
+    240
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5104,
+    0.941
+   ],
+   [
+    0.4984,
+    0.8612
+   ],
+   [
+    0.5941,
+    0.7656
+   ],
+   [
+    0.5104,
+    0.6539
+   ],
+   [
+    0.626,
+    0.5502
+   ],
+   [
+    0.4466,
+    0.4226
+   ],
+   [
+    0.5582,
+    0.303
+   ],
+   [
+    0.6539,
+    0.1914
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "autumn-day": {
+  "source_size": 1254,
+  "use": "Quarter 2 \u00b7 light",
+  "theme": "light",
+  "painted": true,
+  "nodes_px": [
+   [
+    635,
+    1138
+   ],
+   [
+    495,
+    924
+   ],
+   [
+    776,
+    726
+   ],
+   [
+    842,
+    594
+   ],
+   [
+    652,
+    520
+   ],
+   [
+    495,
+    421
+   ],
+   [
+    776,
+    305
+   ],
+   [
+    685,
+    211
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5064,
+    0.9075
+   ],
+   [
+    0.3947,
+    0.7368
+   ],
+   [
+    0.6188,
+    0.5789
+   ],
+   [
+    0.6715,
+    0.4737
+   ],
+   [
+    0.5199,
+    0.4147
+   ],
+   [
+    0.3947,
+    0.3357
+   ],
+   [
+    0.6188,
+    0.2432
+   ],
+   [
+    0.5463,
+    0.1683
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "autumn-night": {
+  "source_size": 1254,
+  "use": "Quarter 2 \u00b7 dark",
+  "theme": "dark",
+  "painted": true,
+  "nodes_px": [
+   [
+    627,
+    1106
+   ],
+   [
+    607,
+    965
+   ],
+   [
+    751,
+    833
+   ],
+   [
+    776,
+    701
+   ],
+   [
+    850,
+    569
+   ],
+   [
+    767,
+    437
+   ],
+   [
+    676,
+    314
+   ],
+   [
+    710,
+    182
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5,
+    0.882
+   ],
+   [
+    0.4841,
+    0.7695
+   ],
+   [
+    0.5989,
+    0.6643
+   ],
+   [
+    0.6188,
+    0.559
+   ],
+   [
+    0.6778,
+    0.4537
+   ],
+   [
+    0.6116,
+    0.3485
+   ],
+   [
+    0.5391,
+    0.2504
+   ],
+   [
+    0.5662,
+    0.1451
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "coast-day": {
+  "source_size": 1254,
+  "use": "Quarter 3 \u00b7 light",
+  "theme": "light",
+  "painted": true,
+  "nodes_px": [
+   [
+    676,
+    1097
+   ],
+   [
+    528,
+    924
+   ],
+   [
+    693,
+    776
+   ],
+   [
+    776,
+    652
+   ],
+   [
+    578,
+    528
+   ],
+   [
+    742,
+    429
+   ],
+   [
+    825,
+    330
+   ],
+   [
+    668,
+    223
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5391,
+    0.8748
+   ],
+   [
+    0.4211,
+    0.7368
+   ],
+   [
+    0.5526,
+    0.6188
+   ],
+   [
+    0.6188,
+    0.5199
+   ],
+   [
+    0.4609,
+    0.4211
+   ],
+   [
+    0.5917,
+    0.3421
+   ],
+   [
+    0.6579,
+    0.2632
+   ],
+   [
+    0.5327,
+    0.1778
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "coast-night": {
+  "source_size": 1254,
+  "use": "Quarter 3 \u00b7 dark",
+  "theme": "dark",
+  "painted": true,
+  "nodes_px": [
+   [
+    693,
+    1106
+   ],
+   [
+    640,
+    949
+   ],
+   [
+    742,
+    792
+   ],
+   [
+    812,
+    676
+   ],
+   [
+    693,
+    586
+   ],
+   [
+    569,
+    470
+   ],
+   [
+    742,
+    330
+   ],
+   [
+    726,
+    198
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5526,
+    0.882
+   ],
+   [
+    0.5104,
+    0.7568
+   ],
+   [
+    0.5917,
+    0.6316
+   ],
+   [
+    0.6475,
+    0.5391
+   ],
+   [
+    0.5526,
+    0.4673
+   ],
+   [
+    0.4537,
+    0.3748
+   ],
+   [
+    0.5917,
+    0.2632
+   ],
+   [
+    0.5789,
+    0.1579
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "summit-day": {
+  "source_size": 1254,
+  "use": "Quarter 4 / Finale \u00b7 light",
+  "theme": "light",
+  "painted": true,
+  "nodes_px": [
+   [
+    693,
+    1106
+   ],
+   [
+    742,
+    916
+   ],
+   [
+    602,
+    776
+   ],
+   [
+    808,
+    644
+   ],
+   [
+    619,
+    495
+   ],
+   [
+    808,
+    383
+   ],
+   [
+    734,
+    272
+   ],
+   [
+    808,
+    211
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5526,
+    0.882
+   ],
+   [
+    0.5917,
+    0.7305
+   ],
+   [
+    0.4801,
+    0.6188
+   ],
+   [
+    0.6443,
+    0.5136
+   ],
+   [
+    0.4936,
+    0.3947
+   ],
+   [
+    0.6443,
+    0.3054
+   ],
+   [
+    0.5853,
+    0.2169
+   ],
+   [
+    0.6443,
+    0.1683
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ },
+ "summit-night": {
+  "source_size": 1254,
+  "use": "Quarter 4 / Finale \u00b7 dark",
+  "theme": "dark",
+  "painted": true,
+  "nodes_px": [
+   [
+    635,
+    1106
+   ],
+   [
+    693,
+    924
+   ],
+   [
+    597,
+    742
+   ],
+   [
+    776,
+    614
+   ],
+   [
+    676,
+    487
+   ],
+   [
+    569,
+    404
+   ],
+   [
+    776,
+    322
+   ],
+   [
+    710,
+    182
+   ]
+  ],
+  "nodes_norm": [
+   [
+    0.5064,
+    0.882
+   ],
+   [
+    0.5526,
+    0.7368
+   ],
+   [
+    0.4761,
+    0.5917
+   ],
+   [
+    0.6188,
+    0.4896
+   ],
+   [
+    0.5391,
+    0.3884
+   ],
+   [
+    0.4537,
+    0.3222
+   ],
+   [
+    0.6188,
+    0.2568
+   ],
+   [
+    0.5662,
+    0.1451
+   ]
+  ],
+  "order": "bottom (first lesson) to top (last lesson)",
+  "placement": "hand-placed on the painted path centre, visually verified"
+ }
+}
