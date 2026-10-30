@@ -6,6 +6,7 @@ import { day, lessonStats, masteryOf, streakInfo, useStore, type SessionSpec } f
 import type { LessonMeta, Manual, ManualCode } from '@/lib/types'
 import { BackBar, Glim, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
 import { GuideTip } from './Guide'
+import { useManualSwitch, manualLabel } from '@/ui/ManualSwitch'
 
 type Anchors = Record<string, { nodes_norm: [number, number][] }>
 const WORLDS = [['meadow', 'The Meadow'], ['autumn', 'Harvest Hills'], ['coast', 'The Coast'], ['summit', 'The Summit']] as const
@@ -58,7 +59,8 @@ export default function Journey() {
 }
 
 function JourneyInner({ m }: { m: Manual }) {
-  const J = useJourney(m); const { cards, sessionSize, theme, prefs, manual, set, draft, lastActive } = J
+  const J = useJourney(m); const { cards, sessionSize, theme, prefs, manual, draft, lastActive } = J
+  const [manualSheet, openManual] = useManualSwitch()
   const start = useStart(); const nav = useNavigate()
   const [anchors, setAnchors] = useState<Anchors | null>(null)
   const [sel, setSel] = useState<LessonMeta | 'stage' | null>(null)
@@ -89,7 +91,7 @@ function JourneyInner({ m }: { m: Manual }) {
 
   return <div className="jy">
     <div className="jy-head">
-      <label className="mbtn manualpick"><Icon n="book" className="s" /><select aria-label="Manual" value={manual} onChange={e => set({ manual: e.target.value as ManualCode })}><option value="AD2627">Adult 26–27</option><option value="EN2627">YAYA 26–27</option></select><Icon n="down" className="s" /></label>
+      <button className="mbtn manualpick" onClick={openManual} aria-label={`Manual: ${manualLabel(manual)}. Switch manual`}><Icon n="book" className="s" /><span className="mlong">{manual === 'AD2627' ? 'Adult 26–27' : 'YAYA 26–27'}</span><span className="mshort">{manual === 'AD2627' ? 'Adult' : 'YAYA'}</span><Icon n="swap" className="s" /></button>
       <div className="grow" />
       <button className="stat-pill" style={{ border: 0 }} onClick={() => setSheet('quests')} aria-label={`Today's quests, ${doneQ} of 3 done`}><Icon n="sprout" className="s" style={{ color: 'var(--rh-pistachio-deep)' }} />{doneQ}/3</button>
       <StatPills />
@@ -156,6 +158,7 @@ function JourneyInner({ m }: { m: Manual }) {
       {allDone ? <><p className="muted">A mixed check across all {g.lessons.length} lessons. Marking is exactly the same as everywhere else.</p>
         <button className="btn block" onClick={() => start({ kind: 'check', manual: m.code, lessons: g.lessons.map(x => x.id), count: 30, title: `Quarter ${g.q} check` })}>Start 30 questions</button></> :
         <p className="muted">Opens when every lesson in this quarter is cleared ({g.lessons.filter(J.isDone).length} of {g.lessons.length} so far). Any started lesson can be practised from Practice.</p>}</div></Sheet>}
+    {manualSheet}
     {sheet === 'quests' && <Sheet label="Daily quests" onClose={() => setSheet(null)}><DailyQuests J={J} m={m} onGo={() => setSheet(null)} /></Sheet>}
     {sheet === 'list' && <Sheet label="All lessons" onClose={() => setSheet(null)}><h2>All lessons</h2><div className="list mt8">{m.lessons.map(l => { const d = J.isDone(l); return <button key={l.id} className="li" onClick={() => { setSheet(null); open(l) }}>
       <span className={`tile ${d ? 'green' : l.id === J.cur.id ? '' : ''}`} style={{ width: 36, height: 36 }}><Icon n={d ? 'check' : l.id === J.cur.id ? 'star' : 'lock'} className="s" /></span><span className="grow"><b>{l.n}. {niceTitle(l.title)}</b><span className="tiny muted" style={{ display: 'block' }}>{d ? 'Done' : l.id === J.cur.id ? 'Current quest' : 'Opens after the lesson before'}</span></span><Icon n="chev" /></button> })}</div></Sheet>}

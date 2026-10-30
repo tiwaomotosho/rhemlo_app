@@ -10,6 +10,9 @@ import { Arena, ArenaRules, DailyChallenge, FriendlyMatch, LeagueView, MatchPlay
 import Circle, { CircleChat, CircleHome } from '@/pages/Circle'
 import { Coach, CoachHost, Steward } from '@/pages/Roles'
 import { isDemo } from '@/lib/backend'
+import { useManualSwitch, manualLabel } from '@/ui/ManualSwitch'
+import { signOut } from '@/lib/sync'
+import { useNavigate } from 'react-router-dom'
 import { startReminders } from '@/lib/notify'
 import You, { Appearance, Notifications, Downloads, Access } from '@/pages/You'
 import Progress, { Planner } from '@/pages/Progress'
@@ -20,6 +23,9 @@ const TABS = [['journey', 'Journey'], ['practice', 'Practice'], ['arena', 'Arena
 
 function Shell() {
   const { pathname } = useLocation(); const m = useManualData(); const cw = useStore(s => s.profile.glim); const role = useStore(s => s.account?.role)
+  const account = useStore(s => s.account); const code = useStore(s => s.manual); const nav = useNavigate(); const [manualSheet, openManual] = useManualSwitch()
+  const flash = useStore(s => s.flash); const set = useStore(s => s.set)
+  useEffect(() => { if (!flash) return; const t = setTimeout(() => set({ flash: '' }), 3200); return () => clearTimeout(t) }, [flash, set])
   const top = pathname.split('/')[1]
   const active = top === 'library' ? 'journey' : top
   const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : pathname.startsWith('/coach') ? 'coach' : pathname.startsWith('/steward') ? 'steward' : ''
@@ -34,9 +40,13 @@ function Shell() {
         <NavLink to={role === 'coach' ? '/coach' : '/steward'} className={`nl sub2 ${sub === role ? 'on' : ''}`}><span className="ic"><Icon n={role === 'coach' ? 'people' : 'shield'} /></span>{role === 'coach' ? 'Coach' : 'Content studio'}</NavLink></>}
       {isDemo && <span className="chip pend demochip" title="Demo server: other people and their activity are simulated">Demo server</span>}
       <NavLink to="/guide" className={`nl navhelp ${top === 'guide' ? 'on' : ''}`}><span className="ic"><Icon n="compass" /></span>Guide</NavLink>
-      <NavLink to="/you/access" className="navfoot"><Glim pose="read" size={52} still /><div><b className="disp" style={{ fontSize: 14 }}>{m?.short.replace('–20', '–') ?? 'Manual'}</b><div className="tiny muted">{m ? `${m.lessons.length} lessons · ${m.bible}` : ''}</div></div></NavLink>
+      <button className="navfoot" onClick={openManual} aria-label="Switch manual"><Glim pose="read" size={44} still /><div className="grow" style={{ textAlign: 'left', minWidth: 0 }}><b className="disp" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>{manualLabel(code)}</b><div className="tiny muted">{m ? `${m.lessons.length} lessons · ${m.bible}` : ''}</div><span className="chip plain mt8" style={{ height: 24, padding: '0 8px' }}><Icon n="swap" />Switch manual</span></div></button>
+      <div className="navacct">{account ? <><span className="tiny grow" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.email}</span><button className="btn link" style={{ minHeight: 32, padding: '0 6px', fontSize: 13 }} onClick={async () => { await signOut(); nav('/', { replace: true }) }}><Icon n="signout" className="s" />Sign out</button></>
+        : <NavLink to="/you" className="tiny b">Not signed in · Sign in</NavLink>}</div>
+      {manualSheet}
     </nav>
     <main className="main" id="main"><Outlet /></main>
+    {flash && <div className="toast" role="status">{flash}</div>}
   </div>
 }
 

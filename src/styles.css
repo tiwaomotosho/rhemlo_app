@@ -468,3 +468,14 @@ html,body{overflow-x:clip}
 .ghead{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;background:transparent;text-align:left;color:inherit;min-height:64px}
 .gbody{padding:0 16px 16px}
 .mapcanvas{margin-bottom:150px}
+
+.wel-mob{display:contents}
+@media (min-width:900px){.wel-mob{display:none}}
+
+.nav .navfoot{border:1.5px solid var(--rh-line2);cursor:pointer;font:inherit;width:100%}
+.nav .navacct{display:none}
+@media (min-width:1024px){.nav .navacct{display:flex;align-items:center;gap:4px;padding:6px 8px 0;color:var(--rh-text2)}}
+
+@media (min-width:1024px){.gtoc{white-space:normal;line-height:18px;padding:9px 12px;align-items:flex-start}.gtoc .icon{margin-top:1px}}
+.mshort{display:none}
+@media (max-width:420px){.mlong{display:none}.mshort{display:inline}.jy-head .mbtn{flex-shrink:0}}

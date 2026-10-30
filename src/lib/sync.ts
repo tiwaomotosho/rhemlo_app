@@ -17,7 +17,13 @@ function adopt(email: string, data: Record<string, unknown> | null, onboard = tr
 export async function signIn(email: string, password: string) {
   await api.signIn(email, password)
   let snap = await api.pullSnapshot()
-  if (!snap && api.mode === 'demo' && email.endsWith('@demo.rhemlo.app')) { await api.pushSnapshot(await demoProgress(email)); snap = await api.pullSnapshot() }
+  if (api.mode === 'demo' && email.endsWith('@demo.rhemlo.app')) {
+    if (!snap) { await api.pushSnapshot(await demoProgress(email)); snap = await api.pullSnapshot() }
+    else if (!Object.keys((snap.data.cards ?? {}) as object).some(k => k.startsWith('EN2627|'))) { // older demo data only covered the Adult manual
+      const extra = await demoProgress(email, 'EN2627'); const d = snap.data as Record<string, Record<string, unknown>>
+      await api.pushSnapshot({ ...snap.data, cards: { ...d.cards, ...extra.cards }, done: { ...d.done, ...extra.done }, ladder: { ...d.ladder, ...extra.ladder } }); snap = await api.pullSnapshot()
+    }
+  }
   adopt(email, snap?.data ?? null)
   if (!snap) await syncNow()
 }
@@ -30,11 +36,13 @@ export async function signOut() {
 }
 
 /** A believable few weeks of study for the demo personas, built from the real question bank. */
-async function demoProgress(email: string) {
-  const manual: ManualCode = 'AD2627'; const m = await loadManual(manual)
-  const coach = email.startsWith('femi'), steward = email.startsWith('ada')
-  const upto = coach ? 9 : steward ? 4 : 6, now = Date.now()
+async function demoProgress(email: string, only?: ManualCode) {
+  const coach = email.startsWith('femi'), steward = email.startsWith('ada'), now = Date.now()
   const cards: Record<string, Card> = {}, done: Record<string, number> = {}, ladder: Record<string, { q27?: boolean; q28?: boolean; q06?: boolean; q04?: boolean }> = {}
+  // both manuals get believable progress, so switching manual never looks like a reset
+  for (const [manual, base] of [['AD2627', coach ? 9 : steward ? 4 : 6], ['EN2627', coach ? 5 : steward ? 2 : 3]] as [ManualCode, number][]) {
+  if (only && manual !== only) continue
+  const m = await loadManual(manual), upto = base
   const lessons = m.lessons.slice(0, upto + 1)
   for (const [i, l] of lessons.entries()) {
     const its = await loadItems(manual, l.id); const keys = [...new Set(its.map(x => x.s))]
@@ -45,6 +53,8 @@ async function demoProgress(email: string) {
       cards[`${manual}|${k}`] = { box, seen, right: Math.max(1, seen - (box ? 1 : 2)), last: now - Math.floor(demoRnd(k, 'l') * 9) * 86400000, due: now + (demoRnd(k, 'd') < .12 ? -86400000 : [0, 1, 3, 7, 14, 30][box] * 86400000 * demoRnd(k, 'f')) } }
     if (i < upto) { done[`${manual}|${l.id}`] = now - (upto - i) * 4 * 86400000; ladder[`${manual}|${l.id}`] = { q27: true, q28: true, q06: true, q04: i < upto - 1 } }
   }
+  }
+  const manual: ManualCode = 'AD2627', m = await loadManual(manual), upto = coach ? 9 : steward ? 4 : 6
   const history: SittingRecord[] = [], activeDays: string[] = []
   for (let d = 24; d >= 1; d--) { if (demoRnd(email, d) < .3) continue; const at = now - d * 86400000 + 18 * 3600000; activeDays.push(day(at))
     const total = 20, right = 13 + Math.floor(demoRnd(email, d, 'r') * 7)

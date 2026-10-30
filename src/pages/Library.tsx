@@ -6,6 +6,7 @@ import { typedRefs } from '@/lib/grade'
 import { lessonStats, useStore } from '@/lib/store'
 import type { Card, Lesson, Manual, ManualCode } from '@/lib/types'
 import { Icon, Loading, Sheet, useManualData } from '@/ui/bits'
+import { useManualSwitch } from '@/ui/ManualSwitch'
 import { api } from '@/lib/backend'
 import { useStart, verseRef } from './Journey'
 
@@ -84,11 +85,11 @@ function VersePeek({ refText, anchor, onClose }: { refText: string; anchor: HTML
 }
 
 function ManualCard() {
-  const m = useManualData(); const set = useStore(s => s.set); const code = useStore(s => s.manual)
+  const m = useManualData(); const [sheet, open] = useManualSwitch()
   if (!m) return null
-  return <button className="row" onClick={() => set({ manual: (code === 'AD2627' ? 'EN2627' : 'AD2627') as ManualCode })} aria-label="Switch manual" style={{ width: '100%', border: 0, textAlign: 'left', padding: 16, borderRadius: 20, color: '#fff', background: 'linear-gradient(135deg,#7041D9,#9A70F0)', boxShadow: '0 4px 0 #4C27A8' }}>
+  return <><button className="row" onClick={open} aria-label="Switch manual" style={{ width: '100%', border: 0, textAlign: 'left', padding: 16, borderRadius: 20, color: '#fff', background: 'linear-gradient(135deg,#7041D9,#9A70F0)', boxShadow: '0 4px 0 #4C27A8' }}>
     <span className="tile" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', width: 46, height: 52 }}><Icon n="book" /></span>
-    <span className="grow"><b className="disp" style={{ fontSize: 16 }}>{m.code === 'AD2627' ? 'Sunday School Student’s Manual' : 'YAYA Student’s Manual'}</b><span className="tiny" style={{ display: 'block', opacity: .9 }}>{m.short} · {m.lessons.length} lessons · {m.bible}</span></span><Icon n="refresh" /></button>
+    <span className="grow"><b className="disp" style={{ fontSize: 16 }}>{m.code === 'AD2627' ? 'Sunday School Student’s Manual' : 'YAYA Student’s Manual'}</b><span className="tiny" style={{ display: 'block', opacity: .9 }}>{m.short} · {m.lessons.length} lessons · {m.bible}</span></span><span className="chip" style={{ background: 'rgba(255,255,255,.22)', color: '#fff', height: 34 }}><Icon n="swap" />Switch</span></button>{sheet}</>
 }
 
 export function Library() {

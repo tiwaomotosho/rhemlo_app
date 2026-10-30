@@ -11,7 +11,7 @@ import { useBadges } from './You'
 const DAY = 86400000
 export default function Progress() {
   const m = useManualData(); const { cards, history, activeDays, manual, set } = useStore(); const start = useStart(); const nav = useNavigate()
-  const [win, setWin] = useState<7 | 30 | 365>(30); const weak = useWeakSpots(m); const badges = useBadges()
+  const [win, setWin] = useState<7 | 30 | 365>(30); const weak = useWeakSpots(m); const badges = useBadges(); const [q, setQ] = useState<string | null>(null)
   if (!m) return <Loading />
   const since = Date.now() - win * DAY, hs = history.filter(h => h.at > since && h.manual === m.code)
   const answered = hs.reduce((a, h) => a + h.total, 0), right = hs.reduce((a, h) => a + h.right, 0)
@@ -20,6 +20,8 @@ export default function Progress() {
   const upto = Math.max(8, touched.length ? touched[touched.length - 1].n : 8)
   const all = manualStats(cards, m, 1, upto), q1 = m.stages[0], g1 = readinessGap(m, q1.lessons, cards)
   const weeks = Array.from({ length: 7 }, (_, i) => { const hi = Date.now() - (6 - i) * 7 * DAY, lo = hi - 7 * DAY; const h = history.filter(x => x.at > lo && x.at <= hi && x.manual === m.code); const t = h.reduce((a, x) => a + x.total, 0); return { acc: t ? h.reduce((a, x) => a + x.right, 0) / t : 0, n: t } })
+  const curN = (m.lessons.find(l => !useStore.getState().done[`${m.code}|${l.id}`]) ?? m.lessons[0]).n
+  const qSel = q ?? (Object.entries(m.groups).find(([, r]) => curN >= r[0] && curN <= r[1])?.[0] ?? '1')
   const C = 2 * Math.PI * 50, seg = (n: number) => `${(all.total ? n / all.total : 0) * C} ${C}`
   const earned = badges.filter(b => b.got), nextB = badges.find(b => !b.got)
   return <div className="page col gap16">
@@ -41,8 +43,9 @@ export default function Progress() {
             <div className="c"><div><b>{Math.round(all.readiness * 100)}%</b><span className="tiny muted">Secure</span></div></div></div>
             <div className="col gap8 grow small" style={{ minWidth: 170 }}>{([['Secure', all.secure, 'var(--rh-node-done)'], ['Strengthening', all.strengthening, 'var(--rh-action)'], ['Learning', all.learning, 'var(--rh-apricot)'], ['Not started', all.notStarted, 'var(--rh-line2)']] as const).map(([t, n, c]) => <div key={t} className="row between"><span className="row gap8"><i style={{ width: 10, height: 10, borderRadius: 3, background: c }} />{t}</span><b>{n.toLocaleString()}</b></div>)}</div></div>
           <p className="tiny muted">Secure means answered right on spaced reviews until the interval reaches 14 days. A Secure item can still become due.</p></div>
-        <div className="card col"><div className="row between"><h3>Secure by lesson</h3><span className="tiny muted">share of each lesson’s points that are Secure</span></div>
-          <div className="lbars">{m.lessons.filter(l => l.n <= upto).map(l => { const s = lessonStats(cards, m, l.id), p = Math.round(s.readiness * 100); return <div key={l.id} className="r"><b>L{l.n}</b><span className="small" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{niceTitle(l.title)}</span><div className="bar thin"><i style={{ width: `${p}%`, background: p >= 80 ? 'var(--rh-node-done)' : 'var(--rh-action)' }} /></div><span className="small b" style={{ textAlign: 'right' }}>{p}%</span></div> })}</div></div>
+        <div className="card col"><div className="row between wrap"><h3>Secure by lesson</h3><span className="tiny muted">share of each lesson’s points that are Secure</span></div>
+          <div className="tabs" role="tablist">{Object.keys(m.groups).map(k => <button key={k} role="tab" aria-selected={qSel === k} className={qSel === k ? 'on' : ''} onClick={() => setQ(k)}>Q{k} · L{m.groups[k][0]}–{m.groups[k][1]}</button>)}</div>
+          <div className="lbars">{m.lessons.filter(l => l.n >= m.groups[qSel][0] && l.n <= m.groups[qSel][1]).map(l => { const s = lessonStats(cards, m, l.id), p = Math.round(s.readiness * 100); return <div key={l.id} className="r"><b>L{l.n}</b><span className="small" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{niceTitle(l.title)}</span><div className="bar thin"><i style={{ width: `${p}%`, background: p >= 80 ? 'var(--rh-node-done)' : 'var(--rh-action)' }} /></div><span className="small b" style={{ textAlign: 'right' }}>{p}%</span></div> })}</div></div>
         <div className="card col"><div className="row between"><p className="eyebrow">Recent accuracy</p><span className="tiny muted">7 weeks</span></div>
           <div className="row" style={{ alignItems: 'flex-end', height: 110, gap: 8 }} role="img" aria-label={`Weekly accuracy: ${weeks.map(w => w.n ? Math.round(w.acc * 100) + '%' : 'no answers').join(', ')}`}>{weeks.map((w, i) => <div key={i} style={{ flex: 1, height: `${w.n ? Math.max(8, w.acc * 100) : 6}%`, borderRadius: '8px 8px 4px 4px', background: i === 6 ? 'var(--rh-action)' : 'var(--rh-raised)' }} title={w.n ? `${Math.round(w.acc * 100)}% of ${w.n}` : 'No answers'} />)}</div>
           <div className="row between tiny muted">{weeks.map((_, i) => <span key={i}>W{i + 1}</span>)}</div><p className="tiny muted">Correct ÷ accepted answers per week. Not mastery.</p></div>

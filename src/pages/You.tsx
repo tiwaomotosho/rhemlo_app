@@ -9,6 +9,7 @@ import { askPermission, canNotify, show } from '@/lib/notify'
 import { signOut, syncNow } from '@/lib/sync'
 import { play } from '@/lib/sound'
 import { SignInSheet } from './Onboarding'
+import { useManualSwitch } from '@/ui/ManualSwitch'
 
 // ---- earned cosmetics (personal, never points or correctness) --------------------------------------
 export function useBadges() {
@@ -40,7 +41,7 @@ export function useStyles() {
 
 export default function You() {
   const S = useStore(); const nav = useNavigate(); const badges = useBadges(); const styles = useStyles(); const [toast, say] = useToast()
-  const [data, setData] = useState(false); const [signin, setSignin] = useState(false); const [busy, setBusy] = useState(false)
+  const [data, setData] = useState(false); const [signin, setSignin] = useState(false); const [busy, setBusy] = useState(false); const [manualSheet, openManual] = useManualSwitch()
   const secure = Object.values(S.cards).filter(c => masteryOf(c) === 'secure').length
   return <div className="page col gap16" style={{ maxWidth: 760 }}>
     <div className="pagehead"><h1>You</h1><StatPills /></div>
@@ -48,7 +49,7 @@ export default function You() {
       <div className="grow"><h2>{S.profile.handle || S.profile.name}</h2><p className="tiny muted">Joined {new Date(S.joined || Date.now()).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} · {S.prefs.keepPrivate ? 'Private profile' : 'Shared with friends'}</p>
         <span className="chip plain mt8"><img src={asset('emblems/tiers/tier-bronze-128.webp')} width={16} height={18} alt="" />{S.arenaOptIn ? 'League pending' : 'No league'}</span></div></div>
     {S.account ? <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">{S.account.email}</b><div className="tiny muted">{S.account.role === 'learner' ? 'Learner' : S.account.role === 'coach' ? 'Coach' : 'Content steward'} · synced {new Date(S.account.lastSync).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}{isDemo ? ' · demo server' : ''}</div></div>
-      <div className="col gap4"><button className="btn sec xs" disabled={busy} onClick={async () => { setBusy(true); await syncNow(); setBusy(false); say('Synced.') }}>Sync now</button><button className="btn link" style={{ minHeight: 30 }} onClick={async () => { await signOut(); nav('/', { replace: true }) }}>Sign out</button></div></div>
+      <div className="col gap8"><button className="btn sec xs" disabled={busy} onClick={async () => { setBusy(true); await syncNow(); setBusy(false); say('Synced.') }}><Icon n="cloud" className="s" />Sync now</button><button className="btn sec xs" style={{ color: 'var(--rh-incorrect)' }} onClick={async () => { await signOut(); nav('/', { replace: true }) }}><Icon n="signout" className="s" />Sign out</button></div></div>
       : <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">No account yet</b><div className="tiny muted">Progress is saved on this device only. Sign in to keep it on every device.</div></div><button className="btn xs" onClick={() => setSignin(true)}>Sign in</button></div>}
     {S.account && S.account.role !== 'learner' && <Link to={S.account.role === 'coach' ? '/coach' : '/steward'} className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n={S.account.role === 'coach' ? 'people' : 'shield'} /></span><div className="grow"><b>{S.account.role === 'coach' ? 'Coach workspace' : 'Content studio'}</b><div className="tiny muted">{S.account.role === 'coach' ? 'Your circle, assignments and Quiz Night hosting' : 'Item review, reports and the manual pipeline'}</div></div><Icon n="chev" className="faint" /></Link>}
     <div className="grid3"><div className="stat center"><div className="v">{S.points.toLocaleString()}</div><div className="d">personal XP</div></div><div className="stat center"><div className="v">{secure}</div><div className="d">Secure items</div></div><div className="stat center"><div className="v">{S.activeDays.length}</div><div className="d">study days</div></div></div>
@@ -61,13 +62,15 @@ export default function You() {
       <img src={b.got ? asset(`emblems/badges/badge-${b.k}-128.webp`) : asset(`emblems/badges/locked/badge-${b.k}-locked.png`)} alt="" /></button>)}</div>
     <p className="tiny muted">Cosmetics only. Nothing here buys points or correctness.</p>
     <div className="card list" style={{ padding: '2px 14px' }}>
-      {([['compass', 'Guide', 'How Rhemlo works · demo mode explained', '/guide'], ['sun', 'Appearance', 'Light, Dark or System · text size', '/you/appearance'], ['bell', 'Notifications', 'Gentle nudges and quiet hours', '/you/notifications'], ['download', 'Downloads', 'Offline lessons and sync', '/you/downloads'], ['key', 'Access & manuals', 'Your manuals and who grants them', '/you/access'], ['chart', 'Progress', 'Mastery and accuracy, defined', '/journey/progress']] as const).map(([i, t, d, to]) =>
-        <Link key={to} to={to} className="li"><span className="tile" style={{ width: 38, height: 38 }}><Icon n={i} className="s" /></span><span className="grow"><b className="small">{t}</b><span className="tiny muted" style={{ display: 'block' }}>{d}</span></span><Icon n="chev" className="faint" /></Link>)}
+      {([['compass', 'Guide', 'How Rhemlo works · demo mode explained', '/guide'], ['swap', 'Manual', 'Switch between Adult and YAYA', '#manual'], ['sun', 'Appearance', 'Light, Dark or System · text size', '/you/appearance'], ['bell', 'Notifications', 'Gentle nudges and quiet hours', '/you/notifications'], ['download', 'Downloads', 'Offline lessons and sync', '/you/downloads'], ['key', 'Access & manuals', 'Your manuals and who grants them', '/you/access'], ['chart', 'Progress', 'Mastery and accuracy, defined', '/journey/progress']] as const).map(([i, t, d, to]) =>
+        <Link key={to} to={to === '#manual' ? '#' : to} onClick={e => { if (to === '#manual') { e.preventDefault(); openManual() } }} className="li"><span className="tile" style={{ width: 38, height: 38 }}><Icon n={i} className="s" /></span><span className="grow"><b className="small">{t}</b><span className="tiny muted" style={{ display: 'block' }}>{d}</span></span><Icon n="chev" className="faint" /></Link>)}
       <div className="li"><span className="tile" style={{ width: 38, height: 38 }}><Icon n="clock" className="s" /></span><span className="grow"><b className="small">Sitting length</b><span className="tiny muted" style={{ display: 'block' }}>Every sitting has a real finish line</span></span>
         <div className="seg" style={{ width: 170 }}>{[10, 20, 40].map(n => <button key={n} className={S.sessionSize === n ? 'on' : ''} onClick={() => S.set({ sessionSize: n })}>{n}</button>)}</div></div>
+      {S.account && <button className="li" onClick={async () => { await signOut(); nav('/', { replace: true }) }}><span className="tile red" style={{ width: 38, height: 38 }}><Icon n="signout" className="s" /></span><span className="grow"><b className="small">Sign out</b><span className="tiny muted" style={{ display: 'block' }}>{S.account.email} · progress is synced first</span></span></button>}
       <button className="li" onClick={() => setData(true)}><span className="tile" style={{ width: 38, height: 38 }}><Icon n="cloud" className="s" /></span><span className="grow"><b className="small">Your data</b><span className="tiny muted" style={{ display: 'block' }}>Export, restore or erase what is on this device</span></span><Icon n="chev" className="faint" /></button>
     </div>
     {signin && <SignInSheet onClose={() => setSignin(false)} />}
+    {manualSheet}
     {data && <DataSheet onClose={() => setData(false)} onErase={() => nav('/', { replace: true })} />}
     {toast}
   </div>

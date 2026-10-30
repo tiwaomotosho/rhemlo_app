@@ -34,7 +34,7 @@ export function Welcome() {
   const hero = dark ? 'worlds/maps/meadow-night/meadow-night-800.webp' : 'worlds/scenes/hero-sunrise/hero-sunrise-800.webp'
   const heroL = dark ? 'worlds/maps/meadow-night/meadow-night-1254.webp' : 'worlds/scenes/hero-sunrise/hero-sunrise-1254.webp'
   return <div className="wel">
-    <div className="wel-mob" style={{ display: 'contents' }}>
+    <div className="wel-mob">
       <div className="wel-hero"><img className="bg" src={asset(hero)} alt="" />
         <div className="wel-pill"><img src={asset('characters/glim/avatars/avatar-classic-64.png')} width={28} height={28} alt="" />Rhemlo</div>
         <Glim pose="wave" motion="wave" once size={220} cw="classic" className="wel-glim" /></div>
