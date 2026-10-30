@@ -434,3 +434,20 @@ html,body{overflow-x:hidden}
 @keyframes spin{to{transform:rotate(360deg)}}
 .demochip{display:none}
 @media (min-width:1024px){.nav .demochip{display:inline-flex;align-self:flex-start;margin:12px 12px 0}}
+
+/* reader: labelled sections and the floating context */
+.reader .rhead{font:800 13px/18px var(--rh-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--rh-text2);margin:28px 0 10px}
+.reader .rsec.section .rhead{color:var(--rh-action);font-size:15px;letter-spacing:.06em;padding-top:14px;border-top:1.5px solid var(--rh-line)}
+.reader ol{margin:0 0 16px;padding-left:24px}.reader ol li{margin:6px 0}.reader ol li::marker{font-weight:800;color:var(--rh-action)}
+.reader .qlist li{font-weight:700}
+.reflink-on{background:var(--rh-raised);border-radius:6px;box-shadow:0 0 0 3px var(--rh-raised)}
+.versepop{position:fixed;z-index:60;width:380px;max-height:min(70dvh,520px);display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:20px;background:var(--rh-surface);border:1.5px solid var(--rh-line2);box-shadow:var(--rh-shadow-float);animation:fade .15s}
+.versepeek{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(var(--rh-nav-h) + env(safe-area-inset-bottom) + 8px);max-height:38dvh;display:flex;flex-direction:column;gap:8px;padding:6px 16px 12px;border-radius:24px;background:var(--rh-surface);border:1.5px solid var(--rh-line2);box-shadow:0 -6px 30px rgba(48,33,62,.18);animation:up .2s var(--rh-ease);transition:max-height .25s var(--rh-ease)}
+.versepeek.open{max-height:72dvh}
+.versepeek .grab{display:block;width:44px;height:5px;border:0;border-radius:9px;background:var(--rh-line2);margin:6px auto 2px;padding:0;cursor:pointer}
+@media (min-width:640px) and (max-width:1023px){.versepeek{left:104px;bottom:12px}}
+.pvbody{overflow:auto;min-height:0}
+.pv{margin:0 0 8px;font:500 15.5px/25px var(--rh-font-body);padding:6px 8px;border-radius:10px}
+.pv sup{font-weight:800;color:var(--rh-text3);margin-right:4px}
+.pv.hit{background:var(--rh-pistachio-bg);font-weight:600}
+.lib3>.ll,.lib3>.lr{align-self:start}

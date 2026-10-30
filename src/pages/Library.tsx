@@ -5,7 +5,7 @@ import { niceTitle } from '@/lib/engine'
 import { typedRefs } from '@/lib/grade'
 import { lessonStats, useStore } from '@/lib/store'
 import type { Card, Lesson, Manual, ManualCode } from '@/lib/types'
-import { ContextSheet, Icon, Loading, Sheet, useManualData } from '@/ui/bits'
+import { Icon, Loading, Sheet, useManualData } from '@/ui/bits'
 import { api } from '@/lib/backend'
 import { useStart, verseRef } from './Journey'
 
@@ -19,7 +19,7 @@ export function masteryChip(cards: Record<string, Card>, m: Manual, id: string):
 const Approved = () => <span className="chip ok" title="Reviewed and approved by the content steward"><Icon n="check" />Approved</span>
 
 /** Wrap printed references such as "(Psalm 119:105; Joshua 1:8)" as tappable links. */
-function linkify(text: string, open: (r: string) => void): ReactNode {
+function linkify(text: string, open: (r: string, el: HTMLElement) => void): ReactNode {
   const out: ReactNode[] = []; let last = 0
   for (const m of text.matchAll(/\(([^()]*?\d+\s*:\s*\d+[^()]*)\)/g)) {
     if (!typedRefs(m[1]).length) continue
@@ -30,11 +30,57 @@ function linkify(text: string, open: (r: string) => void): ReactNode {
       if (/^;\s*$/.test(part)) { out.push(part); return }
       const own = typedRefs(part)[0], ref = own ?? (book && /^\s*\d/.test(part) ? typedRefs(`${book} ${part}`)[0] : undefined)
       if (own) book = own.replace(/\s+\d.*$/, '')
-      out.push(ref ? <button key={`${m.index}-${i}`} className="reflink" onClick={() => open(ref)}>{part}</button> : part)
+      out.push(ref ? <button key={`${m.index}-${i}`} className="reflink" onClick={e => open(ref, e.currentTarget)}>{part}</button> : part)
     })
     out.push(')'); last = m.index! + m[0].length
   }
   out.push(text.slice(last)); return out
+}
+
+const outlineNo = (l: Lesson, s: Lesson['sections'][number]) => s.k === 'section' ? l.sections.filter(x => x.k === 'section').indexOf(s) + 1 : 0
+function headOf(l: Lesson, s: Lesson['sections'][number]) {
+  const n = outlineNo(l, s)
+  return n ? `Outline ${n}: ${s.h}` : s.k === 'questions' ? 'Lesson questions' : s.h || (s.k === 'introduction' ? 'Introduction' : 'Conclusion')
+}
+/** Bullet points are sentences of the lesson too: each one counts. */
+function statsOf(s: Lesson['sections'][number]) {
+  let sentences = 0, bullets = 0, refs = 0
+  for (const b of s.b) {
+    if (b.t === 'l') { bullets += b.i?.length ?? 0; refs += (b.i ?? []).reduce((a, x) => a + typedRefs(x).length, 0) }
+    else if (b.x) { sentences += b.x.split(/(?<=[.!?])\s+(?=[A-Z“"‘(])/).filter(Boolean).length; refs += typedRefs(b.x).length }
+  }
+  return { sentences: sentences + bullets, bullets, refs }
+}
+
+/** Read in context. Desktop: a floating card beside the reference that stays in view while you scroll.
+ *  Phone and tablet: a peek drawer above the navigation that leaves the lesson readable; pull up for more verses. */
+function VersePeek({ refText, anchor, onClose }: { refText: string; anchor: HTMLElement | null; onClose: () => void }) {
+  const [span, setSpan] = useState(1); const [data, setData] = useState<Awaited<ReturnType<typeof readInContext>> | undefined>(undefined)
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null); const box = useRef<HTMLDivElement>(null)
+  const desk = matchMedia('(min-width:1024px)').matches
+  useEffect(() => { let on = true; readInContext(refText, span).then(x => on && setData(x)); return () => { on = false } }, [refText, span])
+  useEffect(() => {
+    anchor?.classList.add('reflink-on')
+    if (!desk && anchor) { const r = anchor.getBoundingClientRect(); if (r.bottom > innerHeight * .55) window.scrollBy(0, r.top - innerHeight * .3) } // keep the tapped verse above the drawer
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; addEventListener('keydown', k)
+    return () => { anchor?.classList.remove('reflink-on'); removeEventListener('keydown', k) }
+  }, [anchor, onClose, desk])
+  useEffect(() => {
+    if (!desk) return
+    const place = () => { const h = box.current?.offsetHeight ?? 260, w = 380, r = anchor?.getBoundingClientRect()
+      if (!r || r.bottom < 0 || r.top > innerHeight) { setPos({ top: 16, left: innerWidth - w - 24 }); return } // the reference scrolled away: dock top-right
+      if (innerWidth >= 1200) { setPos({ top: Math.min(Math.max(16, r.top - 24), innerHeight - h - 16), left: innerWidth - w - 24 }); return } // beside the verse, over the context rail
+      let top = r.bottom + 10; if (top + h > innerHeight - 16) top = Math.max(16, r.top - h - 10)
+      setPos({ top, left: Math.min(Math.max(16, r.left - 40), innerWidth - w - 16) }) }
+    place(); addEventListener('scroll', place, { passive: true }); addEventListener('resize', place)
+    return () => { removeEventListener('scroll', place); removeEventListener('resize', place) }
+  }, [anchor, desk, data, span])
+  const body = data === undefined ? <div className="skel" style={{ height: 60 }} /> : data ? data.verses.map(v => <p key={v.n} className={`pv ${v.hit ? 'hit' : ''}`}><sup>{v.n}</sup>{v.t}</p>) : <p className="small muted">{refText} is not in the stored text.</p>
+  const head = <div className="row between"><div><p className="eyebrow">Read in context · KJV</p><b className="disp">{refText}</b></div><button className="iconbtn" aria-label="Close" onClick={onClose}><Icon n="x" /></button></div>
+  const more = <div className="row gap8"><button className="chip lg plain" onClick={() => setSpan(span >= 7 ? 1 : span + 3)}><Icon n={span >= 7 ? 'up' : 'down'} />{span >= 7 ? 'Less' : 'More verses'}</button><span className="tiny faint grow" style={{ textAlign: 'right' }}>Public domain · display only</span></div>
+  if (desk) return <div ref={box} className="versepop" role="dialog" aria-label={`Read ${refText} in context`} style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}>{head}<div className="pvbody">{body}</div>{more}</div>
+  return <div className={`versepeek ${span > 1 ? 'open' : ''}`} role="dialog" aria-label={`Read ${refText} in context`}>
+    <button className="grab" aria-label={span > 1 ? 'Show less' : 'Show more verses'} onClick={() => setSpan(span > 1 ? 1 : 4)} />{head}<div className="pvbody">{body}</div>{more}</div>
 }
 
 function ManualCard() {
@@ -66,7 +112,7 @@ export function Reader() {
   const { id = 'L01' } = useParams(); const nav = useNavigate(); const m = useManualData(); const start = useStart()
   const { sessionSize, cards, readings, set, prefs } = useStore()
   const [l, setL] = useState<Lesson | null>(null); const [tab, setTab] = useState<'read' | 'outline' | 'refs'>('read')
-  const [ref, setRef] = useState<string | null>(null); const [side, setSide] = useState<string | null>(null); const [sideText, setSideText] = useState<string>('')
+  const [peek, setPeek] = useState<{ ref: string; el: HTMLElement | null } | null>(null)
   const [focus, setFocus] = useState<string[]>([]); const [size, setSize] = useState(false); const [report, setReport] = useState(false)
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => { if (m) { setL(null); setTab('read'); loadLesson(m.code, id).then(setL).catch(() => nav('/library', { replace: true })) } }, [m, id, nav])
@@ -75,7 +121,7 @@ export function Reader() {
     const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { const k = `${m.code}|read|${id}`; if (!useStore.getState().readings[k]) set({ readings: { ...useStore.getState().readings, [k]: true } }) } })
     io.observe(end.current); return () => io.disconnect()
   }, [l, m, id, set, tab])
-  const openRef = (r: string) => { if (matchMedia('(min-width:1024px)').matches) { setSide(r); setSideText(''); readInContext(r).then(x => setSideText(x ? x.verses.filter(v => v.hit).map(v => v.t).join(' ') : 'Not in the stored text.')) } else setRef(r) }
+  const openRef = (r: string, el?: HTMLElement) => setPeek({ ref: r, el: el ?? null })
   const inScope = useMemo(() => { if (!l) return []; const seen = new Set<string>(); const out: { r: string; where: string }[] = []
     const add = (r: string, where: string) => { if (!seen.has(r)) { seen.add(r); out.push({ r, where }) } }
     add(verseRef(l as never), 'Memory verse'); if (l.bp) add(l.bp, 'Bible passage')
@@ -99,20 +145,23 @@ export function Reader() {
       <h1 style={{ fontSize: 32, lineHeight: '36px' }}>{niceTitle(l.title)}</h1>
       <div className="mvcard"><p className="eyebrow">Memory verse</p><q>{mvText}</q><p className="src">{verseRef(meta)} · Bible passage {l.bp}</p></div>
       {tab === 'read' && <div className="reader" style={{ ['--rh-text-scale' as string]: scale }}>
-        {l.sections.map((s, si) => <section key={s.k + si}>{s.h && <p className="eyebrow" style={{ margin: '22px 0 10px' }}>{s.h}</p>}{s.b.map((b, j) => b.t === 'l' ? <ul key={j}>{b.i?.map((x, k) => <li key={k}>{linkify(x, openRef)}</li>)}</ul> : <p key={j}>{linkify(b.x ?? '', openRef)}</p>)}</section>)}
+        {l.sections.map((s, si) => <section key={s.k + si} className={`rsec ${s.k}`}><h2 className="rhead">{headOf(l, s)}</h2>{s.k === 'questions' && <p className="tiny muted" style={{ margin: '-6px 0 10px' }}>For class discussion · never graded</p>}
+          {s.b.map((b, j) => b.t === 'l' ? <ol key={j} className={s.k === 'questions' ? 'qlist' : ''}>{b.i?.map((x, k) => <li key={k}>{linkify(x, openRef)}</li>)}</ol> : <p key={j}>{linkify(b.x ?? '', openRef)}</p>)}</section>)}
         {l.assignment && <div className="card lav" style={{ font: 'var(--rh-type-body)' }}><p className="eyebrow">Assignment · for reflection</p><p className="mt8">{l.assignment}</p><p className="tiny muted mt8">Never graded.</p></div>}
         <div ref={end} style={{ height: 1 }} />
         {readings[`${m.code}|read|${id}`] && <p className="small row gap8" style={{ color: 'var(--rh-correct)' }}><Icon n="check" className="s" />Learn step done for this chapter</p>}
       </div>}
       {tab === 'outline' && <div className="col gap8">
-        {l.sections.filter(s => s.h).map((s, si) => { const sentences = s.b.reduce((a, b) => a + (b.x ? b.x.split(/(?<=[.!?])\s+/).length : 0), 0), nrefs = s.b.reduce((a, b) => a + typedRefs([b.x ?? '', ...(b.i ?? [])].join(' ')).length, 0)
-          const list = s.b.find(b => b.t === 'l')
-          return <Fragment key={s.k + si}><div className="card row"><span className="tile" style={{ width: 48, height: 48 }}><b className="disp" style={{ fontSize: 18 }}>{si + 1}</b></span><div><b className="disp">{s.h}</b><div className="tiny muted">{sentences} sentences · {nrefs} references</div></div></div>
-            {list && <div className="card col gap8"><p className="eyebrow">Point {si + 1} · {s.h}</p>{list.i!.map((x, k) => <div key={k} className="numrow"><span className="n">{k + 1}</span><span className="small">{x.replace(/\s*\(.*?\)\s*$/, '')}</span></div>)}</div>}</Fragment> })}
+        {l.sections.map((s, si) => { const st = statsOf(s), num = outlineNo(l, s)
+          if (s.k === 'questions') return <div key={s.k + si} className="card col gap8" style={{ borderStyle: 'dashed' }}><p className="eyebrow">Lesson questions · never graded</p>{s.b.flatMap(b => b.i ?? (b.x ? [b.x] : [])).map((x, k) => <div key={k} className="numrow"><span className="n">{k + 1}</span><span className="small">{x}</span></div>)}</div>
+          const list = s.b.filter(b => b.t === 'l').flatMap(b => b.i ?? [])
+          return <div key={s.k + si} className="card col gap8"><div className="row"><span className={`tile ${num ? '' : 'green'}`} style={{ width: 48, height: 48 }}>{num ? <b className="disp" style={{ fontSize: 18 }}>{num}</b> : <Icon n={s.k === 'introduction' ? 'book' : 'flag'} />}</span>
+            <div className="grow"><p className="eyebrow">{num ? `Outline ${num}` : s.k === 'introduction' ? 'Introduction' : 'Conclusion'}</p>{num ? <b className="disp">{niceTitle(s.h)}</b> : null}<div className="tiny muted">{st.sentences} sentence{st.sentences === 1 ? '' : 's'}{st.bullets ? ` (${st.bullets} as bullet points)` : ''} · {st.refs} reference{st.refs === 1 ? '' : 's'}</div></div></div>
+            {list.length > 0 && <div className="col gap8" style={{ paddingLeft: 4 }}>{list.map((x, k) => <div key={k} className="numrow"><span className="n">{k + 1}</span><span className="small">{x.replace(/\s*\(.*?\)\s*\.?$/, '')}</span></div>)}</div>}</div> })}
         {l.assignment && <div className="card lav"><p className="eyebrow">Assignment</p><p className="small mt8">{l.assignment}</p><p className="tiny muted mt8">A reflection card, never graded.</p></div>}</div>}
       {tab === 'refs' && <div className="col gap8"><div className="row gap8"><span className="chip lg">{inScope.length} in scope</span><span className="chip lg plain">{meta.readings.length} further readings</span></div>
-        <div className="card list" style={{ padding: '2px 14px' }}>{inScope.map(x => <button key={x.r} className="li" onClick={() => openRef(x.r)}><span className="tile apricot" style={{ width: 36, height: 36 }}><Icon n="bookmark" className="s" /></span><span className="grow"><b className="small">{x.r}</b><span className="tiny muted" style={{ display: 'block' }}>{x.where}</span></span><span className="chip ok">In scope</span></button>)}
-          {meta.readings.map(r => <button key={r.d} className="li" onClick={() => openRef(r.r)}><span className="tile" style={{ width: 36, height: 36 }}><Icon n="bookmark" className="s" /></span><span className="grow"><b className="small">{r.r}</b><span className="tiny muted" style={{ display: 'block' }}>{r.d} reading</span></span><span className="chip plain">Not graded</span></button>)}</div></div>}
+        <div className="card list" style={{ padding: '2px 14px' }}>{inScope.map(x => <button key={x.r} className="li" onClick={e => openRef(x.r, e.currentTarget)}><span className="tile apricot" style={{ width: 36, height: 36 }}><Icon n="bookmark" className="s" /></span><span className="grow"><b className="small">{x.r}</b><span className="tiny muted" style={{ display: 'block' }}>{x.where}</span></span><span className="chip ok">In scope</span></button>)}
+          {meta.readings.map(r => <button key={r.d} className="li" onClick={e => openRef(r.r, e.currentTarget)}><span className="tile" style={{ width: 36, height: 36 }}><Icon n="bookmark" className="s" /></span><span className="grow"><b className="small">{r.r}</b><span className="tiny muted" style={{ display: 'block' }}>{r.d} reading</span></span><span className="chip plain">Not graded</span></button>)}</div></div>}
       <div className="row between">{prev ? <Link className="btn link" to={`/library/${prev.id}`}>← Lesson {prev.n}</Link> : <span />}{nxt && <Link className="btn link" to={`/library/${nxt.id}`}>Lesson {nxt.n} →</Link>}</div>
       <div className="row gap8 mobonly" style={{ position: 'sticky', bottom: 'calc(var(--rh-nav-h) + 8px)' }}><button className="btn sec" onClick={() => setReport(true)}><Icon n="flag" className="s" />Report</button><button className="btn grow" onClick={() => start({ kind: 'quest', manual: m.code, lessons: [id], count: sessionSize, title: `Lesson ${meta.n} · Recall` })}>Practise lesson</button></div>
     </article>
@@ -120,11 +169,11 @@ export function Reader() {
       <div className="card col gap8"><h3>Practise Lesson {meta.n}</h3><p className="tiny muted">{meta.ic.toLocaleString()} questions · this lesson only</p>
         <div className="row wrap gap8">{(['verses', 'outlines', 'references'] as const).map(k => <button key={k} className="chip btnchip" aria-pressed={focus.includes(k)} onClick={() => setFocus(f => f.includes(k) ? f.filter(x => x !== k) : [...f, k])}>{k === 'verses' ? 'Memory verse' : k === 'outlines' ? 'Outline' : 'References'}</button>)}</div>
         <button className="btn block" onClick={() => start({ kind: focus.length ? 'target' : 'quest', manual: m.code, lessons: [id], count: sessionSize, focus, title: `Lesson ${meta.n} · ${focus.length ? 'Target practice' : 'Recall'}` })}>Start {sessionSize} questions</button></div>
-      <div className="card col gap8"><p className="eyebrow">Read in context · KJV</p>{side ? <><b className="small">{side}</b><p className="small muted">{sideText || '…'}</p></> : <p className="small muted">Tap a reference in the lesson to read it here.</p>}<p className="tiny faint">Public domain · display only</p></div>
+      <div className="card col gap8"><p className="eyebrow">Read in context · KJV</p><p className="small muted">Tap any purple reference in the lesson. The verse opens right beside it and stays in view as you scroll.</p><p className="tiny faint">Public domain · display only</p></div>
       <button className="btn sec block" onClick={() => setReport(true)}><Icon n="flag" className="s" />Report a content error</button>
       <div className="row gap8"><span className={`chip ${mc}`}>{mt}</span><span className="tiny muted">your mastery · separate from approval</span></div>
     </aside>
-    {ref && <ContextSheet refs={[ref]} onClose={() => setRef(null)} />}
+    {peek && <VersePeek key={peek.ref} refText={peek.ref} anchor={peek.el} onClose={() => setPeek(null)} />}
     {report && <Sheet label="Report a content error" onClose={() => setReport(false)}><ReportForm lesson={id} onClose={() => setReport(false)} /></Sheet>}
   </div>
 }
