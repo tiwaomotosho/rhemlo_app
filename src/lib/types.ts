@@ -33,6 +33,6 @@ export type Response =
 
 export interface Card { box: number; due: number; seen: number; right: number; last: number }
 export interface SittingRecord {
-  id: string; at: number; manual: ManualCode; kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily'; lesson?: string
-  total: number; right: number; misses: { u: string; wrote: string; expected: string }[]; minutes: number
+  id: string; at: number; manual: ManualCode; kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart'; lesson?: string; title?: string
+  total: number; right: number; misses: { u: string; wrote: string; expected: string; t?: string }[]; minutes: number
 }

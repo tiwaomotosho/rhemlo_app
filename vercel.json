@@ -4,9 +4,10 @@
   "buildCommand": "bun run build",
   "installCommand": "bun install",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!assets/|data/|favicon|manifest).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!assets/|data/|favicon|manifest|sw).*)", "destination": "/index.html" }],
   "headers": [
-    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
+    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }] },
+    { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
     { "source": "/data/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }] }
   ]
 }

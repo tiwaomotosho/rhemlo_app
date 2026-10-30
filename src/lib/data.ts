@@ -16,8 +16,10 @@ export const loadItems = (c: ManualCode, id: string) => { const k = c + id; if (
 // ---- KJV text for "read in context" ------------------------------------------------------------
 let kjv: Promise<Map<string, string>> | null = null
 async function loadKJV() {
-  const res = await fetch('/data/bible/KJV.tsv.gz'); const ds = new DecompressionStream('gzip')
-  const text = await new Response(res.body!.pipeThrough(ds)).text(); const m = new Map<string, string>()
+  // Some servers (including Vite dev) send the .gz with Content-Encoding, so the browser has already inflated it.
+  const buf = new Uint8Array(await (await fetch('/data/bible/KJV.tsv.gz')).arrayBuffer())
+  const text = buf[0] === 0x1f && buf[1] === 0x8b ? await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text() : new TextDecoder().decode(buf)
+  const m = new Map<string, string>()
   for (const line of text.split('\n')) { if (!line || line[0] === '#') continue; const [b, c, v, t] = line.split('\t'); m.set(`${b} ${c}:${v}`, t) }
   return m
 }
@@ -29,5 +31,15 @@ export async function readInContext(ref: string): Promise<{ ref: string; verses:
   kjv ??= loadKJV(); const bible = await kjv
   const c = +m[2], v1 = +m[3], v2 = m[4] ? +m[4] : v1; const verses = []
   for (let v = Math.max(1, v1 - 1); v <= v2 + 1; v++) { const t = bible.get(`${osis} ${c}:${v}`); if (t) verses.push({ n: v, t, hit: v >= v1 && v <= v2 }) }
+  return verses.length ? { ref, verses } : null
+}
+
+/** Every verse of a printed reading such as "Psalm 139:1-3" or "James 5:16" (one chapter). */
+export async function readPassage(ref: string): Promise<{ ref: string; verses: { n: number; t: string }[] } | null> {
+  const m = ref.trim().match(/^(.*?)\s+(\d+):(\d+)(?:\s*[-–]\s*(\d+))?/); if (!m) return null
+  const osis = OSIS[m[1]] ?? OSIS[m[1].replace(/s$/, '')]; if (!osis) return null
+  kjv ??= loadKJV(); const bible = await kjv
+  const c = +m[2], v1 = +m[3], v2 = Math.min(m[4] ? +m[4] : v1, v1 + 30); const verses = []
+  for (let v = v1; v <= v2; v++) { const t = bible.get(`${osis} ${c}:${v}`); if (t) verses.push({ n: v, t }) }
   return verses.length ? { ref, verses } : null
 }

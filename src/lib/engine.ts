@@ -46,9 +46,10 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
   // score each card: due (seen & overdue) first, then new, then not yet due; never more than one item per card
   const cardsArr = [...byCard.entries()].map(([k, its]) => {
     const c = cards[`${spec.manual}|${k}`]; const dueNow = c && c.seen > 0 && c.due <= now
-    const score = spec.kind === 'review' ? (dueNow ? 0 : 9) : dueNow ? 0 : !c || c.seen === 0 ? 1 : 2
+    const score = spec.kind === 'review' ? (dueNow ? 0 : 9) : spec.kind === 'restart' ? (c && c.seen ? 5 - c.box : 9) : dueNow ? 0 : !c || c.seen === 0 ? 1 : 2
     return { k, its, score, jitter: hash(k + seed) }
   })
+  if (spec.kind === 'restart') cardsArr.splice(0, cardsArr.length, ...cardsArr.filter(c => c.score < 9))
   if (spec.kind === 'review') { const due = cardsArr.filter(c => c.score === 0); pool = due.flatMap(c => c.its) }
   cardsArr.sort((a, b) => a.score - b.score || a.jitter - b.jitter)
   const eligible = spec.kind === 'review' ? cardsArr.filter(c => c.score === 0) : cardsArr
@@ -102,3 +103,19 @@ export function weakAreas(cards: Record<string, Card>, code: string, minSeen = 5
 const SMALL = new Set(['of', 'the', 'and', 'in', 'to', 'for', 'a', 'an', 'on', 'at', 'by', 'with'])
 /** "THE IMMANENCE OF GOD" → "The Immanence of God" */
 export const niceTitle = (t: string) => t.toLowerCase().split(' ').map((w, i) => i && SMALL.has(w) ? w : w.replace(/(^|-)\S/g, c => c.toUpperCase())).join(' ')
+
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+/** "6TH SEPTEMBER, 2026" → Date (the Sunday the lesson is taught). */
+export function lessonDate(d: string): Date | null {
+  const m = d.toLowerCase().match(/(\d+)\w*\s+([a-z]+),?\s+(\d{4})/); if (!m) return null
+  const mo = MONTHS.indexOf(m[2]); return mo < 0 ? null : new Date(+m[3], mo, +m[1])
+}
+/** The lesson taught this week: the latest one whose Sunday is on or before today. */
+export function weekLesson(manual: Manual, now = new Date()) {
+  let cur = manual.lessons[0]
+  for (const l of manual.lessons) { const d = lessonDate(l.date); if (d && d <= now) cur = l }
+  return cur
+}
+export type Category = 'verse' | 'outline' | 'refs' | 'sentences'
+export const categoryOf = (s: string): Category => /\.MV$/.test(s) ? 'verse' : /\.OUT$|\.L\d/.test(s) ? 'outline' : /\.R\d+$/.test(s) ? 'refs' : 'sentences'
+export const shortDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
