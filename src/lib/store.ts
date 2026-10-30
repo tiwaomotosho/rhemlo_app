@@ -32,7 +32,7 @@ interface State {
   history: SittingRecord[]; points: number; activeDays: string[]; arenaOptIn: boolean; reminders: boolean
   draft: Draft | null; seenIds: Record<string, true>
   prefs: Prefs; lastActive: number; prevActive: number; readings: Record<string, true>; joined: number; downloads: string[]
-  account: { email: string; userId: string; role: string; lastSync: number } | null; inbox: { id: string; at: number; title: string; body: string }[]; askedPush: boolean
+  account: { email: string; userId: string; role: string; lastSync: number } | null; inbox: { id: string; at: number; title: string; body: string }[]; askedPush: boolean; guideSeen: boolean
   set: (p: Partial<State>) => void
   finishOnboarding: (p: Profile, manual: ManualCode) => void
   recordAnswer: (manual: ManualCode, item: Item, correct: boolean, assisted: boolean) => void
@@ -46,7 +46,7 @@ const initial = {
   manual: 'AD2627' as ManualCode, theme: 'system' as Theme, sessionSize: 20, cards: {}, done: {}, ladder: {}, history: [],
   points: 0, activeDays: [], arenaOptIn: false, reminders: false, draft: null, seenIds: {},
   prefs: DEFAULT_PREFS, lastActive: 0, prevActive: 0, readings: {}, joined: 0, downloads: [] as string[],
-  account: null as State['account'], inbox: [] as State['inbox'], askedPush: false,
+  account: null as State['account'], inbox: [] as State['inbox'], askedPush: false, guideSeen: false,
 }
 export const useStore = create<State>()(persist((set, get) => ({
   ...initial,

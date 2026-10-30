@@ -14,6 +14,7 @@ import { startReminders } from '@/lib/notify'
 import You, { Appearance, Notifications, Downloads, Access } from '@/pages/You'
 import Progress, { Planner } from '@/pages/Progress'
 import { Library, Reader } from '@/pages/Library'
+import Guide from '@/pages/Guide'
 
 const TABS = [['journey', 'Journey'], ['practice', 'Practice'], ['arena', 'Arena'], ['circle', 'Circle'], ['you', 'You']] as const
 
@@ -32,6 +33,7 @@ function Shell() {
       {(role === 'coach' || role === 'steward') && <><div className="navsep" /><p className="eyebrow sub">Workspace</p>
         <NavLink to={role === 'coach' ? '/coach' : '/steward'} className={`nl sub2 ${sub === role ? 'on' : ''}`}><span className="ic"><Icon n={role === 'coach' ? 'people' : 'shield'} /></span>{role === 'coach' ? 'Coach' : 'Content studio'}</NavLink></>}
       {isDemo && <span className="chip pend demochip" title="Demo server: other people and their activity are simulated">Demo server</span>}
+      <NavLink to="/guide" className={`nl navhelp ${top === 'guide' ? 'on' : ''}`}><span className="ic"><Icon n="compass" /></span>Guide</NavLink>
       <NavLink to="/you/access" className="navfoot"><Glim pose="read" size={52} still /><div><b className="disp" style={{ fontSize: 14 }}>{m?.short.replace('–20', '–') ?? 'Manual'}</b><div className="tiny muted">{m ? `${m.lessons.length} lessons · ${m.bible}` : ''}</div></div></NavLink>
     </nav>
     <main className="main" id="main"><Outlet /></main>
@@ -87,6 +89,7 @@ export default function App() {
       <Route path="/coach" element={<Coach />} />
       <Route path="/coach/host" element={<CoachHost />} />
       <Route path="/steward" element={<Steward />} />
+      <Route path="/guide" element={<Guide />} />
       <Route path="/arena/match" element={<FriendlyMatch />} />
       <Route path="/circle" element={<Circle />} />
       <Route path="/you" element={<You />} />

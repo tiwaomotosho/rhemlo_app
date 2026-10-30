@@ -412,7 +412,7 @@ input[type=range].slider{width:100%;height:36px;accent-color:var(--rh-action)}
 .lib3>.lc{padding:16px 16px 32px}
 .plan-desk{display:none}.grid-today{display:grid;gap:14px}
 @media (min-width:1024px){.plan-desk{display:grid}.plan-mob{display:none}.grid-today{grid-template-columns:1.2fr 1fr;align-items:start}.mobonly2{display:none}}
-html,body{overflow-x:hidden}
+html,body{overflow-x:clip}
 .jy-head .mbtn{min-width:0;flex-shrink:1}.mbtn select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .qswitch{top:auto;bottom:88px;right:10px}
 @media (max-width:420px){.stat-pill{height:34px;padding:0 9px;font-size:14px;gap:4px}.stat-pill .icon{width:18px;height:18px}.jy-head{gap:6px}.mbtn{padding:0 10px;font-size:13px}}
@@ -451,3 +451,20 @@ html,body{overflow-x:hidden}
 .pv sup{font-weight:800;color:var(--rh-text3);margin-right:4px}
 .pv.hit{background:var(--rh-pistachio-bg);font-weight:600}
 .lib3>.ll,.lib3>.lr{align-self:start}
+
+/* guide */
+.nav a.navhelp{display:none}
+@media (min-width:640px){.nav a.navhelp{display:flex;margin-top:auto}}
+@media (min-width:1024px){.nav a.navhelp{margin-top:auto;margin-bottom:8px}.nav .navfoot{margin-top:0}}
+.helpbtn{width:40px;height:40px;background:var(--rh-surface);border-radius:12px;color:var(--rh-action);flex:none}
+@media (min-width:640px){.helpbtn{display:none}}
+.guidetip{margin-bottom:8px;padding:8px 6px 8px 10px;gap:10px;box-shadow:var(--rh-shadow-float)}
+.guide{display:grid;gap:20px}
+.guide-toc{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;position:sticky;top:0;z-index:5;background:var(--rh-bg);padding-top:8px;margin-top:-8px}
+.gtoc{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:8px 12px;border-radius:99px;background:var(--rh-surface);border:1.5px solid var(--rh-line2);font:700 13px var(--rh-font-display);color:var(--rh-text2)}
+.gtoc.on{background:var(--rh-raised);color:var(--rh-action);border-color:var(--rh-action)}
+@media (min-width:1024px){.guide{grid-template-columns:220px minmax(0,1fr);align-items:start}.guide-toc{flex-direction:column;overflow:visible;top:24px;padding:0;margin:0}.gtoc{border-radius:12px;border-color:transparent;background:transparent;font-size:14px}}
+.gsec{padding:0;scroll-margin-top:64px}
+.ghead{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;background:transparent;text-align:left;color:inherit;min-height:64px}
+.gbody{padding:0 16px 16px}
+.mapcanvas{margin-bottom:150px}

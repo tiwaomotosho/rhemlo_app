@@ -5,6 +5,7 @@ import { loadItems, loadLesson, readPassage } from '@/lib/data'
 import { day, lessonStats, masteryOf, streakInfo, useStore, type SessionSpec } from '@/lib/store'
 import type { LessonMeta, Manual, ManualCode } from '@/lib/types'
 import { BackBar, Glim, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
+import { GuideTip } from './Guide'
 
 type Anchors = Record<string, { nodes_norm: [number, number][] }>
 const WORLDS = [['meadow', 'The Meadow'], ['autumn', 'Harvest Hills'], ['coast', 'The Coast'], ['summit', 'The Summit']] as const
@@ -92,6 +93,7 @@ function JourneyInner({ m }: { m: Manual }) {
       <div className="grow" />
       <button className="stat-pill" style={{ border: 0 }} onClick={() => setSheet('quests')} aria-label={`Today's quests, ${doneQ} of 3 done`}><Icon n="sprout" className="s" style={{ color: 'var(--rh-pistachio-deep)' }} />{doneQ}/3</button>
       <StatPills />
+      <Link to="/guide" className="iconbtn helpbtn" aria-label="Guide: how Rhemlo works"><Icon n="compass" /></Link>
     </div>
     <button className="jy-banner" onClick={() => setSel(J.cur)}>
       <div className="grow"><p className="eyebrow">Quarter {quarterOf(m, J.cur.n)} · Chapter {J.groups[curG].lessons.indexOf(J.cur) + 1} of {J.groups[curG].lessons.length}</p><h2>{niceTitle(J.cur.title)}</h2><p className="tiny" style={{ opacity: .9 }}>{niceDate(J.cur).replace(/^\w+, /, '')} · Memory verse {verseRef(J.cur)}</p></div>
@@ -126,7 +128,7 @@ function JourneyInner({ m }: { m: Manual }) {
         </div></div>
         <div className="qswitch" role="group" aria-label="Quarter">{J.groups.map((x, i) => <button key={x.q} className={i === gi ? 'on' : ''} aria-pressed={i === gi} onClick={() => setQi(i)}>Q{x.q}</button>)}
           <button onClick={() => setSheet('list')} aria-label="List view of all lessons"><Icon n="listn" className="s" /></button></div>
-        <div className="dock"><div className="card glass">
+        <div className="dock"><GuideTip /><div className="card glass">
           {J.due.count ? <><span className="tile apricot"><Icon n="refresh" /></span>
             <div className="grow"><b className="disp">{J.due.count} point{J.due.count === 1 ? '' : 's'} to revisit</b><div className="tiny muted">Due review · {J.due.range} · {J.due.minutes} min</div></div>
             <button className="btn sm" onClick={() => start(J.quests[1].spec!)}>Review</button></> :
