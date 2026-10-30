@@ -32,6 +32,7 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
   const rungOpen = (i: Item) => { const l = ladder[`${spec.manual}|${lessonOfKey(i.s)}`]; return !!(l?.q27 && l?.q28) }
   const allowed = (i: Item) => (types ? types.has(i.t) : !LADDER_TYPES.has(i.t)) && (i.t !== 'Q04' || rungOpen(i))
   let pool = lists.flat().filter(allowed)
+  if (spec.only) { const keep = new Set(spec.only); const its = lists.flat().filter(i => keep.has(i.u)); return { items: its, pool: its.length } }
   const now = Date.now(), seed = spec.kind === 'daily' ? `daily${day()}` : `${spec.kind}${now >> 16}`
   if (spec.kind === 'ladder') {
     const l = lessons[0]; const lad = ladder[`${spec.manual}|${l}`] ?? {}
@@ -82,3 +83,22 @@ export function readinessGap(manual: Manual, stageLessons: [number, number], car
 }
 export const daysUntil = (iso: string) => Math.ceil((new Date(iso + 'T23:59:59').getTime() - Date.now()) / 86400000)
 export { loadManual }
+
+/** Cards due now: count, and the lessons they belong to (lowest first). */
+export function dueInfo(cards: Record<string, Card>, code: string) {
+  const now = Date.now(), per: Record<string, number> = {}; let count = 0
+  for (const k in cards) if (k.startsWith(code + '|') && cards[k].seen > 0 && cards[k].due <= now) { count++; const l = lessonOfKey(k); per[l] = (per[l] ?? 0) + 1 }
+  const lessons = Object.keys(per).sort()
+  const nums = lessons.map(l => +l.slice(1))
+  return { count, lessons, range: nums.length ? (nums[0] === nums[nums.length - 1] ? `Lesson ${nums[0]}` : `Lessons ${nums[0]}–${nums[nums.length - 1]}`) : '', minutes: Math.max(2, Math.round(Math.min(count, 20) * 0.4)) }
+}
+/** Lessons where this learner's answers are least often right (needs enough attempts to mean anything). */
+export function weakAreas(cards: Record<string, Card>, code: string, minSeen = 5) {
+  const per: Record<string, { seen: number; right: number }> = {}
+  for (const k in cards) if (k.startsWith(code + '|')) { const l = lessonOfKey(k), c = cards[k]; const e = (per[l] ??= { seen: 0, right: 0 }); e.seen += c.seen; e.right += c.right }
+  return Object.entries(per).filter(([, v]) => v.seen >= minSeen).map(([l, v]) => ({ lesson: l, n: +l.slice(1), acc: v.right / v.seen, seen: v.seen })).sort((a, b) => a.acc - b.acc)
+}
+
+const SMALL = new Set(['of', 'the', 'and', 'in', 'to', 'for', 'a', 'an', 'on', 'at', 'by', 'with'])
+/** "THE IMMANENCE OF GOD" → "The Immanence of God" */
+export const niceTitle = (t: string) => t.toLowerCase().split(' ').map((w, i) => i && SMALL.has(w) ? w : w.replace(/(^|-)\S/g, c => c.toUpperCase())).join(' ')

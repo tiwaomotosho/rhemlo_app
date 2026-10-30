@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { buildSession, KIND_LABEL, lessonOfKey, shuffleSeed } from '@/lib/engine'
-import { loadItems, readInContext } from '@/lib/data'
-import { gradeItem, type Grade } from '@/lib/grade'
+import { loadItems } from '@/lib/data'
+import { gradeItem, normText, type Grade } from '@/lib/grade'
 import { day, useStore, type Draft, type SessionSpec } from '@/lib/store'
 import type { Item, Response, SittingRecord } from '@/lib/types'
-import { Glim, Icon, Loading, Sheet } from '@/ui/bits'
+import { ContextSheet, Glim, Icon, Loading } from '@/ui/bits'
 
 const OFF = { autoComplete: 'off', autoCorrect: 'off', autoCapitalize: 'off', spellCheck: false, 'data-lpignore': 'true', 'data-1p-ignore': 'true' } as const
-const MIN = (n: number) => Math.max(1, Math.round(n * 0.4))
 
 function Passage({ text }: { text: string }) {
   const parts = text.split('____'), many = parts.length > 2
@@ -29,8 +28,8 @@ function Context({ item }: { item: Item }) {
   </>
 }
 
-function Answer({ item, locked, grade, onResponse, onEnter }: { item: Item; locked: boolean; grade: Grade | null; onResponse: (r: Response | null) => void; onEnter: () => void }) {
-  const kind = item.p.input.kind, mcq = kind === 'choice' || !item.f.includes('typed')
+function Answer({ item, locked, grade, forced, onResponse, onEnter }: { item: Item; locked: boolean; grade: Grade | null; forced: boolean; onResponse: (r: Response | null) => void; onEnter: () => void }) {
+  const kind = item.p.input.kind, mcq = kind === 'choice' || !item.f.includes('typed') || forced
   const [text, setText] = useState(''); const [vals, setVals] = useState<string[]>(() => Array(item.p.input.count ?? 1).fill(''))
   const [sel, setSel] = useState(''); const [chosen, setChosen] = useState<number[]>([]); const [pick, setPick] = useState<number | null>(null)
   const first = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
@@ -47,7 +46,7 @@ function Answer({ item, locked, grade, onResponse, onEnter }: { item: Item; lock
     else if (kind === 'word_bank') onResponse(chosen.length ? { kind: 'bank', values: chosen.map(i => bank[i]) } : null)
     else if (kind === 'spot_error') onResponse(pick !== null && text.trim() ? { kind: 'text', value: text } : null)
     else onResponse(text.trim() ? { kind: 'text', value: text } : null)
-  }, [text, vals, sel, chosen, pick]) // eslint-disable-line
+  }, [text, vals, sel, chosen, pick, mcq]) // eslint-disable-line
 
   const note = item.p.input.note
   const hint = note && <p className="hint"><Icon n="info" />{note}</p>
@@ -84,20 +83,30 @@ function Answer({ item, locked, grade, onResponse, onEnter }: { item: Item; lock
     {hint}</div>
 }
 
-function ContextSheet({ refs, onClose }: { refs: string[]; onClose: () => void }) {
-  const [data, setData] = useState<Awaited<ReturnType<typeof readInContext>>[] | null>(null)
-  useEffect(() => { Promise.all(refs.map(readInContext)).then(setData) }, [refs])
-  return <Sheet label="Read in context" onClose={onClose}><div className="col"><p className="eyebrow">KJV</p>
-    {!data ? <p className="muted">Loading…</p> : data.map((d, i) => d ? <div key={i}><h3>{d.ref}</h3>{d.verses.map(v => <p key={v.n} className={`ctxv ${v.hit ? 'hit' : ''}`}><sup>{v.n}</sup><span>{v.t}</span></p>)}</div> : <p key={i} className="muted">{refs[i]} is not available offline yet.</p>)}
-    <button className="btn ghost block" onClick={onClose}>Close</button></div></Sheet>
+const lev1 = (a: string, b: string) => {
+  if (a === b || Math.abs(a.length - b.length) > 1) return false
+  let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++
+  const x = a.slice(i), y = b.slice(i)
+  return x.slice(1) === y || x === y.slice(1) || x.slice(1) === y.slice(1)
 }
+/** Underline only the letters that differ: "profitteth" vs "profiteth". */
+function Marked({ wrote, expected, side }: { wrote: string; expected: string; side: 'w' | 'e' }) {
+  const t = side === 'w' ? wrote : expected, o = (side === 'w' ? expected : wrote).toLowerCase(), l = t.toLowerCase()
+  let i = 0; while (i < l.length && i < o.length && l[i] === o[i]) i++
+  let j = 0; while (j < l.length - i && j < o.length - i && l[l.length - 1 - j] === o[o.length - 1 - j]) j++
+  const mid = t.slice(i, t.length - j)
+  if (!mid) return <>{t}</>
+  return <>{t.slice(0, i)}<span className={side === 'w' ? 'mk' : 'ok'}>{mid}</span>{t.slice(t.length - j)}</>
+}
+const PRAISE = ['That is the one.', 'Exactly right.', 'Well recalled.', 'Spot on.']
+const chapterOf = (r: string) => r.replace(/:.*$/, '')
 
 export default function Session() {
   const loc = useLocation(); const nav = useNavigate(); const S = useStore()
   const spec0 = (loc.state as { spec?: SessionSpec } | null)?.spec
   const [items, setItems] = useState<Map<string, Item> | null>(null); const [draft, setDraft] = useState<Draft | null>(null)
   const [empty, setEmpty] = useState(false); const [resp, setResp] = useState<Response | null>(null)
-  const [grade, setGrade] = useState<Grade | null>(null); const [ctx, setCtx] = useState(false); const [fin, setFin] = useState<SittingRecord | null>(null)
+  const [forced, setForced] = useState(false); const [grade, setGrade] = useState<Grade | null>(null); const [ctx, setCtx] = useState(false); const [fin, setFin] = useState<SittingRecord | null>(null)
   const booted = useRef(false); const dRef = useRef<Draft | null>(null)
   const save = (d: Draft) => { dRef.current = d; setDraft(d); S.setDraft(d) }
 
@@ -123,7 +132,7 @@ export default function Session() {
   const check = useCallback(() => {
     if (!item || !resp || grade || !draft) return
     const g = gradeItem(item, resp); setGrade(g)
-    S.recordAnswer(draft.spec.manual, item, g.correct, false)
+    S.recordAnswer(draft.spec.manual, item, g.correct, forced)
     if (g.correct && ['Q27', 'Q28', 'Q04'].includes(item.t)) S.markLadder(draft.spec.manual, lessonOfKey(item.s), item.t === 'Q27' ? 'q27' : item.t === 'Q28' ? 'q28' : 'q04')
     const retry = !g.correct && !draft.again.includes(item.u)
     save({ ...draft, right: draft.right + (g.correct ? 1 : 0), queue: retry ? [...draft.queue, item.u] : draft.queue, again: retry ? [...draft.again, item.u] : draft.again,
@@ -132,7 +141,7 @@ export default function Session() {
 
   const next = useCallback(() => {
     const d = dRef.current; if (!d || !grade) return
-    setGrade(null); setResp(null)
+    setGrade(null); setResp(null); setForced(false)
     if (d.index + 1 >= d.queue.length) {
       const total = d.queue.length - d.again.length
       const rec: SittingRecord = { id: d.id, at: Date.now(), manual: d.spec.manual, kind: d.spec.kind, lesson: d.spec.lessons.length === 1 ? d.spec.lessons[0] : undefined,
@@ -149,44 +158,56 @@ export default function Session() {
   if (!draft || !items || !item) return <Loading text="Setting up your sitting…" />
 
   const total = draft.queue.length, retrying = draft.queue.indexOf(item.u) < draft.index
+  const single = !!grade && !grade.parts && grade.wrote.length === 1 && grade.expected.length === 1 && item.p.input.kind !== 'reference' && !grade.correct
+  const near = single && !!grade && lev1(normText(grade.wrote[0]), normText(grade.expected[0]))
+  const title = !grade ? '' : grade.correct ? PRAISE[draft.index % PRAISE.length] : near ? 'One spelling to fix.' : 'Not quite.'
   const refs = item.a.refs?.map(r => r.key) ?? (item.p.ref ? [item.p.ref] : [])
   return <div className="focus">
     <div className="ftop"><button className="iconbtn" aria-label="Save and leave" onClick={leave}><Icon n="x" /></button>
       <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={draft.index}><i className="s" style={{ width: `${(draft.index / total) * 100}%`, background: 'var(--rh-action)' }} /></div>
-      <span className="small" style={{ fontWeight: 800, minWidth: 64, textAlign: 'right' }}>{draft.index + 1} of {total}</span></div>
+      <span className="small" style={{ fontWeight: 800, minWidth: 48, textAlign: 'right' }} aria-label={`Question ${draft.index + 1} of ${total}`}>{draft.index + 1}/{total}</span></div>
     <div className="fbody">
-      <div className="qtype"><span className="pill">{KIND_LABEL[item.t] ?? item.t}</span>{retrying && <span className="again">Again — you missed this one</span>}<span className="small muted grow" style={{ textAlign: 'right' }}>{draft.spec.title} · about {MIN(total)} min</span></div>
-      {item.p.context && <p className="small muted">{item.p.context}</p>}
+      <div className="qtype"><span className="pill"><Icon n="star" />{KIND_LABEL[item.t] ?? item.t} · {item.t}</span>{retrying && <span className="again">Again</span>}<span className="small muted grow" style={{ textAlign: 'right' }}>{item.p.context ?? draft.spec.title}</span></div>
       <h1 className="prompt">{item.p.instruction}</h1>
       <Context item={item} />
-      <Answer key={`${item.u}${draft.index}`} item={item} locked={!!grade} grade={grade} onResponse={setResp} onEnter={check} />
+      <Answer key={`${item.u}${draft.index}${forced}`} item={item} locked={!!grade} grade={grade} forced={forced} onResponse={setResp} onEnter={check} />
+      {!grade && !forced && item.f.includes('mcq') && item.f.includes('typed') && item.d.length > 0 && <div className="row wrap"><button className="btn ghost sm" onClick={() => setForced(true)}><Icon n="journey" />Switch to choices</button><span className="small muted">for this item only · counts as assisted</span></div>}
     </div>
-    {!grade ? <div className="fbar"><div className="row"><button className="btn quiet" onClick={leave}>Save &amp; leave</button><button className="btn grow" disabled={!resp} onClick={check}>Check</button></div></div> :
+    {!grade ? <div className="fbar"><div className="row"><button className="btn quiet" onClick={leave}>Save &amp; leave</button><button className="btn grow" disabled={!resp} onClick={check}>Check answer</button></div></div> :
       <div className={`fbar ${grade.correct ? 'good' : 'bad'}`} role="status" aria-live="polite"><div>
-        <div className="head"><Glim pose={grade.correct ? 'cheer' : 'think'} size={256} style={{ width: 56, height: 56 }} />
-          <Icon n={grade.correct ? 'check' : 'x'} className="big" /><h3 className="grow">{grade.correct ? 'Correct' : 'Not quite'}</h3>{grade.correct && <span className="xp">+10 XP</span>}</div>
-        {!grade.correct && <div className="diff">
-          <div className="ln w"><b>You wrote</b><span>{grade.wrote.join(' · ') || '—'}</span></div><div className="ln e"><b>Expected</b><span>{grade.expected.join(' · ')}</span></div></div>}
-        {!grade.correct && draft.queue.lastIndexOf(item.u) > draft.index && <p className="small" style={{ marginBottom: 10 }}>You'll see this one again before the end.</p>}
-        <div className="row">{refs.length > 0 && <button className="btn ghost sm" onClick={() => setCtx(true)}>Read {refs[0].length > 18 ? 'in context' : refs[0] + ' in context'}</button>}
-          <button className={`btn grow ${grade.correct ? 'good' : 'bad'}`} onClick={next} autoFocus>{draft.index + 1 >= total ? 'Finish' : 'Continue'}</button></div>
+        <div className="head"><Glim pose={grade.correct ? 'thumbs' : 'think'} size={64} motion={grade.correct ? 'pop' : undefined} once={grade.correct} />
+          <Icon n={grade.correct ? 'check' : 'x'} className="big" /><h3 className="grow">{title}</h3>{grade.correct && <span className="xp"><Icon n="star" className="" /> +10 XP</span>}</div>
+        {grade.correct ? (item.t === 'Q28' || item.t === 'Q27') && <p className="small" style={{ marginBottom: 10 }}>{item.t === 'Q27' ? 'Built correctly. Fade unlocks next.' : 'All words correct. Full recall unlocks next.'}</p> :
+          <div className="diff"><div className="ln w"><b>You wrote</b><span>{single ? <Marked wrote={grade.wrote[0]} expected={grade.expected[0]} side="w" /> : grade.wrote.join(' · ') || '—'}</span></div>
+            <div className="ln e"><b>Expected</b><span>{single ? <Marked wrote={grade.wrote[0]} expected={grade.expected[0]} side="e" /> : grade.expected.join(' · ')}</span></div></div>}
+        {!grade.correct && <p className="small" style={{ marginBottom: 10 }}>{near ? 'One letter is off. Spelling counts, so this ' : 'This '}{draft.queue.lastIndexOf(item.u) > draft.index ? 'returns later in this sitting.' : 'comes back in your reviews.'}</p>}
+        <div className="row">{refs.length > 0 && <button className="btn ghost sm" onClick={() => setCtx(true)}><Icon n="book" />Read {chapterOf(refs[0])} in context</button>}</div>
+        <button className={`btn block ${grade.correct ? 'good' : 'bad'}`} style={{ marginTop: 12 }} onClick={next} autoFocus>{draft.index + 1 >= total ? 'Finish' : 'Next question'}</button>
       </div></div>}
     {ctx && <ContextSheet refs={refs.slice(0, 2)} onClose={() => setCtx(false)} />}
   </div>
 }
 
 function Done({ rec, spec }: { rec: SittingRecord; spec: SessionSpec }) {
-  const nav = useNavigate(); const done = useStore(s => s.done); const pct = rec.total ? rec.right / rec.total : 0
+  const nav = useNavigate(); const done = useStore(s => s.done); const ladder = useStore(s => s.ladder); const pct = rec.total ? rec.right / rec.total : 0
   const cleared = (rec.kind === 'quest' || rec.kind === 'ladder') && rec.lesson && !!done[`${rec.manual}|${rec.lesson}`]
-  return <div className="splash" style={{ justifyContent: 'flex-start', paddingTop: 32, maxWidth: 560, margin: '0 auto' }}>
-    <Glim pose={pct >= .8 ? 'celebrate' : pct >= .5 ? 'cheer' : 'confident'} size={256} />
-    <p className="eyebrow">Sitting complete</p><h1>{rec.right} of {rec.total} right</h1>
-    <div className="stat" style={{ width: '100%' }}><div className="card"><b>+{rec.right * 10}</b><span className="small muted">XP</span></div><div className="card"><b>{Math.round(pct * 100)}%</b><span className="small muted">accuracy</span></div><div className="card"><b>{rec.minutes}</b><span className="small muted">min</span></div></div>
+  const lad = rec.lesson ? ladder[`${rec.manual}|${rec.lesson}`] : undefined
+  const title = rec.kind === 'review' ? 'Review complete.' : rec.kind === 'ladder' ? 'Ladder climbed.' : rec.kind === 'quest' ? 'Quest complete.' : 'Sitting complete.'
+  const uniq = rec.misses.filter((m, i, a) => a.findIndex(x => x.u === m.u) === i)
+  const stat = (v: string, l: string, c?: string) => <div className="card" style={{ padding: 12 }}><b style={{ color: c }}>{v}</b><span className="small muted">{l}</span></div>
+  return <div className="splash" style={{ justifyContent: 'flex-start', paddingTop: 24, maxWidth: 520, margin: '0 auto' }}>
+    <Glim pose={pct >= .8 ? 'celebrate' : pct >= .5 ? 'cheer' : 'thumbs'} size={200} motion={pct >= .5 ? 'jump' : undefined} once={pct >= .5} />
+    <h1 style={{ fontSize: 30 }}>{title}</h1>
+    <p className="muted">Your progress is saved. This is a good place to stop.</p>
+    <div className="stat" style={{ width: '100%' }}>{stat(String(rec.right), `of ${rec.total} correct`, 'var(--rh-correct)')}{stat(String(uniq.length), 'queued', 'var(--rh-apricot-deep)')}{stat(`+${rec.right * 10}`, 'personal XP', 'var(--rh-action)')}</div>
+    {(lad?.q27 || lad?.q28 || lad?.q04) && rec.kind !== 'review' && <div className="card row" style={{ width: '100%', textAlign: 'left' }}><Icon n="star" /><div><b>Memory ladder</b><div className="small muted">{lad?.q04 ? 'Full verse reached' : lad?.q28 ? 'Fade done — full verse is open' : 'Build done — fade is next'}</div></div></div>}
     {cleared && <span className="pill ok"><Icon n="check" />Lesson cleared — the next stop is open</span>}
-    {rec.misses.length > 0 && <div className="card col" style={{ width: '100%', textAlign: 'left' }}><h3>Worth another look</h3>
-      {rec.misses.slice(0, 6).map(m => <div key={m.u} className="diff" style={{ margin: 0 }}><div className="ln w"><b>You wrote</b><span>{m.wrote || '—'}</span></div><div className="ln e"><b>Expected</b><span>{m.expected}</span></div></div>)}
-      <p className="small muted">These return in your reviews, sooner than the ones you got right.</p></div>}
-    <div className="col" style={{ width: '100%' }}><button className="btn block" onClick={() => nav('/journey', { replace: true })}>Back to Journey</button>
-      <button className="btn ghost block" onClick={() => nav('/session', { replace: true, state: { spec } })}>Another sitting</button></div>
+    <div className="row wrap" style={{ justifyContent: 'center' }}><span className="pill ok"><Icon n="check" />Saved on this device</span><span className="pill">Private · not ranked</span></div>
+    {uniq.length > 0 && <div className="card col" style={{ width: '100%', textAlign: 'left' }}><h3>Returning later</h3>
+      {uniq.slice(0, 5).map(m => <div key={m.u} className="diff" style={{ margin: 0 }}><div className="ln w"><b>You wrote</b><span>{m.wrote || '—'}</span></div><div className="ln e"><b>Expected</b><span>{m.expected}</span></div></div>)}
+      <p className="small muted">These come back in your reviews, sooner than the ones you got right.</p></div>}
+    <div className="col" style={{ width: '100%' }}><button className="btn block" onClick={() => nav('/journey', { replace: true })}>Done for now</button>
+      <div className="row"><button className="btn ghost grow" disabled={!uniq.length} onClick={() => nav('/session', { replace: true, state: { spec: { ...spec, kind: 'target', only: uniq.map(m => m.u), count: uniq.length, title: 'Review my misses' } } })}>Review my misses</button>
+        <button className="btn ghost grow" onClick={() => nav('/journey', { replace: true })}>Back to journey</button></div></div>
   </div>
 }

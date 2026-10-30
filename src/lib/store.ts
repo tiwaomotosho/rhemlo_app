@@ -8,7 +8,7 @@ export type Pace = 'light' | 'steady' | 'focused'
 export interface Profile { name: string; handle: string; goal: Goal; pace: Pace; glim: string }
 export interface SessionSpec {
   kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily'; manual: ManualCode; lessons: string[]; count: number
-  focus?: string[]; title: string; ranked?: boolean
+  focus?: string[]; title: string; ranked?: boolean; only?: string[]
 }
 export interface Draft {
   id: string; spec: SessionSpec; queue: string[]; index: number; right: number; startedAt: number

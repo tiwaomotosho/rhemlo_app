@@ -1,0 +1,54 @@
+{
+ "pose": "pray",
+ "size": [
+  614,
+  1220
+ ],
+ "bbox": [
+  8,
+  9,
+  605,
+  1210
+ ],
+ "pivots": {
+  "body": [
+   308.13714755879175,
+   1210.0
+  ],
+  "flame": [
+   326.0208049835193,
+   227.0
+  ],
+  "arm0": [
+   308.0,
+   636.0
+  ],
+  "leg0": [
+   186.44444444444446,
+   1008.0
+  ],
+  "leg1": [
+   437.9,
+   1007.0
+  ]
+ },
+ "arms": 1,
+ "legs": 2,
+ "props": 0,
+ "lids": 0,
+ "eyes": [],
+ "layers": [
+  "arm0",
+  "body",
+  "flame",
+  "leg0",
+  "leg1"
+ ],
+ "layer_files": {
+  "arm0": "arm0.webp",
+  "body": "body.webp",
+  "flame": "flame.webp",
+  "leg0": "leg0.webp",
+  "leg1": "leg1.webp"
+ }
+}

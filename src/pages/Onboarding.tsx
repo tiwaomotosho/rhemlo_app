@@ -25,7 +25,7 @@ export default function Onboarding() {
   }
   if (step === 0) return <div className="splash" style={{ background: 'var(--rh-bg)' }}>
     <img className="hero-img" src={asset('worlds/scenes/hero-sunrise/hero-sunrise-800.webp')} alt="" />
-    <Glim pose="wave" size={160} cw="classic" style={{ marginTop: -90 }} />
+    <Glim pose="wave" size={160} cw="classic" motion="wave" once style={{ marginTop: -90 }} />
     <div className="col" style={{ alignItems: 'center', maxWidth: 440 }}>
       <h1 style={{ fontSize: 34, lineHeight: '38px' }}>Little quests.<br />Lasting light.</h1>
       <p className="muted">Memorise Scripture with short sittings, honest marking and a map that remembers where you are.</p>

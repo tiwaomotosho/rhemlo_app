@@ -1,0 +1,60 @@
+{
+ "pose": "cheer",
+ "size": [
+  944,
+  1210
+ ],
+ "bbox": [
+  8,
+  8,
+  934,
+  1200
+ ],
+ "pivots": {
+  "body": [
+   458.46431725939215,
+   1200.0
+  ],
+  "flame": [
+   522.2366262424807,
+   227.0
+  ],
+  "arm0": [
+   195.0,
+   507.0
+  ],
+  "arm1": [
+   733.0,
+   557.0
+  ],
+  "leg0": [
+   263.7325581395349,
+   892.0
+  ],
+  "leg1": [
+   591.6896551724138,
+   970.0
+  ]
+ },
+ "arms": 2,
+ "legs": 2,
+ "props": 0,
+ "lids": 0,
+ "eyes": [],
+ "layers": [
+  "arm0",
+  "arm1",
+  "body",
+  "flame",
+  "leg0",
+  "leg1"
+ ],
+ "layer_files": {
+  "arm0": "arm0.webp",
+  "arm1": "arm1.webp",
+  "body": "body.webp",
+  "flame": "flame.webp",
+  "leg0": "leg0.webp",
+  "leg1": "leg1.webp"
+ }
+}

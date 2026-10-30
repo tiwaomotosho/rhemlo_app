@@ -1,0 +1,60 @@
+{
+ "pose": "celebrate",
+ "size": [
+  467,
+  558
+ ],
+ "bbox": [
+  2,
+  2,
+  464,
+  515
+ ],
+ "pivots": {
+  "body": [
+   234.30515051740358,
+   515.0
+  ],
+  "flame": [
+   254.9147192186955,
+   93.0
+  ],
+  "arm0": [
+   95.0,
+   216.0
+  ],
+  "arm1": [
+   375.0,
+   216.0
+  ],
+  "leg0": [
+   108.23214285714286,
+   390.0
+  ],
+  "leg1": [
+   315.27777777777777,
+   422.0
+  ]
+ },
+ "arms": 2,
+ "legs": 2,
+ "props": 0,
+ "lids": 0,
+ "eyes": [],
+ "layers": [
+  "arm0",
+  "arm1",
+  "body",
+  "flame",
+  "leg0",
+  "leg1"
+ ],
+ "layer_files": {
+  "arm0": "arm0.webp",
+  "arm1": "arm1.webp",
+  "body": "body.webp",
+  "flame": "flame.webp",
+  "leg0": "leg0.webp",
+  "leg1": "leg1.webp"
+ }
+}

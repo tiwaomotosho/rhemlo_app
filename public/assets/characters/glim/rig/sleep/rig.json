@@ -1,0 +1,48 @@
+{
+ "pose": "sleep",
+ "size": [
+  952,
+  633
+ ],
+ "bbox": [
+  8,
+  9,
+  942,
+  624
+ ],
+ "pivots": {
+  "body": [
+   369.979006019601,
+   624.0
+  ],
+  "flame": [
+   503.22032288698955,
+   40.0
+  ],
+  "leg0": [
+   46.276595744680854,
+   460.0
+  ],
+  "leg1": [
+   845.0769230769231,
+   357.0
+  ]
+ },
+ "arms": 0,
+ "legs": 2,
+ "props": 0,
+ "lids": 0,
+ "eyes": [],
+ "layers": [
+  "body",
+  "flame",
+  "leg0",
+  "leg1"
+ ],
+ "layer_files": {
+  "body": "body.webp",
+  "flame": "flame.webp",
+  "leg0": "leg0.webp",
+  "leg1": "leg1.webp"
+ }
+}
