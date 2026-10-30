@@ -22,8 +22,17 @@ const Approved = () => <span className="chip ok" title="Reviewed and approved by
 function linkify(text: string, open: (r: string) => void): ReactNode {
   const out: ReactNode[] = []; let last = 0
   for (const m of text.matchAll(/\(([^()]*?\d+\s*:\s*\d+[^()]*)\)/g)) {
-    const refs = typedRefs(m[1]); if (!refs.length) continue
-    out.push(text.slice(last, m.index)); out.push(<button key={m.index} className="reflink" onClick={() => open(refs[0])}>({m[1]})</button>); last = m.index! + m[0].length
+    if (!typedRefs(m[1]).length) continue
+    out.push(text.slice(last, m.index), '(')
+    // each reference inside "(Jeremiah 23:23; Isaiah 55:9)" is its own link; "4:8; 5:1" inherits the book before it
+    let book = ''
+    m[1].split(/(;\s*)/).forEach((part, i) => {
+      if (/^;\s*$/.test(part)) { out.push(part); return }
+      const own = typedRefs(part)[0], ref = own ?? (book && /^\s*\d/.test(part) ? typedRefs(`${book} ${part}`)[0] : undefined)
+      if (own) book = own.replace(/\s+\d.*$/, '')
+      out.push(ref ? <button key={`${m.index}-${i}`} className="reflink" onClick={() => open(ref)}>{part}</button> : part)
+    })
+    out.push(')'); last = m.index! + m[0].length
   }
   out.push(text.slice(last)); return out
 }
