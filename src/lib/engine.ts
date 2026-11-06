@@ -1,6 +1,7 @@
 import { loadItems, loadManual } from './data'
 import type { Card, Item, Manual } from './types'
 import { day, useStore, type Ladder, type SessionSpec } from './store'
+import { phaseAt } from './srs'
 
 export const FOCUS: Record<string, { label: string; types: string[] }> = {
   verses: { label: 'Memory verses', types: ['Q04', 'Q06', 'Q27', 'Q28', 'Q05', 'Q09'] },
@@ -67,6 +68,7 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
   const newToday = [...firstSeen.values()].filter(t => t >= todayStart.getTime()).length
   const overdue = Object.entries(cards).filter(([k, c]) => k.startsWith(spec.manual + '|') && c.seen > 0 && c.due <= now).length
   let newRoom = ['quest', 'today', 'learn'].includes(spec.kind) ? (overdue > S.prefs.overdueLimit ? 0 : Math.max(0, S.prefs.newCap - newToday)) : Infinity
+  if (spec.kind === 'today' && phaseAt(S.prefs.phases).pace === 0) newRoom = 0 // consolidation and buffer weeks: Today adds nothing new (PRD 6.2)
   const cardsArr = [...byCard.entries()].map(([k, its]) => {
     const c = cards[`${spec.manual}|${k}`]; const dueNow = c && c.seen > 0 && c.due <= now, isNew = !c || c.seen === 0
     const score = spec.kind === 'review' ? (dueNow ? 0 : 9) : spec.kind === 'restart' ? (c && c.seen ? 5 - c.box : 9)

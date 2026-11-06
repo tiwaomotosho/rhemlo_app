@@ -15,7 +15,7 @@ async function call<T>(path: string, body?: unknown, method = 'POST'): Promise<T
   if (!r.ok) throw new Error(r.status === 401 ? 'Please sign in again. Accepted progress is safe and nothing will be counted twice.' : `The server could not finish that (${r.status}). Your work on this device is safe.`)
   return r.status === 204 ? (undefined as T) : r.json()
 }
-const rpc = <T,>(name: string, args: Record<string, unknown> = {}) => call<T>(`/rest/v1/rpc/${name}`, args)
+export const rpc = <T,>(name: string, args: Record<string, unknown> = {}) => call<T>(`/rest/v1/rpc/${name}`, args)
 async function startSession(t: { access_token: string; user: { id: string; email: string } }) {
   const [p] = await call<{ id: string; handle: string; display_name: string; colorway: string; role: string }[]>(`/rest/v1/profiles?id=eq.${t.user.id}&select=*`, undefined, 'GET').catch(() => [])
   session = { userId: t.user.id, email: t.user.email, token: t.access_token, user: { id: t.user.id, handle: p?.handle ?? '', name: p?.display_name ?? '', cw: p?.colorway ?? 'classic', tier: 'bronze', role: (p?.role as 'learner') ?? 'learner' } }
@@ -28,6 +28,8 @@ export const live: Backend = {
   demoAccounts: () => [],
   async signUp(email, password, handle, name) { const t = await call<{ access_token: string; user: { id: string; email: string } }>('/auth/v1/signup', { email, password, data: { handle, display_name: name } }); return startSession(t) },
   async signIn(email, password) { const t = await call<{ access_token: string; user: { id: string; email: string } }>('/auth/v1/token?grant_type=password', { email, password }); return startSession(t) },
+  async sendLink(email) { await call('/auth/v1/otp', { email, create_user: false, options: { emailRedirectTo: `${location.origin}/auth/callback` } }) },
+  async redeemLink(token) { const t = await call<{ access_token: string; user: { id: string; email: string } }>('/auth/v1/verify', { type: 'magiclink', token_hash: token }); return startSession(t) },
   async signOut() { await call('/auth/v1/logout').catch(() => {}); session = null; localStorage.removeItem(SKEY) },
   async pushSnapshot(data) { await rpc('submit_reviews', { payload: data }); return Date.now() },
   async pullSnapshot() { return null },

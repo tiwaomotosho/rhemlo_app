@@ -11,7 +11,7 @@ import Circle, { CircleChat, CircleHome } from '@/pages/Circle'
 import { Coach, CoachHost, Steward } from '@/pages/Roles'
 import { isDemo } from '@/lib/backend'
 import { useManualSwitch, manualLabel } from '@/ui/ManualSwitch'
-import { signOut } from '@/lib/sync'
+import { signOut, startSync } from '@/lib/sync'
 import { useNavigate } from 'react-router-dom'
 import { startReminders } from '@/lib/notify'
 import You, { Appearance, Notifications, Downloads, Access } from '@/pages/You'
@@ -22,6 +22,10 @@ import { MockExam, MockIntro, MockResult, MockSetup } from '@/pages/Mock'
 import { Discrimination, Flashcards, LearnLesson, Matching, Palace } from '@/pages/Drills'
 import Insights from '@/pages/Insights'
 import { StudySettings } from '@/pages/Plan'
+import { Boards, DMThread, HostRoom, Inbox, JoinLeague, LeagueTable, Leagues, Messages, RoomPlay } from '@/pages/Community'
+import { Admin } from '@/pages/Admin'
+import { RefIndex } from '@/pages/Library'
+import { Privacy } from '@/pages/You'
 
 const TABS = [['journey', 'Journey'], ['practice', 'Practice'], ['arena', 'Arena'], ['circle', 'Circle'], ['you', 'You']] as const
 
@@ -32,7 +36,7 @@ function Shell() {
   useEffect(() => { if (!flash) return; const t = setTimeout(() => set({ flash: '' }), 3200); return () => clearTimeout(t) }, [flash, set])
   const top = pathname.split('/')[1]
   const active = top === 'library' ? 'journey' : top
-  const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : pathname.startsWith('/journey/insights') ? 'insights' : pathname.startsWith('/coach') ? 'coach' : pathname.startsWith('/steward') ? 'steward' : ''
+  const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : pathname.startsWith('/journey/insights') ? 'insights' : pathname.startsWith('/coach') ? 'coach' : pathname.startsWith('/steward') ? 'steward' : pathname.startsWith('/admin') ? 'admin' : pathname.startsWith('/inbox') || pathname.startsWith('/messages') ? 'inbox' : ''
   return <div className="shell">
     <nav className="nav" aria-label="Main">
       <div className="brand"><GlimHead cw={cw} size={40} /><span className="word">Rhemlo</span></div>
@@ -40,8 +44,9 @@ function Shell() {
       <div className="navsep" /><p className="eyebrow sub">Journey</p>
       {([['library', 'Library', 'book', '/library'], ['planner', 'Planner', 'calendar', '/journey/planner'], ['progress', 'Progress', 'chart', '/journey/progress'], ['insights', 'Insights', 'target', '/journey/insights']] as const).map(([k, l, ic, to]) =>
         <NavLink key={k} to={to} className={`nl sub2 ${sub === k ? 'on' : ''}`} style={{ display: undefined }}><span className="ic"><Icon n={ic} /></span>{l}</NavLink>)}
-      {(role === 'coach' || role === 'steward') && <><div className="navsep" /><p className="eyebrow sub">Workspace</p>
-        <NavLink to={role === 'coach' ? '/coach' : '/steward'} className={`nl sub2 ${sub === role ? 'on' : ''}`}><span className="ic"><Icon n={role === 'coach' ? 'people' : 'shield'} /></span>{role === 'coach' ? 'Coach' : 'Content studio'}</NavLink></>}
+      {account && <NavLink to="/inbox" className={`nl sub2 ${sub === 'inbox' ? 'on' : ''}`}><span className="ic"><Icon n="inbox" /></span>Inbox</NavLink>}
+      {(role === 'coach' || role === 'steward' || role === 'admin') && <><div className="navsep" /><p className="eyebrow sub">Workspace</p>
+        <NavLink to={role === 'coach' ? '/coach' : role === 'admin' ? '/admin' : '/steward'} className={`nl sub2 ${sub === role ? 'on' : ''}`}><span className="ic"><Icon n={role === 'coach' ? 'people' : role === 'admin' ? 'key' : 'shield'} /></span>{role === 'coach' ? 'Coach' : role === 'admin' ? 'Admin console' : 'Content studio'}</NavLink></>}
       {isDemo && <span className="chip pend demochip" title="Demo server: other people and their activity are simulated">Demo server</span>}
       <NavLink to="/guide" className={`nl navhelp ${top === 'guide' ? 'on' : ''}`}><span className="ic"><Icon n="compass" /></span>Guide</NavLink>
       <button className="navfoot" onClick={openManual} aria-label="Switch manual"><Glim pose="read" size={44} still /><div className="grow" style={{ textAlign: 'left', minWidth: 0 }}><b className="disp" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>{manualLabel(code)}</b><div className="tiny muted">{m ? `${m.lessons.length} lessons · ${m.bible}` : ''}</div><span className="chip plain mt8" style={{ height: 24, padding: '0 8px' }}><Icon n="swap" />Switch manual</span></div></button>
@@ -67,6 +72,7 @@ export default function App() {
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   useEffect(() => startReminders(), [])
+  useEffect(() => startSync(), [])
 
   if (!onboarded) return <Routes>
     <Route path="/welcome" element={<Welcome />} />
@@ -114,6 +120,18 @@ export default function App() {
       <Route path="/coach/host" element={<CoachHost />} />
       <Route path="/steward" element={<Steward />} />
       <Route path="/guide" element={<Guide />} />
+      <Route path="/arena/boards" element={<Boards />} />
+      <Route path="/arena/leagues" element={<Leagues />} />
+      <Route path="/arena/leagues/:id" element={<LeagueTable />} />
+      <Route path="/l/:code" element={<JoinLeague />} />
+      <Route path="/arena/host" element={<HostRoom />} />
+      <Route path="/arena/room/:code" element={<RoomPlay />} />
+      <Route path="/inbox" element={<Inbox />} />
+      <Route path="/messages" element={<Messages />} />
+      <Route path="/messages/:id" element={<DMThread />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/library/index" element={<RefIndex />} />
+      <Route path="/you/privacy" element={<Privacy />} />
       <Route path="/arena/match" element={<FriendlyMatch />} />
       <Route path="/circle" element={<Circle />} />
       <Route path="/you" element={<You />} />

@@ -4,7 +4,7 @@ import { loadManual } from '@/lib/data'
 import { masteryOf, streakInfo, useStore, type Theme } from '@/lib/store'
 import type { ManualCode } from '@/lib/types'
 import { BackBar, CW, Glim, Icon, Loading, Sheet, StatPills, Toggle, asset, useManualData, useToast } from '@/ui/bits'
-import { api, isDemo, type Outbox } from '@/lib/backend'
+import { api, isDemo, social, type CatalogueManual, type Outbox } from '@/lib/backend'
 import { askPermission, canNotify, show } from '@/lib/notify'
 import { signOut, syncNow } from '@/lib/sync'
 import { play } from '@/lib/sound'
@@ -48,10 +48,11 @@ export default function You() {
     <div className="row gap16"><span className="card lav" style={{ padding: 6, borderRadius: 24 }}><Glim pose="wave" size={96} /></span>
       <div className="grow"><h2>{S.profile.handle || S.profile.name}</h2><p className="tiny muted">Joined {new Date(S.joined || Date.now()).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} · {S.prefs.keepPrivate ? 'Private profile' : 'Shared with friends'}</p>
         <span className="chip plain mt8"><img src={asset('emblems/tiers/tier-bronze-128.webp')} width={16} height={18} alt="" />{S.arenaOptIn ? 'League pending' : 'No league'}</span></div></div>
-    {S.account ? <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">{S.account.email}</b><div className="tiny muted">{S.account.role === 'learner' ? 'Learner' : S.account.role === 'coach' ? 'Coach' : 'Content steward'} · synced {new Date(S.account.lastSync).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}{isDemo ? ' · demo server' : ''}</div></div>
+    {S.account ? <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">{S.account.email}</b><div className="tiny muted">{({ learner: 'Learner', coach: 'Coach', steward: 'Content steward', admin: 'Admin' } as Record<string, string>)[S.account.role] ?? 'Learner'} · synced {new Date(S.account.lastSync).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}{isDemo ? ' · demo server' : ''}</div></div>
       <div className="col gap8"><button className="btn sec xs" disabled={busy} onClick={async () => { setBusy(true); await syncNow(); setBusy(false); say('Synced.') }}><Icon n="cloud" className="s" />Sync now</button><button className="btn sec xs" style={{ color: 'var(--rh-incorrect)' }} onClick={async () => { await signOut(); nav('/', { replace: true }) }}><Icon n="signout" className="s" />Sign out</button></div></div>
       : <div className="card row"><span className="tile"><Icon n="cloud" /></span><div className="grow"><b className="small">No account yet</b><div className="tiny muted">Progress is saved on this device only. Sign in to keep it on every device.</div></div><button className="btn xs" onClick={() => setSignin(true)}>Sign in</button></div>}
-    {S.account && S.account.role !== 'learner' && <Link to={S.account.role === 'coach' ? '/coach' : '/steward'} className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n={S.account.role === 'coach' ? 'people' : 'shield'} /></span><div className="grow"><b>{S.account.role === 'coach' ? 'Coach workspace' : 'Content studio'}</b><div className="tiny muted">{S.account.role === 'coach' ? 'Your circle, assignments and Quiz Night hosting' : 'Item review, reports and the manual pipeline'}</div></div><Icon n="chev" className="faint" /></Link>}
+    {S.account && isDemo && <PasskeyCard email={S.account.email} />}
+    {S.account && S.account.role !== 'learner' && <Link to={S.account.role === 'coach' ? '/coach' : S.account.role === 'admin' ? '/admin' : '/steward'} className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n={S.account.role === 'coach' ? 'people' : S.account.role === 'admin' ? 'key' : 'shield'} /></span><div className="grow"><b>{S.account.role === 'coach' ? 'Coach workspace' : S.account.role === 'admin' ? 'Admin console' : 'Content studio'}</b><div className="tiny muted">{S.account.role === 'coach' ? 'Your circle, set mocks, submissions and Quiz Night hosting' : S.account.role === 'admin' ? 'Manuals, seasons, organisations, consents and moderation' : 'Verification, anomalies, reports and the manual pipeline'}</div></div><Icon n="chev" className="faint" /></Link>}
     <div className="grid3"><div className="stat center"><div className="v">{S.points.toLocaleString()}</div><div className="d">personal XP</div></div><div className="stat center"><div className="v">{secure}</div><div className="d">Secure items</div></div><div className="stat center"><div className="v">{S.activeDays.length}</div><div className="d">study days</div></div></div>
     <p className="eyebrow">Glim style</p>
     <div className="stylepick">{styles.map(s => <button key={s.cw} className={`${S.profile.glim === s.cw ? 'on' : ''} ${s.got ? '' : 'lock'}`} aria-pressed={S.profile.glim === s.cw} aria-label={`${s.cw}${s.got ? '' : ', locked: ' + s.how}`}
@@ -62,7 +63,7 @@ export default function You() {
       <img src={b.got ? asset(`emblems/badges/badge-${b.k}-128.webp`) : asset(`emblems/badges/locked/badge-${b.k}-locked.png`)} alt="" /></button>)}</div>
     <p className="tiny muted">Cosmetics only. Nothing here buys points or correctness.</p>
     <div className="card list" style={{ padding: '2px 14px' }}>
-      {([['compass', 'Guide', 'How Rhemlo works · demo mode explained', '/guide'], ['swap', 'Manual', 'Switch between Adult and YAYA', '#manual'], ['target', 'Study settings', 'Daily caps, marking, help and options', '/you/study'], ['sun', 'Appearance', 'Light, Dark or System · text size', '/you/appearance'], ['bell', 'Notifications', 'Gentle nudges and quiet hours', '/you/notifications'], ['download', 'Downloads', 'Offline lessons and sync', '/you/downloads'], ['key', 'Access & manuals', 'Your manuals and who grants them', '/you/access'], ['chart', 'Progress', 'Mastery and accuracy, defined', '/journey/progress']] as const).map(([i, t, d, to]) =>
+      {([['compass', 'Guide', 'How Rhemlo works · demo mode explained', '/guide'], ['swap', 'Manual', 'Switch between Adult and YAYA', '#manual'],  ['inbox', 'Inbox and messages', 'Notices, coach notes and direct messages', '/inbox'], ['shield', 'Privacy and safety', 'Age, guardian consent, who can message you, visibility', '/you/privacy'], ['target', 'Study settings', 'Daily caps, marking, help and options', '/you/study'], ['sun', 'Appearance', 'Light, Dark or System · text size', '/you/appearance'], ['bell', 'Notifications', 'Gentle nudges and quiet hours', '/you/notifications'], ['download', 'Downloads', 'Offline lessons and sync', '/you/downloads'], ['key', 'Access & manuals', 'Your manuals and who grants them', '/you/access'], ['chart', 'Progress', 'Mastery and accuracy, defined', '/journey/progress']] as const).map(([i, t, d, to]) =>
         <Link key={to} to={to === '#manual' ? '#' : to} onClick={e => { if (to === '#manual') { e.preventDefault(); openManual() } }} className="li"><span className="tile" style={{ width: 38, height: 38 }}><Icon n={i} className="s" /></span><span className="grow"><b className="small">{t}</b><span className="tiny muted" style={{ display: 'block' }}>{d}</span></span><Icon n="chev" className="faint" /></Link>)}
       <div className="li"><span className="tile" style={{ width: 38, height: 38 }}><Icon n="clock" className="s" /></span><span className="grow"><b className="small">Sitting length</b><span className="tiny muted" style={{ display: 'block' }}>Every sitting has a real finish line</span></span>
         <div className="seg" style={{ width: 170 }}>{[10, 20, 40].map(n => <button key={n} className={S.sessionSize === n ? 'on' : ''} onClick={() => S.set({ sessionSize: n })}>{n}</button>)}</div></div>
@@ -152,6 +153,7 @@ export function Downloads() {
   const drop = async (p: Pack) => { const c = await caches.open('rhemlo-packs'); await Promise.all(p.urls.slice(1).map(u => c.delete(u))); setState(s => ({ ...s, [p.id]: 'none' })) }
   return <div className="page col gap16" style={{ maxWidth: 560 }}>
     <BackBar title="Downloads" onBack={() => nav('/you')} />
+    <InstallCard />
     {!online && <div className="card row" style={{ background: 'var(--rh-warning-bg)', borderColor: 'transparent' }}><img src={asset('illustrations/states/state-offline-256.webp')} width={64} height={64} alt="" /><div><b>No signal. Still your journey.</b><div className="tiny muted">Downloaded private practice works offline.</div></div></div>}
     <SyncCard />
     <p className="eyebrow">Download for private practice</p>
@@ -165,7 +167,8 @@ export function Downloads() {
 
 // ---- Access & manuals (R45) -------------------------------------------------------------------------
 export function Access() {
-  const S = useStore(); const nav = useNavigate(); const [titles, setTitles] = useState<Record<string, string>>({})
+  const S = useStore(); const nav = useNavigate(); const [titles, setTitles] = useState<Record<string, string>>({}); const [cat, setCat] = useState<CatalogueManual[]>([])
+  useEffect(() => { social.catalogue().then(setCat).catch(() => {}) }, [])
   useEffect(() => { Promise.all((['AD2627', 'EN2627'] as ManualCode[]).map(c => loadManual(c))).then(ms => setTitles(Object.fromEntries(ms.map(m => [m.code, `${m.short} · ${m.lessons.length} lessons · ${m.bible}`])))) }, [])
   return <div className="page col gap16" style={{ maxWidth: 560 }}>
     <BackBar title="Access & manuals" onBack={() => nav('/you')} />
@@ -174,6 +177,9 @@ export function Access() {
     {(['AD2627', 'EN2627'] as ManualCode[]).map(c => <div key={c} className="card row"><span className="spine" style={{ background: c === 'AD2627' ? '#7041D9' : '#FFAA72' }}><Icon n="book" /></span>
       <div className="grow"><b>{c === 'AD2627' ? 'Adult 2026–2027' : 'YAYA 2026–2027'}</b><div className="tiny muted">{titles[c] ?? c}</div><span className="chip ok mt8">Available</span></div>
       {S.manual === c ? <span className="chip">In use</span> : <button className="btn sec xs" onClick={() => S.set({ manual: c })}>Switch</button>}</div>)}
+    {cat.filter(c => c.code !== 'AD2627' && c.code !== 'EN2627').map(c => <div key={c.code} className="card row" style={{ opacity: .8 }}><span className="spine" style={{ background: 'var(--rh-line)' }}><Icon n={c.status === 'retired' ? 'history' : 'lock'} /></span>
+      <div className="grow"><b>{c.title}</b><div className="tiny muted">{c.status === 'retired' ? `Retired ${c.retiredAt ? new Date(c.retiredAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : ''} · read-only; your history and exports are kept` : c.status === 'licensed' ? 'Licensed to organisations · ask your coordinator for access' : 'Coming soon'}</div>
+        <span className={`chip mt8 ${c.status === 'retired' ? 'plain' : 'str'}`}>{c.status === 'retired' ? 'Retired' : c.status === 'licensed' ? 'Locked · licensed' : 'Draft'}</span></div></div>)}
     <p className="hint"><Icon n="info" />Both manuals are open to everyone on this device. Publisher permission is recorded. Organisation-provided and retired manuals appear here with who grants them. Joining a circle never grants manual access.</p>
   </div>
 }
@@ -183,4 +189,50 @@ function SyncCard() {
   if (!account) return <div className="card col gap8"><div className="row between"><b>Saved on this device</b><span className="chip ok"><Icon n="check" />Saved</span></div><p className="tiny muted">Sign in from You to keep your progress on every device.</p></div>
   return <div className="card col gap8"><div className="row between"><b>Up to date</b><button className="btn xs" disabled={busy || !navigator.onLine} onClick={async () => { setBusy(true); await syncNow(); setBusy(false) }}>{navigator.onLine ? 'Retry sync' : 'Offline'}</button></div>
     <p className="tiny muted">Saved on this device · last synced {new Date(account.lastSync).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}{isDemo ? ' · demo server' : ''}</p></div>
+}
+
+// ---- Privacy and safety (9.14) ----------------------------------------------------------------------------
+export function Privacy() {
+  const S = useStore(); const nav = useNavigate(); const p = S.prefs; const [guardian, setGuardian] = useState(''); const [msg, setMsg] = useState('')
+  const set = (x: Partial<typeof p>) => { const n = { ...p, ...x }; S.set({ prefs: n }); if (S.account) social.set_safety({ birthYear: n.birthYear, guardian: n.guardian, dmFrom: n.dmFrom, visibility: n.visibility }).catch(() => {}) }
+  const age = p.birthYear ? new Date().getFullYear() - p.birthYear : null, minor = age === null || age < 18
+  return <div className="page col gap16" style={{ maxWidth: 560 }}>
+    <BackBar title="Privacy and safety" onBack={() => nav('/you')} />
+    <p className="eyebrow">Age</p>
+    <div className="card col gap8"><label className="small" htmlFor="by">Year of birth</label><input id="by" className="field" type="number" min={1920} max={new Date().getFullYear()} value={p.birthYear ?? ''} onChange={e => set({ birthYear: e.target.value ? +e.target.value : undefined })} placeholder="e.g. 2009" />
+      <p className="tiny muted">{age === null ? 'Not given: Rhemlo treats you as under 18 until you add it.' : minor ? 'Under 18: messages only with connections, after a guardian agrees.' : 'Adult safeguards apply.'} Only the year is stored, never shown to others.</p></div>
+    {minor && <div className="card col gap8"><b className="small">Guardian consent</b>{p.guardian ? <span className="chip ok"><Icon n="check" />Consent recorded</span> : <>
+      <input className="field" type="email" value={guardian} onChange={e => setGuardian(e.target.value)} placeholder="Parent or guardian email" aria-label="Guardian email" />
+      <button className="btn sec" disabled={!/.+@.+\..+/.test(guardian) || !S.account} onClick={async () => { await social.request_consent(guardian); setMsg('Request sent. Messages open once they agree.') }}>Ask for consent</button>
+      {!S.account && <p className="tiny muted">Sign in first.</p>}{msg && <p className="small" role="status">{msg}</p>}</>}</div>}
+    <p className="eyebrow">Messages</p>
+    <div className="card col gap8"><b className="small">Who can message you</b><div className="seg">{(['everyone', 'connections', 'nobody'] as const).map(k => <button key={k} className={p.dmFrom === k ? 'on' : ''} disabled={minor && k === 'everyone'} onClick={() => set({ dmFrom: k })}>{k[0].toUpperCase() + k.slice(1)}</button>)}</div>
+      <p className="tiny muted">Blocking, reporting and deleting your own messages are always available. At most 20 messages a minute, 2,000 characters each.</p></div>
+    <p className="eyebrow">Visibility</p>
+    <div className="card list" style={{ padding: '2px 16px' }}>
+      <div className="li"><div className="grow"><b className="small">Hidden learner</b><div className="tiny muted">Leaderboards show “Hidden learner” instead of your handle. You still rank.</div></div><Toggle on={p.visibility === 'hidden'} onChange={v => set({ visibility: v ? 'hidden' : 'public' })} label="Hidden learner" /></div>
+      <div className="li"><div className="grow"><b className="small">Private profile</b><div className="tiny muted">Friends do not see your milestones in their feed.</div></div><Toggle on={p.keepPrivate} onChange={v => set({ keepPrivate: v })} label="Private profile" /></div></div>
+    <p className="hint"><Icon n="shield" />For an urgent safety concern, tell a trusted adult or your church coordinator straight away.</p>
+  </div>
+}
+
+function PasskeyCard({ email }: { email: string }) {
+  const [keys, setKeys] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem('rhemlo.passkeys') ?? '{}') } catch { return {} } }); const [err, setErr] = useState('')
+  const has = Object.values(keys).includes(email)
+  const add = async () => { setErr(''); try {
+    const c = await navigator.credentials.create({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rp: { name: 'Rhemlo' }, user: { id: new TextEncoder().encode(email), name: email, displayName: email }, pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }], authenticatorSelection: { userVerification: 'preferred', residentKey: 'preferred' }, timeout: 60000 } }) as PublicKeyCredential
+    const n = { ...keys, [btoa(String.fromCharCode(...new Uint8Array(c.rawId)))]: email }; localStorage.setItem('rhemlo.passkeys', JSON.stringify(n)); setKeys(n)
+  } catch (x) { setErr((x as Error).name === 'NotAllowedError' ? 'Cancelled.' : 'This device could not create a passkey.') } }
+  return <div className="card row"><span className="tile"><Icon n="key" /></span><div className="grow"><b className="small">Passkey</b><div className="tiny muted">{has ? 'Sign in on this device with your fingerprint, face or screen lock.' : 'Sign in without a password on this device.'}{err ? ` ${err}` : ''}</div></div>{has ? <span className="chip ok">On</span> : <button className="btn sec xs" onClick={add}>Add passkey</button>}</div>
+}
+
+function InstallCard() {
+  type BIP = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
+  const get = () => (window as unknown as { rhemloInstall?: BIP }).rhemloInstall
+  const [ev, setEv] = useState<BIP | undefined>(get); const [done, setDone] = useState(matchMedia('(display-mode: standalone)').matches)
+  useEffect(() => { const f = () => setEv(get()); addEventListener('rhemlo-installable', f); const g = () => setDone(true); addEventListener('appinstalled', g); return () => { removeEventListener('rhemlo-installable', f); removeEventListener('appinstalled', g) } }, [])
+  if (done) return <div className="card row"><span className="tile green"><Icon n="check" /></span><div className="grow"><b className="small">Installed</b><div className="tiny muted">Rhemlo opens from your home screen and works offline.</div></div></div>
+  const ios = /iphone|ipad/i.test(navigator.userAgent)
+  return <div className="card row"><span className="tile"><Icon n="download" /></span><div className="grow"><b className="small">Install Rhemlo</b><div className="tiny muted">{ev ? 'Add it to your home screen or desktop. Opens full screen and works offline.' : ios ? 'In Safari, tap Share, then Add to Home Screen.' : 'Use your browser menu: Install app or Add to Home Screen.'}</div></div>
+    {ev && <button className="btn xs" onClick={async () => { await ev.prompt(); const r = await ev.userChoice; if (r.outcome === 'accepted') setDone(true); setEv(undefined) }}>Install</button>}</div>
 }

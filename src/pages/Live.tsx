@@ -9,7 +9,7 @@ import type { Item, ManualCode } from '@/lib/types'
 import type { PublicUser } from '@/lib/backend'
 import { Icon, asset } from '@/ui/bits'
 
-export interface LiveQ { u: string; prompt: string; text?: string; options: string[]; answer: string }
+export interface LiveQ { u: string; prompt: string; text?: string; options: string[]; answer: string; lesson?: string; ref?: string; typed?: boolean }
 /** Choice questions from the given lessons, the same for everyone with the same seed. */
 export async function liveQuestions(manual: ManualCode, lessons: string[], n: number, seed: string): Promise<LiveQ[]> {
   const lists = await Promise.all(lessons.map(l => loadItems(manual, l)))
@@ -18,8 +18,17 @@ export async function liveQuestions(manual: ManualCode, lessons: string[], n: nu
   return [...bySib.values()].slice(0, n).map(i => {
     const lesson = i.p.input.kind === 'lesson'
     const options = shuffleSeed([i.a.text!, ...i.d.slice(0, 3)], i.u + seed).map(o => lesson ? niceTitle(o) : o)
-    return { u: i.u, prompt: i.p.instruction, text: i.p.text?.replace(/____/g, '_____') ?? i.p.ref, options, answer: lesson ? niceTitle(i.a.text!) : i.a.text! }
+    return { u: i.u, prompt: i.p.instruction, text: i.p.text?.replace(/____/g, '_____') ?? i.p.ref, options, answer: lesson ? niceTitle(i.a.text!) : i.a.text!, lesson: i.s.match(/:(L\d+)\./)?.[1], ref: i.p.ref }
   })
+}
+/** Host-room questions: choice, typed or a mix. Typed ones use short answers only, so a room stays playable. */
+export async function roomQuestions(manual: ManualCode, lessons: string[], n: number, seed: string, formats: ('mcq' | 'typed')[]): Promise<LiveQ[]> {
+  const mcq = formats.includes('mcq') ? await liveQuestions(manual, lessons, n, seed) : []
+  if (!formats.includes('typed')) return mcq
+  const pool = (await Promise.all(lessons.map(l => loadItems(manual, l)))).flat().filter((i: Item) => i.a.text && i.a.text.length <= 40 && i.f.includes('typed') && ['Q01', 'Q02', 'Q10', 'Q12', 'Q30', 'Q29'].includes(i.t))
+  const typed = shuffleSeed(pool, seed + 't').slice(0, n).map(i => ({ u: i.u, prompt: i.p.instruction, text: i.p.text ?? i.p.ref, options: [], answer: i.p.input.kind === 'lesson' ? niceTitle(i.a.text!) : i.a.text!, lesson: i.s.match(/:(L\d+)\./)?.[1], ref: i.p.ref, typed: true }))
+  if (!mcq.length) return typed
+  return shuffleSeed([...mcq.slice(0, Math.ceil(n / 2)), ...typed.slice(0, Math.floor(n / 2))], seed + 'mix').slice(0, n)
 }
 export const same = (a: string, b: string) => normText(a) === normText(b)
 const TILE = ['#7041D9', '#FFAA72', '#8DBF2F', '#E25C8B']

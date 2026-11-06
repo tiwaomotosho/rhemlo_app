@@ -4,7 +4,7 @@ import { DEFAULT_PREFS, useStore, type Goal as GoalT, type Pace as PaceT } from 
 import type { ManualCode } from '@/lib/types'
 import { Glim, Icon, Sheet, Toggle, asset } from '@/ui/bits'
 import { api, isDemo } from '@/lib/backend'
-import { signIn, signUp, syncNow } from '@/lib/sync'
+import { signIn, signUp, syncNow, redeemLink } from '@/lib/sync'
 
 // The answers given during onboarding live here until the last step commits them.
 type Draft = { goal: GoalT; name: string; handle: string; manual: ManualCode; size: number; keepPrivate: boolean; leagues: boolean; account?: boolean }
@@ -108,8 +108,30 @@ export function SignInSheet({ onClose }: { onClose: () => void }) {
       {api.demoAccounts().map(a => <button key={a.email} type="button" className="li row" style={{ border: 0, background: 'transparent', textAlign: 'left', color: 'inherit', padding: '6px 0' }} disabled={busy} onClick={() => go(a.email, a.password)}>
         <span className="grow"><b className="small">{a.email}</b><span className="tiny muted" style={{ display: 'block' }}>{a.who}</span></span><span className="btn sec xs">Use</span></button>)}
       <p className="tiny muted">Password for all demo accounts: <b>{api.demoAccounts()[0]?.password}</b>. Demo people and their activity are simulated.</p></div>}
+    <PasswordlessRow email={email} onDone={() => nav('/journey', { replace: true })} onErr={setErr} />
     <button type="button" className="btn link" onClick={() => setRestore(true)}>Restore a backup file instead</button>
   </form></Sheet>
+}
+
+/** Magic link (demo: an on-screen outbox stands in for email) and passkey sign-in (WebAuthn, this device). */
+function PasswordlessRow({ email, onDone, onErr }: { email: string; onDone: () => void; onErr: (m: string) => void }) {
+  const [sent, setSent] = useState<{ email: string; token: string }[] | null>(null); const [busy, setBusy] = useState(false)
+  const keys = (() => { try { return JSON.parse(localStorage.getItem('rhemlo.passkeys') ?? '{}') as Record<string, string> } catch { return {} } })()
+  const link = async () => { if (!/.+@.+\..+/.test(email)) { onErr('Enter your email first.'); return } setBusy(true); onErr('')
+    try { await api.sendLink(email); setSent(isDemo ? (JSON.parse(localStorage.getItem('rhemlo.demo.magic') ?? '[]') as { email: string; token: string }[]).filter(b => b.email === email.trim().toLowerCase()).slice(0, 1) : []) } catch (x) { onErr((x as Error).message) } finally { setBusy(false) } }
+  const passkey = async () => {
+    onErr(''); if (!window.PublicKeyCredential) { onErr('This browser does not support passkeys.'); return }
+    const ids = Object.keys(keys); if (!ids.length) { onErr('No passkey on this device yet. Sign in once, then add one in You.'); return }
+    try { const c = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), allowCredentials: ids.map(id => ({ id: Uint8Array.from(atob(id), ch => ch.charCodeAt(0)), type: 'public-key' as const })), userVerification: 'preferred', timeout: 60000 } }) as PublicKeyCredential | null
+      const who = c && keys[btoa(String.fromCharCode(...new Uint8Array(c.rawId)))]; if (!who) throw new Error('That passkey is not linked to an account here.')
+      await api.sendLink(who); const t = (JSON.parse(localStorage.getItem('rhemlo.demo.magic') ?? '[]') as { email: string; token: string }[]).find(b => b.email === who)!; await redeemLink(t.token); onDone()
+    } catch (x) { onErr((x as Error).name === 'NotAllowedError' ? 'Passkey sign-in was cancelled.' : (x as Error).message) }
+  }
+  return <div className="col gap8">
+    <div className="row gap8"><button type="button" className="btn sec grow" disabled={busy} onClick={link}><Icon n="send" className="s" />Email me a link</button>{isDemo && <button type="button" className="btn sec grow" onClick={passkey}><Icon n="key" className="s" />Use a passkey</button>}</div>
+    {sent && (isDemo ? sent.map(s => <div key={s.token} className="card lav col gap8"><b className="small">Demo outbox · to {s.email}</b><p className="tiny muted">“Tap to sign in to Rhemlo. This link works once and expires in 15 minutes.”</p>
+      <button type="button" className="btn xs" onClick={async () => { try { await redeemLink(s.token); onDone() } catch (x) { onErr((x as Error).message) } }}>Open sign-in link</button></div>) : <p className="small" role="status">Check your email for a sign-in link.</p>)}
+  </div>
 }
 
 export function Account() {

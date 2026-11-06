@@ -147,6 +147,7 @@ function JourneyInner({ m }: { m: Manual }) {
       <aside className="jy-ctx" aria-label="Chapter and today">
         <div className="tabletpanel"><ChapterPanel m={m} l={panel} J={J} /></div>
         <div className="deskrail col gap16">
+          {daysUntil(q1.date) <= 14 && daysUntil(q1.date) >= 0 && <div className="card col gap8" style={{ background: 'var(--rh-apricot-bg)', borderColor: 'transparent' }}><p className="eyebrow" style={{ color: 'var(--rh-apricot-deep)' }}>Consolidation · {daysUntil(q1.date)} days to {q1.name}</p><b className="small">Today’s plan adds no new lessons. Reviews hold at 95% and a mock each week.</b><Link to="/practice/mock" className="btn sec sm">Take this week’s mock</Link></div>}
           <TodayCard catchUp={catchUp} overdue={overdueN} onGo={() => start(todaySpec)} />
           <div className="card col gap8"><div className="row between"><p className="eyebrow">Today's quests</p><span className="chip str"><Icon n="sprout" />{doneQ} of 3</span></div>
             {J.quests.map(q => <button key={q.id} className="li row" style={{ border: 0, background: 'transparent', padding: '6px 0', textAlign: 'left', color: 'inherit' }} disabled={!q.spec} onClick={() => q.spec && start(q.spec)}>

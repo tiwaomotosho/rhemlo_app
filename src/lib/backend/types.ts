@@ -1,6 +1,6 @@
 // The contract every backend implements. Method names follow the RPCs in the bundle's
 // db/migrations (0003–0006), so the live adapter maps one-to-one onto Supabase.
-export type Role = 'learner' | 'coach' | 'steward'
+export type Role = 'learner' | 'coach' | 'steward' | 'admin'
 export type Tier = 'bronze' | 'silver' | 'gold' | 'jade' | 'amethyst' | 'lantern'
 export const TIERS: Tier[] = ['bronze', 'silver', 'gold', 'jade', 'amethyst', 'lantern']
 
@@ -31,6 +31,10 @@ export interface Backend {
   signUp(email: string, password: string, handle: string, name: string): Promise<Session>
   signIn(email: string, password: string): Promise<Session>
   signOut(): Promise<void>
+  /** Passwordless: email a one-time sign-in link (demo: it lands in the on-screen demo outbox). */
+  sendLink(email: string): Promise<void>
+  /** Finish a link or passkey sign-in. */
+  redeemLink(token: string): Promise<Session>
   demoAccounts(): { email: string; password: string; who: string }[]
   // sync (cards, sittings, settings)
   pushSnapshot(data: Record<string, unknown>): Promise<number>

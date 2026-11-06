@@ -171,7 +171,8 @@ export function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold, opti
     {long ? <div><label className="lbl" htmlFor="ans">{lab}</label><div className={`fwrap ${locked ? (grade?.correct ? 'ok' : 'bad') : ''}`}>
       <textarea id="ans" ref={e => { refs.current[0] = e }} className="field" rows={4} value={a.text} readOnly={locked} {...OFF} onChange={e => setA(x => ({ ...x, text: e.target.value }))} /></div>
       <div className="row between tiny muted mt8"><span>{words(a.text)} of {exp} words</span><span>{item.t === 'Q04' ? 'Long typing: memory verses only' : item.t === 'Q22' ? '≤ 30-word sentences only' : ''}</span></div></div>
-      : <FieldBox id="ans" label={lab} value={a.text} state={locked ? grade?.correct : undefined} inputRef={e => { refs.current[0] = e }} enterKeyHint="done" onChange={v => setA(x => ({ ...x, text: v }))} />}
+      : <><FieldBox id="ans" label={lab} value={a.text} state={locked ? grade?.correct : undefined} inputRef={e => { refs.current[0] = e }} enterKeyHint="done" onChange={v => setA(x => ({ ...x, text: v }))} />
+        {!locked && <Voice onText={t => setA(x => ({ ...x, text: t }))} />}</>}
     {note ?? <p className="hint"><Icon n="spell" />{STANDING}</p>}</div>
 }
 
@@ -443,4 +444,15 @@ export function Done() {
       </div>
     </div>
   </div>
+}
+
+/** Optional voice answer for short answers (quick-fire): what you say is typed into the box for you to check before submitting. */
+function Voice({ onText }: { onText: (t: string) => void }) {
+  type SR = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void; onend: () => void; onerror: () => void }
+  const Ctor = (window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR }).SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: new () => SR }).webkitSpeechRecognition
+  const [on, setOn] = useState(false); const r = useRef<SR | null>(null)
+  if (!Ctor) return null
+  const go = () => { if (on) { r.current?.stop(); return } const x = new Ctor(); x.lang = 'en-GB'; x.interimResults = false; x.maxAlternatives = 1
+    x.onresult = e => onText(e.results[0][0].transcript.replace(/[.?!]$/, '')); x.onend = () => setOn(false); x.onerror = () => setOn(false); r.current = x; setOn(true); x.start() }
+  return <button type="button" className="btn link xs" style={{ alignSelf: 'flex-start' }} onClick={go} aria-pressed={on}><Icon n="speaker" className="s" />{on ? 'Listening… tap to stop' : 'Answer by voice'}<span className="tiny faint"> · check the spelling before you submit</span></button>
 }

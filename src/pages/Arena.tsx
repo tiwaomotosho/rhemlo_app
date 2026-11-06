@@ -55,6 +55,11 @@ export function Arena() {
       : <NeedAccount what="weekly leagues" />}
     <Link to="/arena/quiz-night" className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n="radio" /></span><div className="grow"><b>Quiz Night · Friday 7pm</b><div className="tiny muted">Grace Youth Circle · room LAMP</div></div><span className="btn sec xs">Join</span></Link>
     <Link to="/arena/match" className="card row" style={{ color: 'inherit' }}><span className="tile"><Icon n="people" /></span><div className="grow"><b>Friendly match</b><div className="tiny muted">Same manual · no league points</div></div><span className="btn sec xs">Invite</span></Link>
+    <div className="grid2">
+      <Link to="/arena/boards" className="card row" style={{ color: 'inherit' }}><span className="tile"><Icon n="trophy" /></span><div className="grow"><b>Leaderboards</b><div className="tiny muted">Week · season · all time · friends · parish</div></div></Link>
+      <Link to="/arena/leagues" className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n="flag" /></span><div className="grow"><b>Private leagues</b><div className="tiny muted">Your own table, shared by invite link</div></div></Link>
+      <Link to="/arena/host" className="card row" style={{ color: 'inherit' }}><span className="tile green"><Icon n="radio" /></span><div className="grow"><b>Host a room</b><div className="tiny muted">Up to 100 players · choice or typed</div></div></Link>
+      <Link to="/inbox" className="card row" style={{ color: 'inherit' }}><span className="tile"><Icon n="inbox" /></span><div className="grow"><b>Inbox and messages</b><div className="tiny muted">Notices, coach notes, direct messages</div></div></Link></div>
     <Link to="/arena/rules" className="btn link">League rules</Link>
     <DemoNote />
   </div>

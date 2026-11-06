@@ -31,12 +31,14 @@ const DEMO: DemoUser[] = [
   ...NAMES.map(([handle, name, skill, activity], i) => ({ id: `d-${handle}`, handle, name, cw: CWS[i % 6], tier: 'silver' as Tier, role: 'learner' as const, demo: true, skill, activity })),
   { id: 'd-bro.femi', handle: 'bro.femi', name: 'Bro. Femi', cw: 'classic', tier: 'gold', role: 'coach', demo: true, skill: .9, activity: .5 },
   { id: 'd-sis.ada', handle: 'sis.ada', name: 'Sis. Ada', cw: 'meadow', tier: 'gold', role: 'steward', demo: true, skill: .9, activity: .3 },
+  { id: 'd-admin.ola', handle: 'admin.ola', name: 'Pastor Ola', cw: 'midnight', tier: 'gold', role: 'admin', demo: true, skill: .85, activity: .2 },
   { id: 'd-tiwa_lamp', handle: 'tiwa_lamp', name: 'Tiwa', cw: 'classic', tier: 'silver', role: 'learner', demo: true, skill: .8, activity: .8 },
 ]
 const ACCOUNTS = [
   { email: 'tiwa@demo.rhemlo.app', userId: 'd-tiwa_lamp', who: 'Learner · Silver league, friends, co-op and a circle' },
   { email: 'femi@demo.rhemlo.app', userId: 'd-bro.femi', who: 'Coach · Grace Youth Circle, assignments, Quiz Night host' },
-  { email: 'ada@demo.rhemlo.app', userId: 'd-sis.ada', who: 'Content steward · review queue and reports' },
+  { email: 'ada@demo.rhemlo.app', userId: 'd-sis.ada', who: 'Content steward · verification, anomalies and reports' },
+  { email: 'ola@demo.rhemlo.app', userId: 'd-admin.ola', who: 'Admin · manuals, seasons, organisations, consents and moderation' },
 ]
 const pub = ({ skill: _s, activity: _a, ...u }: DemoUser): PublicUser => u
 
@@ -107,6 +109,19 @@ export const demo: Backend = {
     s.session = { userId: acc.userId, email, user: pub(user(acc.userId)), token: crypto.randomUUID() }; save(); return s.session
   },
   async signOut() { load().session = null; save() },
+  async sendLink(email) {
+    await wait(400); const s = load(); email = email.trim().toLowerCase()
+    if (!ACCOUNTS.some(a => a.email === email) && !s.accounts.some(a => a.email === email)) throw new Error('No account uses that email. Create one first.')
+    const box = JSON.parse(localStorage.getItem('rhemlo.demo.magic') ?? '[]') as { email: string; token: string; at: number }[]
+    box.unshift({ email, token: crypto.randomUUID(), at: Date.now() }); localStorage.setItem('rhemlo.demo.magic', JSON.stringify(box.slice(0, 10)))
+  },
+  async redeemLink(token) {
+    await wait(); const s = load(); const box = JSON.parse(localStorage.getItem('rhemlo.demo.magic') ?? '[]') as { email: string; token: string; at: number }[]
+    const hit = box.find(b => b.token === token && Date.now() - b.at < 15 * 60000); if (!hit) throw new Error('That sign-in link has expired. Ask for a new one.')
+    localStorage.setItem('rhemlo.demo.magic', JSON.stringify(box.filter(b => b !== hit)))
+    const d = ACCOUNTS.find(a => a.email === hit.email), acc = s.accounts.find(a => a.email === hit.email), uid = d?.userId ?? acc!.userId
+    s.session = { userId: uid, email: hit.email, user: pub(user(uid)), token: crypto.randomUUID() }; save(); return s.session
+  },
   async pushSnapshot(data) { const s = load(), u = me(); const at = Date.now(); s.snapshots[u.userId] = { at, data }; save(); await wait(150); return at },
   async pullSnapshot() { await wait(); return load().snapshots[me().userId] ?? null },
 
@@ -225,4 +240,7 @@ function groupView(id: string, uid: string): Circle {
 }
 export const demoPeople = () => DEMO.filter(d => d.role === 'learner').map(pub)
 export const demoSkill = (id: string) => DEMO.find(d => d.id === id)?.skill ?? .7
-export { rnd as demoRnd, weekStart, utcDay }
+export const demoUserById = (id: string): PublicUser | undefined => { const u = allUsers().find(x => x.id === id); return u ? pub(u) : undefined }
+export const demoAllPeople = () => allUsers().map(pub)
+export const demoSession = () => load().session
+export { rnd as demoRnd, weekStart, utcDay, weekPoints as demoWeekPoints, DEMO as DEMO_USERS }

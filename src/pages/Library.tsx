@@ -5,10 +5,11 @@ import { niceTitle } from '@/lib/engine'
 import { typedRefs } from '@/lib/grade'
 import { lessonStats, useStore } from '@/lib/store'
 import type { Card, Lesson, Manual, ManualCode } from '@/lib/types'
-import { Icon, Loading, Sheet, useManualData } from '@/ui/bits'
+import { BackBar, Icon, Loading, Sheet, useManualData } from '@/ui/bits'
 import { useManualSwitch } from '@/ui/ManualSwitch'
 import { api } from '@/lib/backend'
 import { useStart, verseRef } from './Journey'
+import { lessonLevel } from '@/lib/mastery'
 
 export function masteryChip(cards: Record<string, Card>, m: Manual, id: string): [string, string] {
   const s = lessonStats(cards, m, id)
@@ -93,18 +94,18 @@ function ManualCard() {
 }
 
 export function Library() {
-  const m = useManualData(); const [q, setQ] = useState(''); const [quarter, setQuarter] = useState(1); const { cards } = useStore()
+  const m = useManualData(); const [q, setQ] = useState(''); const [quarter, setQuarter] = useState(1); const { cards, log, checks, readings, learn } = useStore()
   if (!m) return <Loading />
   const f = q.trim().toLowerCase(), range = m.groups[String(quarter)]
   const rows = m.lessons.filter(l => f ? `${l.n} ${l.title} ${l.mv} ${l.bp} ${l.outline.join(' ')} ${verseRef(l)}`.toLowerCase().includes(f) : l.n >= range[0] && l.n <= range[1])
   return <div className="page col gap16" style={{ maxWidth: 680 }}>
-    <div className="pagehead"><h1>Library</h1><Icon n="search" className="faint" /></div>
+    <div className="pagehead"><h1>Library</h1><Link to="/library/index" className="btn sec sm"><Icon n="listn" className="s" />Index</Link></div>
     <ManualCard />
     <div className="fwrap"><Icon n="search" className="s" /><input className="field" style={{ paddingLeft: 42 }} type="search" placeholder="Search lessons, verses, references" aria-label="Search the manual" value={q} onChange={e => setQ(e.target.value)} autoComplete="off" spellCheck={false} /></div>
     {!f && <div className="tabs" role="tablist">{Object.keys(m.groups).map(k => <button key={k} role="tab" aria-selected={quarter === +k} className={quarter === +k ? 'on' : ''} onClick={() => setQuarter(+k)}>Q{k}</button>)}</div>}
     <div className="card list" style={{ padding: '2px 14px' }}>{rows.map(l => { const [t, c] = masteryChip(cards, m, l.id); return <Link key={l.id} to={`/library/${l.id}`} className="li">
       <span className="tile" style={{ background: c === 'ok' || c === 'str' ? 'var(--rh-pistachio-bg)' : 'var(--rh-raised)', color: c === 'ok' || c === 'str' ? 'var(--rh-pistachio-deep)' : 'var(--rh-action)' }}><b className="disp">{l.n}</b></span>
-      <span className="grow"><b>{niceTitle(l.title)}</b><span className="row gap8 mt8"><Approved /><span className={`chip ${c}`}>{t}</span></span></span><Icon n="chev" className="faint" /></Link> })}
+      <span className="grow"><b>{niceTitle(l.title)}</b><span className="row gap8 mt8"><Approved /><span className={`chip ${c}`}>{t}</span>{(() => { const lv = lessonLevel(m, l.id, cards, log, checks, !!readings[`${m.code}|read|${l.id}`], learn[`${m.code}|${l.id}`] ?? []); return lv.level > 0 && <span className={`chip ${lv.mastered ? 'ok' : 'plain'}`} title="Mastery level">{lv.mastered ? 'Mastered' : `L${lv.level} ${lv.name}`}</span> })()}</span></span><Icon n="chev" className="faint" /></Link> })}
       {!rows.length && <p className="muted" style={{ padding: 14 }}>No lessons match “{q}”.</p>}</div>
   </div>
 }
@@ -184,4 +185,36 @@ function ReportForm({ lesson, onClose }: { lesson: string; onClose: () => void }
   return <div className="col"><h2>Report a content error</h2><p className="small muted">Quote what looks wrong and where. A steward checks it against the printed manual.</p>
     <textarea className="field" rows={4} value={txt} onChange={e => setTxt(e.target.value)} aria-label="What looks wrong" />
     <button className="btn block" disabled={!txt.trim()} onClick={() => { try { const r = JSON.parse(localStorage.getItem('rhemlo.reports') ?? '[]'); r.push({ lesson, note: txt, at: Date.now() }); localStorage.setItem('rhemlo.reports', JSON.stringify(r)) } catch { /* */ } if (api.session()) void api.report('content', lesson, 'Content error', txt); setSent(true) }}>Send report</button></div>
+}
+
+// ---- Quarter outline tree (FR-RD-02) and reference index (FR-RD-03) ----------------------------------
+export function RefIndex() {
+  const m = useManualData(); const nav = useNavigate(); const [tab, setTab] = useState<'tree' | 'refs'>('tree'); const [q, setQ] = useState('')
+  const [idx, setIdx] = useState<Map<string, Set<string>> | null>(null); const [open, setOpen] = useState<Record<string, boolean>>({})
+  useEffect(() => {
+    if (!m || tab !== 'refs' || idx) return
+    Promise.all(m.lessons.map(l => loadLesson(m.code, l.id))).then(ls => {
+      const map = new Map<string, Set<string>>()
+      for (const l of ls) for (const s of l.sections) for (const b of s.b) for (const t of [b.x ?? '', ...(b.i ?? [])]) for (const x of t.matchAll(/\(([^()]*?\d+\s*:\s*\d+[^()]*)\)/g))
+        for (const r of typedRefs(x[1])) { const k = r.replace(/\b[a-z]/g, c => c.toUpperCase()); if (!map.has(k)) map.set(k, new Set()); map.get(k)!.add(l.id) }
+      setIdx(map)
+    })
+  }, [m, tab, idx])
+  if (!m) return <Loading />
+  const f = q.trim().toLowerCase()
+  const refs = idx ? [...idx.entries()].filter(([k]) => !f || k.toLowerCase().includes(f)).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })) : []
+  return <div className="page col gap16" style={{ maxWidth: 680 }}>
+    <BackBar title="Manual index" onBack={() => nav('/library')} />
+    <div className="tabs" role="tablist"><button role="tab" aria-selected={tab === 'tree'} className={tab === 'tree' ? 'on' : ''} onClick={() => setTab('tree')}>Outline tree</button><button role="tab" aria-selected={tab === 'refs'} className={tab === 'refs' ? 'on' : ''} onClick={() => setTab('refs')}>Reference index</button></div>
+    {tab === 'tree' ? Object.entries(m.groups).map(([g, r]) => <div key={g} className="card col gap4"><button className="row between" style={{ border: 0, background: 'transparent', color: 'inherit', padding: 0 }} onClick={() => setOpen(o => ({ ...o, [g]: !o[g] }))} aria-expanded={open[g] !== false}><b>Quarter {g} · Lessons {r[0]}–{r[1]}</b><Icon n="chev" style={{ transform: open[g] !== false ? 'rotate(90deg)' : undefined }} /></button>
+      {open[g] !== false && m.lessons.filter(l => l.n >= r[0] && l.n <= r[1]).map(l => <div key={l.id} style={{ paddingLeft: 8, borderLeft: '2px solid var(--rh-line)' }} className="mt8">
+        <Link to={`/library/${l.id}`} className="small b" style={{ color: 'inherit' }}>{l.n}. {niceTitle(l.title)}</Link>
+        <ol className="tiny muted" style={{ margin: '2px 0 0', paddingLeft: 22 }}>{l.outline.map((o, i) => <li key={i}>{o}</li>)}</ol></div>)}</div>)
+      : <>
+        <div className="fwrap"><Icon n="search" className="s" /><input className="field" style={{ paddingLeft: 42 }} type="search" placeholder="Book or reference, e.g. Romans 8" aria-label="Search references" value={q} onChange={e => setQ(e.target.value)} /></div>
+        {!idx ? <div className="skel" style={{ height: 240 }} /> : <div className="card list" style={{ padding: '2px 14px' }}>{refs.slice(0, 300).map(([k, ls]) => <div key={k} className="li"><b className="small grow">{k}</b>
+          <span className="row wrap gap4">{[...ls].map(id => <Link key={id} to={`/library/${id}`} className="chip">L{+id.slice(1)}</Link>)}</span></div>)}
+          {refs.length > 300 && <p className="tiny muted" style={{ padding: 8 }}>{refs.length - 300} more · narrow the search</p>}{!refs.length && <p className="muted" style={{ padding: 14 }}>No reference matches “{q}”.</p>}</div>}
+        <p className="tiny muted">Every reference the manual prints, with the lessons that cite it. Only what the manual prints is ever tested.</p></>}
+  </div>
 }

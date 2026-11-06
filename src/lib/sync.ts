@@ -5,9 +5,44 @@ import { loadItems, loadManual } from './data'
 import { day, snapshotOf, useStore } from './store'
 import type { Card, ManualCode, SittingRecord } from './types'
 
+/** Conflict-safe merge (FR-AC-04): the answer log is a union by time, each card keeps its latest review, nothing is ever dropped. */
+export function merge(local: Record<string, unknown>, remote: Record<string, unknown>) {
+  const out: Record<string, unknown> = { ...remote, ...local }
+  const L = local as Record<string, any>, R = remote as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const cards: Record<string, Card> = { ...(R.cards ?? {}) }; for (const [k, c] of Object.entries((L.cards ?? {}) as Record<string, Card>)) if (!cards[k] || (c.last ?? 0) >= (cards[k].last ?? 0)) cards[k] = c
+  const byKey = <T,>(a: T[] = [], b: T[] = [], key: (x: T) => string) => { const m = new Map<string, T>(); for (const x of [...a, ...b]) m.set(key(x), x); return [...m.values()] }
+  out.cards = cards
+  out.log = byKey(R.log, L.log, (e: { at: number; s: string; u: string }) => `${e.at}|${e.u}`).sort((a, b) => a.at - b.at).slice(-6000)
+  out.history = byKey(R.history, L.history, (h: { id: string; at: number }) => h.id).sort((a, b) => b.at - a.at)
+  out.mocks = byKey(R.mocks, L.mocks, (h: { id: string; at: number }) => h.id).sort((a, b) => a.at - b.at)
+  out.activeDays = [...new Set([...(R.activeDays ?? []), ...(L.activeDays ?? [])])].sort()
+  out.done = { ...(R.done ?? {}), ...(L.done ?? {}) }; out.readings = { ...(R.readings ?? {}), ...(L.readings ?? {}) }; out.ladder = { ...(R.ladder ?? {}), ...(L.ladder ?? {}) }
+  const checks: Record<string, { at: number; score: number }[]> = { ...(R.checks ?? {}) }; for (const [k, v] of Object.entries((L.checks ?? {}) as typeof checks)) checks[k] = byKey(checks[k], v, x => String(x.at)).sort((a, b) => a.at - b.at)
+  out.checks = checks; out.points = Math.max(R.points ?? 0, L.points ?? 0)
+  return out
+}
+let syncing = false
 export async function syncNow() {
-  const S = useStore.getState(); if (!S.account || !api.session()) return
-  try { const at = await api.pushSnapshot(snapshotOf()); useStore.getState().set({ account: { ...S.account, lastSync: at } }) } catch { /* stays saved on this device; retried after the next sitting */ }
+  const S = useStore.getState(); if (!S.account || !api.session() || syncing) return
+  if (!navigator.onLine) { S.set({ syncPending: true } as never); return }
+  syncing = true
+  try {
+    const remote = await api.pullSnapshot(); const local = snapshotOf()
+    const merged = remote && remote.at > (S.account.lastSync ?? 0) ? merge(local, remote.data) : local
+    if (merged !== local) useStore.getState().set(merged as never)
+    const at = await api.pushSnapshot(merged); useStore.getState().set({ account: { ...useStore.getState().account!, lastSync: at }, syncPending: false } as never)
+  } catch { useStore.getState().set({ syncPending: true } as never) /* stays saved on this device; retried when back online */ } finally { syncing = false }
+}
+/** Offline queue: anything saved while offline is pushed as soon as the connection returns. */
+export function startSync() {
+  const go = () => { if (navigator.onLine) syncNow() }
+  addEventListener('online', go); const t = setInterval(() => { if ((useStore.getState() as unknown as { syncPending?: boolean }).syncPending) go() }, 60000)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') go() })
+  return () => { removeEventListener('online', go); clearInterval(t) }
+}
+export async function redeemLink(token: string) {
+  const sess = await api.redeemLink(token); const snap = await api.pullSnapshot()
+  adopt(sess.email, snap?.data ? merge(snapshotOf(), snap.data) : null); await syncNow()
 }
 function adopt(email: string, data: Record<string, unknown> | null, onboard = true) {
   const sess = api.session()!; const S = useStore.getState()

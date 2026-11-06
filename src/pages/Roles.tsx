@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, isDemo, type Assignment, type Circle, type PublicUser, type Report } from '@/lib/backend'
+import { api, isDemo, social, type Assignment, type Circle, type MockSet, type PublicUser, type Report, type Submission } from '@/lib/backend'
 import { loadItems } from '@/lib/data'
 import { FOCUS, KIND_LABEL, niceTitle } from '@/lib/engine'
 import { useStore } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { GlimHead, Icon, Loading, StateCard, asset, useManualData } from '@/ui/bits'
 import { QuizNightPlay } from './Arena'
+import { Verify } from './Admin'
 
 const DemoNote = () => isDemo ? <p className="tiny faint center"><Icon n="info" className="s" style={{ verticalAlign: 'middle' }} /> Demo server: learners and their numbers are simulated.</p> : null
 function Gate({ role, children }: { role: string; children: React.ReactNode }) {
@@ -46,9 +47,28 @@ function CoachInner() {
             <div className="grow"><label className="lbl" htmlFor="ad">Due</label><input id="ad" className="field" type="date" value={due} onChange={e => setDue(e.target.value)} /></div></div>
           <button className="btn block" disabled={!lessons.length} onClick={assign}>Assign to circle</button>
           {saved && <p className="small" role="status" style={{ color: 'var(--rh-correct)' }}>Assigned “{saved.title}”. Members see it on their circle page.</p>}</div>
+        <CoachMocks group={g.id} lessons={m.lessons.map(l => ({ id: l.id, n: l.n }))} groups={m.groups} />
         <div className="card col gap8"><h3>Assignments</h3>{g.assignments.map(a => <div key={a.id} className="row small"><Icon n="flag" className="s" style={{ color: 'var(--rh-apricot-deep)' }} /><span className="grow">{a.title}</span><span className="tiny muted">{new Date(a.due).toLocaleDateString(undefined, { weekday: 'short' })}</span></div>)}</div>
       </div></div>
     <DemoNote />
+  </div>
+}
+function CoachMocks({ group, lessons, groups }: { group: string; lessons: { id: string; n: number }[]; groups: Record<string, [number, number]> }) {
+  const [list, setList] = useState<MockSet[]>([]); const [q, setQ] = useState('1'); const [count, setCount] = useState(50); const [mins, setMins] = useState(45); const [due, setDue] = useState(() => new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10))
+  const [open, setOpen] = useState<string | null>(null); const [subs, setSubs] = useState<Submission[] | null>(null)
+  const load = () => social.mocks_for(group).then(setList); useEffect(() => { load() }, [group]) // eslint-disable-line
+  useEffect(() => { setSubs(null); if (open) social.submissions(open).then(setSubs) }, [open])
+  const r = q === 'all' ? [1, 999] : groups[q], ids = lessons.filter(l => l.n >= r[0] && l.n <= r[1]).map(l => l.id)
+  return <div className="card col gap8"><h3>Set a timed mock</h3>
+    <div className="row gap8 wrap"><select className="mbtn" value={q} onChange={e => setQ(e.target.value)} aria-label="Scope">{Object.keys(groups).map(k => <option key={k} value={k}>Quarter {k}</option>)}<option value="all">Full manual</option></select>
+      <label className="small">Questions <input type="number" className="field" style={{ width: 80, display: 'inline-block' }} min={10} max={200} value={count} onChange={e => setCount(+e.target.value || 10)} /></label>
+      <label className="small">Minutes <input type="number" className="field" style={{ width: 80, display: 'inline-block' }} min={5} max={240} value={mins} onChange={e => setMins(+e.target.value || 5)} /></label>
+      <input type="date" className="field" style={{ width: 160 }} value={due} onChange={e => setDue(e.target.value)} aria-label="Due date" /></div>
+    <button className="btn" onClick={async () => { await social.set_mock(group, { title: q === 'all' ? 'Full manual mock' : `Quarter ${q} mock`, lessons: ids, count, minutes: mins, due: Date.parse(due + 'T18:00') }); load() }}>Set mock for the circle</button>
+    {list.map(x => <div key={x.id} className="col gap4"><button className="row small" style={{ border: 0, background: 'transparent', color: 'inherit', padding: '6px 0', textAlign: 'left' }} onClick={() => setOpen(open === x.id ? null : x.id)}><Icon n="clock" className="s" /><span className="grow"><b>{x.title}</b> · {x.count} q · {x.minutes} min · due {new Date(x.due).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span><Icon n="chev" className="faint" style={{ transform: open === x.id ? 'rotate(90deg)' : undefined }} /></button>
+      {open === x.id && (!subs ? <div className="skel" style={{ height: 80 }} /> : <div className="list">{subs.length === 0 ? <p className="tiny muted">No submissions yet.</p> : <>
+        <p className="tiny muted">{subs.length} submitted · average {Math.round(subs.reduce((a, s) => a + s.score, 0) / subs.length * 100)}% · {subs.filter(s => s.score >= .95).length} on target</p>
+        {subs.map(s => <div key={s.uid} className="li small"><GlimHead cw={s.user.cw} size={26} /><span className="grow">{s.user.handle}{s.flagged && <span className="chip bad" title={s.flagged} style={{ marginLeft: 6 }}>Check</span>}</span><span className="tiny muted">{Math.round(s.usedS / 60)} min</span><b style={{ width: 44, textAlign: 'right' }}>{Math.round(s.score * 100)}%</b></div>)}</>}</div>)}</div>)}
   </div>
 }
 export function CoachHost() { return <Gate role="coach"><QuizNightPlay host /></Gate> }
@@ -56,7 +76,7 @@ export function CoachHost() { return <Gate role="coach"><QuizNightPlay host /></
 // ---- Content studio (R47) ---------------------------------------------------------------------------
 export function Steward() { return <Gate role="steward"><StewardInner /></Gate> }
 function StewardInner() {
-  const m = useManualData(); const [tab, setTab] = useState<'review' | 'reports' | 'pipeline'>('review'); const [lesson, setLesson] = useState('L01')
+  const m = useManualData(); const [tab, setTab] = useState<'verify' | 'review' | 'reports' | 'pipeline'>('verify'); const [lesson, setLesson] = useState('L01')
   const [items, setItems] = useState<Item[] | null>(null); const [marks, setMarks] = useState<Record<string, 'ok' | 'flag'>>({}); const [q, setQ] = useState<Report[] | null>(null)
   useEffect(() => { if (m) loadItems(m.code, lesson).then(x => setItems(x.slice(0, 40))) }, [m, lesson])
   useEffect(() => { api.moderation_queue().then(setQ) }, [tab])
@@ -64,7 +84,8 @@ function StewardInner() {
   const local = (() => { try { return JSON.parse(localStorage.getItem('rhemlo.reports') ?? '[]') as { u?: string; lesson?: string; why?: string; note: string; at: number }[] } catch { return [] } })()
   return <div className="page col gap16">
     <div className="pagehead"><div><p className="eyebrow">Content studio · {m.short}</p><h1>Approval stays separate from mastery.</h1></div><span className="chip ok"><Icon n="check" />{m.lessons.length} lessons approved</span></div>
-    <div className="tabs" role="tablist" style={{ maxWidth: 480 }}>{([['review', 'Review items'], ['reports', 'Reports'], ['pipeline', 'Pipeline']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t}</button>)}</div>
+    <div className="tabs" role="tablist" style={{ maxWidth: 600 }}>{([['verify', 'Verify'], ['review', 'Quick review'], ['reports', 'Reports'], ['pipeline', 'Pipeline']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t}</button>)}</div>
+    {tab === 'verify' && <Verify />}
     {tab === 'review' && <><div className="row gap8"><label className="lbl" htmlFor="sl" style={{ margin: 0 }}>Lesson</label><select id="sl" className="mbtn" value={lesson} onChange={e => setLesson(e.target.value)}>{m.lessons.map(l => <option key={l.id} value={l.id}>{l.n} · {niceTitle(l.title)}</option>)}</select>
       <span className="tiny muted">{m.lessons.find(l => l.id === lesson)?.ic.toLocaleString()} generated questions · showing 40</span></div>
       {!items ? <div className="skel" style={{ height: 200 }} /> : <div className="card list" style={{ padding: '2px 14px' }}>{items.map(i => <div key={i.u} className="li" style={{ alignItems: 'flex-start' }}>

@@ -40,25 +40,34 @@ function sections(demo: boolean, accounts: { email: string; password: string; wh
     { id: 'practice', title: 'Practice', icon: 'practice', body: <>
       <P><b>Due review</b> brings back what is ready to revisit. Do this first.</P>
       <P><b>Target practice</b> lets you pick lessons, a focus (memory verses, outlines, references, key sentences, spelling, listening) and 5–100 questions. If fewer questions match, it tells you the real number. Questions never repeat to pad a sitting.</P>
-      <P><b>Weak spots</b> appear once you have answered a few questions in a lesson. They come only from your own answers.</P></> },
+      <P><b>Weak spots</b> appear once you have answered a few questions in a lesson. They come only from your own answers.</P>
+      <P><b>Modes</b>: Quick-fire (12 seconds a question; short answers can be spoken), Repair (stubborn points and recent misses), Trap gauntlet, Discrimination (pairs you mix up), Listen, Matching, Flashcards, Learn a lesson (the four-day cycle), Mastery check and Memory palace.</P></> },
+    { id: 'mock', title: 'CBT mock exam', icon: 'clock', body: <>
+      <P>The mock works like an international computer-based test: candidate screen and rules first, then one question per screen with a countdown clock, Previous and Next, Flag for review, and a question navigator.</P>
+      <P>Warnings come at 10, 5 and 1 minute; when time ends your answers are submitted automatically. Your place is saved if the page closes. Keys: N next, P previous, F flag, R review, 1–5 choose.</P>
+      <P>Results break down by lesson, question type, format and capability. Practise your misses straight from the result. Coaches can set mocks with a due date for a circle.</P></> },
     { id: 'library', title: 'Reading the manual', icon: 'book', body: <>
       <P><b>Library</b> holds every lesson exactly as printed. Search by title, verse or reference.</P>
       <P>In a lesson, <b>Read</b> shows the text with labelled sections (Introduction, Outline 1, Outline 2, Conclusion, Lesson questions). <b>Outline</b> shows the structure and <b>References</b> lists every citation.</P>
       <P>Tap any purple reference to read the verse in context. On a computer it floats beside the verse; on a phone a drawer opens above the menu and you can keep reading. Further readings are for devotion and are never graded.</P></> },
     { id: 'progress', title: 'Progress and planner', icon: 'chart', body: <>
       <P>Every point you study is <b>Learning</b>, <b>Strengthening</b> or <b>Secure</b>. Secure means you got it right on spaced reviews until the gap reached 14 days. A Secure point can still come due again.</P>
-      <P><b>Readiness</b> is the share of a test’s points that are Secure. The target is 95% before each test date (Quarter 1 test, then the Finale).</P>
+      <P><b>Readiness</b> is today’s chance of recall across every point of a test, plus your latest mastery check and coverage. Only real recall moves it. The target is 95% before each test date.</P>
+      <P><b>Mastery levels</b> per lesson: L1 Understanding, L2 Recognition, L3 Recall, L4 Verbatim, L5 Bidirectional (every direction passed unaided), then Mastered after two 98% checks a week apart.</P>
+      <P><b>Insights</b> shows retention, speed, your error log, confusion pairs, a 30-day forecast and exports. <b>Today</b> on Journey runs due work first, then repairs, then new points within your cap; when the backlog is large it switches to catch-up.</P>
       <P><b>Planner</b> lays out the week around Sunday class. Overdue work stays visible; it is never deleted to tidy the plan.</P>
       <P>Personal XP, verified league points and mastery are kept apart. One never buys another.</P></> },
     { id: 'arena', title: 'Arena', icon: 'arena', body: <>
       <P>Competition is optional. Join weekly leagues of about 30 learners on the same manual.</P>
       <P>The <b>daily challenge</b> is 10 questions with one ranked attempt a day. Answers are only accepted, not marked, until you finish. Your result then shows as pending while it is checked, then final. Only daily challenges add <b>verified points</b>.</P>
       <P>Ranks 1–10 move up a tier each week and ranks 26–30 move down. Equal points share a rank. There is no demotion in your first week.</P>
-      <P><b>Friendly matches</b> and <b>Quiz Night</b> are for fun and never add league points.</P>
+      <P><b>Friendly matches</b>, <b>Quiz Night</b> and <b>hosted rooms</b> (up to 100 players; 500 for a right choice, 750 for a right typed answer) are for fun and never add league points.</P>
+      <P><b>Leaderboards</b> cover the week, the season, all time, friends and your parish. <b>Private leagues</b> are your own tables, shared by invite link.</P>
       <div className="tiers" style={{ justifyContent: 'flex-start' }}>{['bronze', 'silver', 'gold', 'jade', 'amethyst', 'lantern'].map(t => <img key={t} src={asset(`emblems/tiers/tier-${t}-128.webp`)} alt={`${t} tier`} style={{ width: 36, height: 42 }} />)}</div></> },
     { id: 'circle', title: 'Circle', icon: 'circle', body: <>
       <P><b>Friends</b> see milestones only, such as a cleared chapter, and can send preset cheers. Add friends by handle; Rhemlo never reads your contacts.</P>
       <P><b>Co-op</b>: two friends aim for ten sittings in a week. Each person can count at most five, one per day. A sitting counts once it has 10 or more answers.</P>
+      <P><b>Inbox and messages</b>: notices from coaches, leagues and the safety team, plus direct messages with stickers. Under-18s (or anyone who has not given a birth year) message only connections, after a guardian agrees. Set who can message you and become a “Hidden learner” in You → Privacy.</P>
       <P><b>Circles</b> are moderated groups with a shared goal, coach assignments and Quiz Night. The shield button opens <b>mute, report, block and leave</b>. Your name is never shown to someone you report.</P></> },
     { id: 'you', title: 'Settings and your data', icon: 'you', body: <>
       <P><b>Appearance</b>: Light, Dark or System, text size, reduced motion, sounds, and day or night map.</P>

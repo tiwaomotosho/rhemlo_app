@@ -7,6 +7,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { buildSession, KIND_LABEL, lessonOfKey, niceTitle, shuffleSeed } from '@/lib/engine'
 import { loadItems, loadManual } from '@/lib/data'
 import { gradeItem, normText } from '@/lib/grade'
+import { social } from '@/lib/backend'
 import { useStore } from '@/lib/store'
 import { phaseAt } from '@/lib/srs'
 import { syncNow } from '@/lib/sync'
@@ -119,6 +120,7 @@ export function MockExam() {
   const submit = useCallback(() => {
     if (!d || !items || submitted.current) return; submitted.current = true
     const res = mark(d, items, m); S.set({ mocks: [...S.mocks, res.rec], mockDraft: null, points: S.points + res.rec.right * 10 })
+    if (res.rec.assignment && S.account) social.submit_mock(res.rec.assignment, res.rec.score, res.rec.usedS).catch(() => {})
     for (const r of res.rows) { const it = items.get(r.u)!; S.recordAnswer(d.spec.manual as never, it, r.ok, false, { ms: r.ms, mcq: r.mcq, mode: 'mock', wrote: r.ok ? undefined : r.wrote.slice(0, 200), expected: r.ok ? undefined : r.expected.slice(0, 200) }) }
     try { sessionStorage.setItem(`rhemlo.mock.${res.rec.id}`, JSON.stringify(res.rows)) } catch { /* */ }
     void syncNow(); nav(`/practice/mock/result/${res.rec.id}`, { replace: true })

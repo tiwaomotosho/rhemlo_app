@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { api, isDemo, type Circle as CircleT, type Coop, type FeedItem, type Message, type PublicUser, type Report } from '@/lib/backend'
+import { api, isDemo, social, type MockSet, type Circle as CircleT, type Coop, type FeedItem, type Message, type PublicUser, type Report } from '@/lib/backend'
 import { useStore } from '@/lib/store'
 import { inQuiet } from '@/lib/notify'
 import { BackBar, Glim, GlimHead, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
@@ -76,8 +76,8 @@ function Circles() {
 // ---- Circle home (R39) -----------------------------------------------------------------------------
 export function CircleHome() {
   const { id = '' } = useParams(); const nav = useNavigate(); const start = useStart(); const m = useManualData(); const { done } = useStore()
-  const [g, setG] = useState<CircleT | null>(null); const [safety, setSafety] = useState(false); const [reminded, setReminded] = useState(false)
-  useEffect(() => { api.my_groups().then(x => setG(x.find(y => y.id === id) ?? null)) }, [id])
+  const [g, setG] = useState<CircleT | null>(null); const [safety, setSafety] = useState(false); const [reminded, setReminded] = useState(false); const [mocks, setMocks] = useState<MockSet[]>([]); const myMocks = useStore(s => s.mocks)
+  useEffect(() => { api.my_groups().then(x => setG(x.find(y => y.id === id) ?? null)); social.mocks_for(id).then(setMocks).catch(() => {}) }, [id])
   if (!g || !m) return <Loading />
   const cur = m.lessons.find(l => !done[`${m.code}|${l.id}`]) ?? m.lessons[0]
   return <div className="page col gap16" style={{ maxWidth: 640 }}>
@@ -87,6 +87,8 @@ export function CircleHome() {
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, background: 'linear-gradient(transparent,var(--rh-bg))' }}><h1>{g.name}</h1><p className="tiny muted">{g.members.length} members · {g.coaches.length} coach · moderated</p></div></div>
     <div className="card col gap8"><div className="row between"><p className="eyebrow">Shared goal · this week</p><b className="small">{g.goal.done} / {g.goal.target}</b></div><b>{g.goal.target} sittings as a circle</b>
       <div className="bar green"><i style={{ width: `${Math.min(100, g.goal.done / g.goal.target * 100)}%` }} /></div><p className="tiny muted">Counts learning, never messages</p></div>
+    {mocks.map(x => { const sat = myMocks.filter(r => r.assignment === x.id).sort((a, b) => b.at - a.at)[0]; return <div key={x.id} className="card row"><span className="tile"><Icon n="clock" /></span><div className="grow"><p className="eyebrow">Mock set by {x.by}</p><b>{x.title}</b><div className="tiny muted">{x.count} questions · {x.minutes} min · due {new Date(x.due).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}{sat ? ` · you scored ${Math.round(sat.score * 100)}%` : ''}</div></div>
+      {sat ? <Link className="btn sec sm" to={`/practice/mock/result/${sat.id}`}>Result</Link> : <button className="btn sm" onClick={() => nav('/practice/mock', { state: { lessons: x.lessons, count: x.count, limitS: x.minutes * 60, assignment: x.id } })}>Take mock</button>}</div> })}
     {g.assignments.map(a => <div key={a.id} className="card row"><span className="tile apricot"><Icon n="flag" /></span><div className="grow"><p className="eyebrow">From your coach</p><b>{a.title}</b><div className="tiny muted">{a.by} · due {new Date(a.due).toLocaleDateString(undefined, { weekday: 'long' })}</div></div>
       <button className="btn sm" onClick={() => start({ kind: 'target', manual: m.code, lessons: a.lessons.length ? a.lessons : [cur.id], count: a.count, focus: a.focus, title: `Assignment · ${a.title}` })}>Start</button></div>)}
     <div className="card row"><span className="tile"><Icon n="radio" /></span><div className="grow"><b>Quiz Night · {new Date(g.quizNight.at).toLocaleDateString(undefined, { weekday: 'short' })} {new Date(g.quizNight.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</b><div className="tiny muted">Room {g.quizNight.room} · {g.quizNight.signedUp} signed up</div></div>

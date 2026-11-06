@@ -24,15 +24,16 @@ Import the repo; framework preset **Vite**, build `bun run build`, output `dist`
 
 ## Demo server (default) and switching to live
 
-Until the real infrastructure exists, the app runs against a **demo server** that lives in the browser (`src/lib/backend/demo.ts`). It gives working sign-up/sign-in, sync, weekly leagues with promotion, the ranked daily challenge (with pending verification), friendly matches, Quiz Night (room `LAMP`), friends, co-op quests, a moderated circle with chat and reports, a coach workspace and a content studio. Other people and their activity are simulated and labelled "Demo server" in the app.
+Until the real infrastructure exists, the app runs against a **demo server** that lives in the browser (`src/lib/backend/demo.ts`). It gives working sign-up/sign-in, sync, weekly leagues with promotion, the ranked daily challenge (with pending verification), friendly matches, Quiz Night (room `LAMP`), friends, co-op quests, a moderated circle with chat and reports, a coach workspace with set mocks and submissions, a content studio, leaderboards, private leagues with invite links (`/l/CODE`), an inbox, direct messages with under-18 safeguards, hosted rooms of up to 100, an admin console, magic-link and passkey sign-in, and a conflict-safe offline sync. Community and admin calls go through `src/lib/backend/social.ts`; live, each becomes a Supabase RPC of the same name. Other people and their activity are simulated and labelled "Demo server" in the app.
 
 | Demo account | Role |
 |---|---|
 | `tiwa@demo.rhemlo.app` | Learner: Silver league, friends, co-op, Grace Youth Circle |
 | `femi@demo.rhemlo.app` | Coach: circle dashboard, assignments, Quiz Night host screen |
-| `ada@demo.rhemlo.app` | Content steward: item review, reports, pipeline |
+| `ada@demo.rhemlo.app` | Content steward: side-by-side verification, anomalies register, reports, pipeline |
+| `ola@demo.rhemlo.app` | Admin: manuals (publish, license, retire), seasons, organisations, guardian consents, moderation |
 
-Password for all three: `Rhemlo-demo-2026`. New accounts can also be created in onboarding.
+Password for all four: `Rhemlo-demo-2026`. New accounts can also be created in onboarding.
 
 To go live, set these in Vercel and redeploy (no code change):
 
