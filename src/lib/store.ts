@@ -9,7 +9,7 @@ export type Pace = 'light' | 'steady' | 'focused'
 export interface Profile { name: string; handle: string; goal: Goal; pace: Pace; glim: string }
 export interface SessionSpec {
   kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart' | 'quickfire' | 'repair' | 'trap' | 'listen' | 'discrimination' | 'learn' | 'today' | 'mock'; manual: ManualCode; lessons: string[]; count: number
-  focus?: string[]; title: string; ranked?: boolean; only?: string[]; attemptId?: string; formats?: 'typed' | 'mcq' | 'mixed'; perItem?: number
+  focus?: string[]; title: string; ranked?: boolean; only?: string[]; attemptId?: string; formats?: 'typed' | 'mcq' | 'mixed'; perItem?: number; learnStep?: string; section?: string
 }
 export interface Draft {
   id: string; spec: SessionSpec; queue: string[]; index: number; right: number; startedAt: number
@@ -35,7 +35,7 @@ interface State {
   draft: Draft | null; seenIds: Record<string, true>
   prefs: Prefs; lastActive: number; prevActive: number; readings: Record<string, true>; joined: number; downloads: string[]
   account: { email: string; userId: string; role: string; lastSync: number } | null; inbox: { id: string; at: number; title: string; body: string }[]; askedPush: boolean; guideSeen: boolean; flash: string
-  log: LogEntry[]; mocks: MockRecord[]; checks: Record<string, { at: number; score: number }[]>; overrides: { at: number; u: string; reason: string }[]; mockDraft: unknown
+  learn: Record<string, string[]>; log: LogEntry[]; mocks: MockRecord[]; checks: Record<string, { at: number; score: number }[]>; overrides: { at: number; u: string; reason: string }[]; mockDraft: unknown
   set: (p: Partial<State>) => void
   finishOnboarding: (p: Profile, manual: ManualCode) => void
   recordAnswer: (manual: ManualCode, item: Item, correct: boolean, assisted: boolean, extra?: Partial<LogEntry>) => void
@@ -50,7 +50,7 @@ const initial = {
   points: 0, activeDays: [], arenaOptIn: false, reminders: false, draft: null, seenIds: {},
   prefs: DEFAULT_PREFS, lastActive: 0, prevActive: 0, readings: {}, joined: 0, downloads: [] as string[],
   account: null as State['account'], inbox: [] as State['inbox'], askedPush: false, guideSeen: false, flash: '',
-  log: [] as LogEntry[], mocks: [] as MockRecord[], checks: {} as State['checks'], overrides: [] as State['overrides'], mockDraft: null as unknown,
+  learn: {} as Record<string, string[]>, log: [] as LogEntry[], mocks: [] as MockRecord[], checks: {} as State['checks'], overrides: [] as State['overrides'], mockDraft: null as unknown,
 }
 export const useStore = create<State>()(persist((set, get) => ({
   ...initial,
@@ -102,5 +102,5 @@ export function streakInfo(days: string[]) {
 }
 
 /** The part of the state that syncs to the account (never the session or draft). */
-export const SYNC_KEYS = ['profile', 'manual', 'theme', 'sessionSize', 'cards', 'done', 'ladder', 'history', 'points', 'activeDays', 'prefs', 'readings', 'joined', 'arenaOptIn', 'log', 'mocks', 'checks', 'overrides'] as const
+export const SYNC_KEYS = ['profile', 'manual', 'theme', 'sessionSize', 'cards', 'done', 'ladder', 'history', 'points', 'activeDays', 'prefs', 'readings', 'joined', 'arenaOptIn', 'log', 'mocks', 'checks', 'overrides', 'learn'] as const
 export const snapshotOf = () => { const s = useStore.getState() as unknown as Record<string, unknown>; return Object.fromEntries(SYNC_KEYS.map(k => [k, s[k]])) }

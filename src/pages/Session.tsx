@@ -38,7 +38,7 @@ function AudioCard({ text }: { text: string }) {
   </div>
 }
 
-function Prompt({ item, cur, lessonsN }: { item: Item; cur: number; lessonsN: (n: number) => string }) {
+export function Prompt({ item, cur, lessonsN }: { item: Item; cur: number; lessonsN: (n: number) => string }) {
   const p = item.p, t = item.t
   if (t === 'Q04') return <><div className="row"><Glim pose="celebrate" size={64} still /><div><b className="disp" style={{ fontSize: 17 }}>Full recall unlocked</b><div className="tiny muted">Build and Fade were right for this verse</div></div></div>
     <div className="pcard"><p className="eyebrow">Type the memory verse</p><b className="disp">{p.context?.split(/\s*[·\u00b7]\s*/)[0]} · {p.ref}</b></div></>
@@ -57,7 +57,8 @@ function Prompt({ item, cur, lessonsN }: { item: Item; cur: number; lessonsN: (n
 }
 
 // ---- answer area -------------------------------------------------------------------------------------
-type AState = { text: string; vals: string[]; sel: string; chosen: number[]; pick: number | null; book: string; cv: string; typeRef: boolean; order: number[]; multi: string[] }
+export type AState = { text: string; vals: string[]; sel: string; chosen: number[]; pick: number | null; book: string; cv: string; typeRef: boolean; order: number[]; multi: string[] }
+export const blankAnswer = (item: Item): AState => ({ text: '', vals: Array(item.p.input.count ?? 1).fill(''), sel: '', chosen: [], pick: null, book: '', cv: '', typeRef: false, order: (item.p.shuffled ?? []).map((_, i) => i), multi: [] })
 function useAnswer(item: Item) {
   const n = item.p.input.count ?? 1
   return useState<AState>({ text: '', vals: Array(n).fill(''), sel: '', chosen: [], pick: null, book: '', cv: '', typeRef: false, order: (item.p.shuffled ?? []).map((_, i) => i), multi: [] })
@@ -83,7 +84,7 @@ function FieldBox({ id, label: lab, value, onChange, state, inputRef, onFocus, .
     <input id={id} ref={inputRef} className="field" value={value} readOnly={state !== undefined} onFocus={onFocus} onChange={e => onChange(e.target.value)} {...OFF} {...rest} /></div></div>
 }
 
-function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold, options }: { item: Item; a: AState; setA: (f: (a: AState) => AState) => void; mcq: boolean; grade: Grade | null; setCur: (n: number) => void; titleToN: (t: string) => number | undefined; hold?: boolean; options: string[] }) {
+export function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold, options }: { item: Item; a: AState; setA: (f: (a: AState) => AState) => void; mcq: boolean; grade: Grade | null; setCur: (n: number) => void; titleToN: (t: string) => number | undefined; hold?: boolean; options: string[] }) {
   const k = item.p.input.kind, locked = !!grade || !!hold, n = item.p.input.count ?? 1
   const refs = useRef<(HTMLInputElement | HTMLTextAreaElement | null)[]>([])
   useEffect(() => { if (!locked && matchMedia('(min-width:640px)').matches) refs.current[0]?.focus({ preventScroll: true }) }, [item.u, mcq]) // eslint-disable-line
@@ -286,7 +287,10 @@ export default function Session() {
       const missed = new Set(d.misses.map(m => m.u))
       const rec: SittingRecord = { id: d.id, at: Date.now(), manual: d.spec.manual, kind: d.spec.kind, lesson: d.spec.lessons.length === 1 ? d.spec.lessons[0] : undefined, title: d.spec.title,
         total, right: firstTry.filter(u => !missed.has(u)).length, misses: d.misses, minutes: Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)) }
-      S.completeSitting(rec); void syncNow()
+      S.completeSitting(rec)
+      if (d.spec.kind === 'check' && d.spec.lessons.length === 1) { const k = `${d.spec.manual}|${d.spec.lessons[0]}`, st = useStore.getState(); st.set({ checks: { ...st.checks, [k]: [...(st.checks[k] ?? []), { at: Date.now(), score: total ? rec.right / total : 0 }] } }) }
+      if (d.spec.learnStep && d.spec.lessons.length === 1) { const k = `${d.spec.manual}|${d.spec.lessons[0]}`, st = useStore.getState(); st.set({ learn: { ...st.learn, [k]: [...new Set([...(st.learn[k] ?? []), d.spec.learnStep])] } }) }
+      void syncNow()
       if (d.spec.ranked && d.spec.attemptId) {
         const its = items!; api.submit_challenge(d.spec.attemptId, d.rankedAnswers ?? [], (u, v) => { const it = its.get(u); return !!it && gradeItem(it, JSON.parse(v)).correct }).finally(() => nav('/arena/challenge', { replace: true }))
       } else nav(`/practice/done/${d.id}`, { replace: true, state: { spec: d.spec } })

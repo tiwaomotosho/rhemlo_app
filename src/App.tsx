@@ -18,6 +18,10 @@ import You, { Appearance, Notifications, Downloads, Access } from '@/pages/You'
 import Progress, { Planner } from '@/pages/Progress'
 import { Library, Reader } from '@/pages/Library'
 import Guide from '@/pages/Guide'
+import { MockExam, MockIntro, MockResult, MockSetup } from '@/pages/Mock'
+import { Discrimination, Flashcards, LearnLesson, Matching, Palace } from '@/pages/Drills'
+import Insights from '@/pages/Insights'
+import { StudySettings } from '@/pages/Plan'
 
 const TABS = [['journey', 'Journey'], ['practice', 'Practice'], ['arena', 'Arena'], ['circle', 'Circle'], ['you', 'You']] as const
 
@@ -28,13 +32,13 @@ function Shell() {
   useEffect(() => { if (!flash) return; const t = setTimeout(() => set({ flash: '' }), 3200); return () => clearTimeout(t) }, [flash, set])
   const top = pathname.split('/')[1]
   const active = top === 'library' ? 'journey' : top
-  const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : pathname.startsWith('/coach') ? 'coach' : pathname.startsWith('/steward') ? 'steward' : ''
+  const sub = pathname.startsWith('/library') ? 'library' : pathname.startsWith('/journey/planner') ? 'planner' : pathname.startsWith('/journey/progress') ? 'progress' : pathname.startsWith('/journey/insights') ? 'insights' : pathname.startsWith('/coach') ? 'coach' : pathname.startsWith('/steward') ? 'steward' : ''
   return <div className="shell">
     <nav className="nav" aria-label="Main">
       <div className="brand"><GlimHead cw={cw} size={40} /><span className="word">Rhemlo</span></div>
       {TABS.map(([k, label]) => <NavLink key={k} to={`/${k}`} className={`nl ${active === k && !sub ? 'on' : ''}`} aria-current={active === k ? 'page' : undefined}><span className="ic"><Icon n={k} /></span>{label}</NavLink>)}
       <div className="navsep" /><p className="eyebrow sub">Journey</p>
-      {([['library', 'Library', 'book', '/library'], ['planner', 'Planner', 'calendar', '/journey/planner'], ['progress', 'Progress', 'chart', '/journey/progress']] as const).map(([k, l, ic, to]) =>
+      {([['library', 'Library', 'book', '/library'], ['planner', 'Planner', 'calendar', '/journey/planner'], ['progress', 'Progress', 'chart', '/journey/progress'], ['insights', 'Insights', 'target', '/journey/insights']] as const).map(([k, l, ic, to]) =>
         <NavLink key={k} to={to} className={`nl sub2 ${sub === k ? 'on' : ''}`} style={{ display: undefined }}><span className="ic"><Icon n={ic} /></span>{l}</NavLink>)}
       {(role === 'coach' || role === 'steward') && <><div className="navsep" /><p className="eyebrow sub">Workspace</p>
         <NavLink to={role === 'coach' ? '/coach' : '/steward'} className={`nl sub2 ${sub === role ? 'on' : ''}`}><span className="ic"><Icon n={role === 'coach' ? 'people' : 'shield'} /></span>{role === 'coach' ? 'Coach' : 'Content studio'}</NavLink></>}
@@ -74,10 +78,12 @@ export default function App() {
   </Routes>
   return <Routes>
     <Route path="/practice/session" element={<SessionRoute />} />
+    <Route path="/practice/mock/exam" element={<MockExam />} />
     <Route element={<Shell />}>
       <Route path="/journey" element={<Journey />} />
       <Route path="/journey/planner" element={<Planner />} />
       <Route path="/journey/progress" element={<Progress />} />
+      <Route path="/journey/insights" element={<Insights />} />
       <Route path="/journey/readings" element={<Readings />} />
       <Route path="/journey/stages/:i" element={<StageCountdown />} />
       <Route path="/journey/check/:id" element={<MasteryCheck />} />
@@ -85,6 +91,14 @@ export default function App() {
       <Route path="/library/:id" element={<Reader />} />
       <Route path="/practice" element={<Practice />} />
       <Route path="/practice/build" element={<TargetBuilder />} />
+      <Route path="/practice/mock" element={<MockSetup />} />
+      <Route path="/practice/learn/:id" element={<LearnLesson />} />
+      <Route path="/practice/match" element={<Matching />} />
+      <Route path="/practice/flashcards" element={<Flashcards />} />
+      <Route path="/practice/discrimination" element={<Discrimination />} />
+      <Route path="/practice/palace" element={<Palace />} />
+      <Route path="/practice/mock/intro" element={<MockIntro />} />
+      <Route path="/practice/mock/result/:id" element={<MockResult />} />
       <Route path="/practice/memory/:id" element={<MemoryLadder />} />
       <Route path="/practice/done/:id" element={<Done />} />
       <Route path="/arena" element={<Arena />} />
@@ -103,6 +117,7 @@ export default function App() {
       <Route path="/arena/match" element={<FriendlyMatch />} />
       <Route path="/circle" element={<Circle />} />
       <Route path="/you" element={<You />} />
+      <Route path="/you/study" element={<StudySettings />} />
       <Route path="/you/appearance" element={<Appearance />} />
       <Route path="/you/notifications" element={<Notifications />} />
       <Route path="/you/downloads" element={<Downloads />} />

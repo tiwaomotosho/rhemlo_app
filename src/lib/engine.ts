@@ -43,7 +43,9 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
   // Q04 (full verse) is only served once Q27 (build) and Q28 (fade) are right for that lesson
   const rungOpen = (i: Item) => { const l = ladder[`${spec.manual}|${lessonOfKey(i.s)}`]; return !!(l?.q27 && l?.q28) }
   const fmtOk = (i: Item) => !spec.formats || spec.formats === 'mixed' || i.f.includes(spec.formats) || (spec.formats === 'typed' && i.p.input.kind !== 'choice' && i.f.includes('typed'))
-  const allowed = (i: Item) => (types ? types.has(i.t) : !LADDER_TYPES.has(i.t)) && (i.t !== 'Q04' || rungOpen(i)) && fmtOk(i)
+  const secOk = (i: Item) => !spec.section || i.s.includes(`.${spec.section}.`)
+  const allowed0 = (i: Item) => (types ? types.has(i.t) : !LADDER_TYPES.has(i.t)) && (i.t !== 'Q04' || rungOpen(i)) && fmtOk(i)
+  const allowed = (i: Item) => allowed0(i) && secOk(i)
   let pool = lists.flat().filter(allowed)
   if (spec.only) { const keep = new Set(spec.only); const its = lists.flat().filter(i => keep.has(i.u)); return { items: its, pool: its.length } }
   const now = Date.now(), seed = spec.kind === 'daily' ? `daily${day()}` : `${spec.kind}${now >> 16}`
@@ -70,10 +72,11 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
     const score = spec.kind === 'review' ? (dueNow ? 0 : 9) : spec.kind === 'restart' ? (c && c.seen ? 5 - c.box : 9)
       : spec.kind === 'repair' ? (c?.leech ? 0 : recentMiss.has(k) ? 1 : 9)
       : spec.kind === 'mock' ? 1
+      : spec.kind === 'today' ? (dueNow ? 0 : c?.leech ? 1 : isNew ? 2 : 9)
       : recentMiss.has(k) ? 0 : dueNow ? 1 : isNew ? 2 : 3 // FR-TP-04: missed in the last 14 days, then due, then unseen
     return { k, its, score, isNew, part: PARTS(k, its[0].t), lesson: lessonOfKey(k), jitter: hash(k + seed) }
   })
-  if (spec.kind === 'repair') cardsArr.splice(0, cardsArr.length, ...cardsArr.filter(c => c.score < 9))
+  if (spec.kind === 'repair' || spec.kind === 'today') cardsArr.splice(0, cardsArr.length, ...cardsArr.filter(c => c.score < 9))
   if (newRoom !== Infinity) { const keep = cardsArr.filter(c => !c.isNew || newRoom-- > 0); cardsArr.splice(0, cardsArr.length, ...keep) }
   if (spec.kind === 'restart') cardsArr.splice(0, cardsArr.length, ...cardsArr.filter(c => c.score < 9))
   if (spec.kind === 'review') { const due = cardsArr.filter(c => c.score === 0); pool = due.flatMap(c => c.its) }

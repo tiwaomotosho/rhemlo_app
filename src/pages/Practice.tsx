@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store'
 import type { Item, Manual } from '@/lib/types'
 import { BackBar, Glim, Icon, Loading, StatPills, useManualData } from '@/ui/bits'
 import { useStart, verseRef } from './Journey'
+import { nextMockDate } from './Mock'
 
 const FOCUS_ICON: Record<string, string> = { verses: 'quote', outlines: 'listn', references: 'bookmark', sentences: 'letter', spelling: 'spell', listening: 'speaker' }
 const CAT_LABEL: Record<string, [string, string, string]> = { refs: ['References', 'bookmark', 'apricot'], outline: ['Outline', 'listn', 'green'], verse: ['Memory verse', 'quote', ''], sentences: ['Key sentences', 'letter', ''] }
@@ -27,11 +28,14 @@ export function useWeakSpots(m: Manual | null) {
 }
 
 export default function Practice() {
-  const m = useManualData(); const { cards, done, sessionSize } = useStore(); const start = useStart(); const nav = useNavigate()
+  const m = useManualData(); const { cards, done, sessionSize, mocks } = useStore(); const start = useStart(); const nav = useNavigate()
   const weak = useWeakSpots(m)
   if (!m) return <Loading />
   const due = dueInfo(cards, m.code)
   const cur = m.lessons.find(l => !done[`${m.code}|${l.id}`]) ?? m.lessons[0]
+  const learned = (() => { const d = m.lessons.filter(l => done[`${m.code}|${l.id}`] || Object.keys(cards).some(k => k.startsWith(`${m.code}|${m.code}:${l.id}.`))).map(l => l.id); return d.length ? d : [cur.id] })()
+  const leeches = Object.entries(cards).filter(([k, c]) => k.startsWith(m.code + '|') && c.leech).length
+  const nextMock = nextMockDate(mocks.filter(x => x.manual === m.code))
   return <div className="page col gap16" style={{ maxWidth: 760 }}>
     <div className="pagehead"><h1>Practice</h1><StatPills /></div>
     <div className="card col" style={{ background: 'var(--rh-apricot-bg)', borderColor: 'transparent' }}>
@@ -44,6 +48,23 @@ export default function Practice() {
       <Link to="/practice/build" className="card col gap8" style={{ color: 'inherit', minHeight: 130 }}><span className="tile"><Icon n="filter" /></span><b className="disp" style={{ fontSize: 16 }}>Target practice</b><span className="tiny muted">Lessons, formats, 5–100</span></Link>
       <Link to={`/practice/memory/${cur.id}`} className="card col gap8" style={{ color: 'inherit', minHeight: 130 }}><span className="tile green"><Icon n="ladder" /></span><b className="disp" style={{ fontSize: 16 }}>Memory ladder</b><span className="tiny muted">Build · Fade · Full recall</span></Link>
     </div>
+    <div className="card row" style={{ background: 'linear-gradient(135deg,#30213E,#4C2F6B)', color: '#fff', border: 0 }}>
+      <span className="tile" style={{ background: 'rgba(255,255,255,.15)', color: '#FFD27A' }}><Icon n="clock" /></span>
+      <div className="grow"><b className="disp" style={{ fontSize: 17 }}>Mock exam (CBT)</b><div className="tiny" style={{ opacity: .85 }}>Timed, mixed typed and choice, sources hidden, marked at the end{nextMock <= Date.now() ? ' · scheduled mock due' : ''}</div></div>
+      <Link className="btn apricot sm" to="/practice/mock">Set up</Link></div>
+    <p className="eyebrow mt8">Study modes</p>
+    <div className="modegrid">{([
+      ['bolt', 'Quick-fire', 'Rapid answers, 12 s each', () => start({ kind: 'quickfire', manual: m.code, lessons: learned, count: 20, perItem: 12, title: 'Quick-fire' })],
+      ['refresh', 'Repair drill', leeches ? `${leeches} stubborn point${leeches === 1 ? '' : 's'} and recent misses` : 'Recent misses', () => start({ kind: 'repair', manual: m.code, lessons: learned, count: sessionSize, title: 'Repair drill' })],
+      ['alert', 'Trap gauntlet', 'Near-miss references, swaps, look-alikes', () => start({ kind: 'trap', manual: m.code, lessons: learned, count: 15, title: 'Trap gauntlet' })],
+      ['scale', 'Discrimination', 'Lessons you mix up, side by side', () => nav('/practice/discrimination')],
+      ['speaker', 'Listen', 'Hear a point, give its reference', () => start({ kind: 'listen', manual: m.code, lessons: learned, count: 10, title: 'Listen' })],
+      ['puzzle', 'Matching', 'Lessons, numbers, verses, references', () => nav('/practice/match')],
+      ['book', 'Flashcards', 'Flip, then rate yourself', () => nav('/practice/flashcards')],
+      ['journey', 'Learn a lesson', `Guided four-day cycle · Lesson ${cur.n}`, () => nav(`/practice/learn/${cur.id}`)],
+      ['flag', 'Mastery check', `25 questions across Lesson ${cur.n}`, () => nav(`/journey/check/${cur.id}`)],
+      ['ladder', 'Memory palace', 'Optional: places for long lists', () => nav('/practice/palace')],
+    ] as const).map(([i, t, d, go]) => <button key={t} className="card col gap8" style={{ textAlign: 'left', color: 'inherit', minHeight: 116 }} onClick={go}><span className="tile"><Icon n={i} /></span><b className="small">{t}</b><span className="tiny muted">{d}</span></button>)}</div>
     <p className="eyebrow mt8">Weak spots</p>
     {weak.length ? <div className="card list" style={{ padding: '2px 14px' }}>{weak.map(w => <button key={w.key} className="li" onClick={() => start({ kind: 'target', manual: m.code, lessons: w.lessons, count: sessionSize, focus: w.focus, title: w.key === 'spell' ? 'Spelling traps' : w.title })}>
       <span className={`tile ${w.tone}`} style={{ width: 38, height: 38 }}><Icon n={w.ico} className="s" /></span><span className="grow"><b className="small">{w.title}</b><span className="tiny muted" style={{ display: 'block' }}>{w.sub}</span></span><Icon n="chev" className="faint" /></button>)}</div>
@@ -55,14 +76,14 @@ export default function Practice() {
 export function TargetBuilder() {
   const m = useManualData(); const nav = useNavigate(); const { cards, ladder, sessionSize, done } = useStore(); const start = useStart()
   const [sel, setSel] = useState<string[] | null>(null); const [more, setMore] = useState(false)
-  const [focus, setFocus] = useState<string[]>([]); const [count, setCount] = useState(Math.max(5, sessionSize)); const [pool, setPool] = useState<number | null>(null)
+  const [focus, setFocus] = useState<string[]>([]); const [count, setCount] = useState(Math.max(5, sessionSize)); const [pool, setPool] = useState<number | null>(null); const [formats, setFormats] = useState<'mixed' | 'typed' | 'mcq'>('mixed'); const [timed, setTimed] = useState(0)
   const lessons = sel ?? (m ? [(m.lessons.find(l => !done[`${m.code}|${l.id}`]) ?? m.lessons[0]).id] : [])
   useEffect(() => {
     if (!m) return; if (!lessons.length) { setPool(0); return }
     setPool(null); let on = true
-    const t = setTimeout(() => buildSession({ kind: 'target', manual: m.code, lessons, count: 9999, focus, title: '' }, cards, ladder).then(r => on && setPool(r.items.length)), 150)
+    const t = setTimeout(() => buildSession({ kind: 'target', manual: m.code, lessons, count: 9999, focus, title: '', formats }, cards, ladder).then(r => on && setPool(r.items.length)), 150)
     return () => { on = false; clearTimeout(t) }
-  }, [m, lessons.join(), focus.join()]) // eslint-disable-line
+  }, [m, lessons.join(), focus.join(), formats]) // eslint-disable-line
   if (!m) return <Loading />
   const tog = (arr: string[], k: string) => arr.includes(k) ? arr.filter(x => x !== k) : [...arr, k]
   const shown = more ? m.lessons : m.lessons.slice(0, 8), n = Math.min(count, pool ?? count)
@@ -75,10 +96,12 @@ export function TargetBuilder() {
     <div><div className="row between"><label className="eyebrow" htmlFor="cnt">Question count</label><b className="disp" style={{ fontSize: 30, color: 'var(--rh-action)' }}>{count}</b></div>
       <input id="cnt" className="slider" type="range" min={5} max={100} step={1} value={count} onChange={e => setCount(+e.target.value)} aria-valuetext={`${count} questions`} />
       <div className="row between tiny muted"><span>5</span><input aria-label="Exact question count" type="number" min={5} max={100} value={count} onChange={e => setCount(Math.max(5, Math.min(100, +e.target.value || 5)))} className="field" style={{ width: 84, minHeight: 36, padding: '4px 10px', fontSize: 14, textAlign: 'center' }} /><span>100</span></div></div>
+    <div><p className="eyebrow">Formats</p><div className="seg mt8">{([['mixed', 'Mixed'], ['typed', 'Typed'], ['mcq', 'Multiple choice']] as const).map(([k, t]) => <button key={k} className={formats === k ? 'on' : ''} onClick={() => setFormats(k)}>{t}</button>)}</div></div>
+    <div><p className="eyebrow">Timed (optional)</p><div className="seg mt8">{[0, 10, 20, 30].map(x => <button key={x} className={timed === x ? 'on' : ''} onClick={() => setTimed(x)}>{x ? `${x} s each` : 'Untimed'}</button>)}</div></div>
     <div className="card lav row"><Icon n="lock" style={{ color: 'var(--rh-correct)' }} /><div><b>Private practice · works offline</b><div className="tiny muted">Marked on this device. Not ranked.</div></div></div>
     <div className="card flat row" aria-live="polite"><Icon n={pool !== null && pool < count ? 'filter' : 'check'} style={{ color: pool !== null && pool < count ? 'var(--rh-apricot-deep)' : 'var(--rh-action)' }} />
       <p className="small">{pool === null ? 'Counting eligible questions…' : pool === 0 ? 'Nothing matches yet. Pick a lesson or loosen the focus.' : pool >= count ? `${pool.toLocaleString()} eligible questions match. All ${count} will be unique.` : <><b>Only {pool} questions match.</b> You asked for {count}. Add lessons or formats, or start with {pool} unique questions.</>}</p></div>
-    <button className="btn block" disabled={!pool} onClick={() => start({ kind: 'target', manual: m.code, lessons, count: n, focus, title: `Target practice · ${lessons.length === 1 ? `Lesson ${+lessons[0].slice(1)}` : `${lessons.length} lessons`}` })}>Start {n} question{n === 1 ? '' : 's'}</button>
+    <button className="btn block" disabled={!pool} onClick={() => start({ kind: 'target', manual: m.code, lessons, count: n, focus, formats, perItem: timed || undefined, title: `Target practice · ${lessons.length === 1 ? `Lesson ${+lessons[0].slice(1)}` : `${lessons.length} lessons`}` })}>Start {n} question{n === 1 ? '' : 's'}</button>
   </div>
 }
 

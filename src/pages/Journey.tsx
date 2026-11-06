@@ -6,6 +6,8 @@ import { day, lessonStats, masteryOf, streakInfo, useStore, type SessionSpec } f
 import type { LessonMeta, Manual, ManualCode } from '@/lib/types'
 import { BackBar, Glim, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
 import { GuideTip } from './Guide'
+import { lessonLevel, readinessFor, DIRECTIONS } from '@/lib/mastery'
+import { nextMockDate } from './Mock'
 import { useManualSwitch, manualLabel } from '@/ui/ManualSwitch'
 
 type Anchors = Record<string, { nodes_norm: [number, number][] }>
@@ -82,7 +84,11 @@ function JourneyInner({ m }: { m: Manual }) {
     const h = el.scrollWidth * S
     el.style.scrollBehavior = 'auto'; el.scrollTop = Math.max(0, p[1] * h - el.clientHeight * 0.42); requestAnimationFrame(() => { el.style.scrollBehavior = '' })
   }, [pos.length, gi]) // eslint-disable-line
-  const q1 = m.stages[0], gap = readinessGap(m, q1.lessons, cards)
+  const S2 = useStore.getState()
+  const q1 = m.stages.find(x => daysUntil(x.date) >= 0) ?? m.stages[0], gap = readinessFor(m, q1.lessons, cards, S2.checks)
+  const overdueN = Object.entries(cards).filter(([k, c]) => k.startsWith(m.code + '|') && c.seen > 0 && c.due < Date.now()).length, catchUp = overdueN > S2.prefs.overdueLimit
+  const mockAt = nextMockDate(S2.mocks.filter(x => x.manual === m.code))
+  const todaySpec: SessionSpec = { kind: 'today', manual: m.code, lessons: m.lessons.filter(l => J.isDone(l) || l.id === J.cur.id).map(l => l.id), count: sessionSize, title: catchUp ? 'Catch-up' : 'Today' }
   const doneQ = J.quests.filter(q => q.done).length
   const wl = weekLesson(m), dow = new Date().getDay(), reading = wl.readings[dow] ?? wl.readings[0]
   const open = (l: LessonMeta) => { setPanel(l); if (matchMedia('(min-width:640px) and (max-width:1023px)').matches) return; setSel(l) }
@@ -130,10 +136,10 @@ function JourneyInner({ m }: { m: Manual }) {
         </div></div>
         <div className="qswitch" role="group" aria-label="Quarter">{J.groups.map((x, i) => <button key={x.q} className={i === gi ? 'on' : ''} aria-pressed={i === gi} onClick={() => setQi(i)}>Q{x.q}</button>)}
           <button onClick={() => setSheet('list')} aria-label="List view of all lessons"><Icon n="listn" className="s" /></button></div>
-        <div className="dock"><GuideTip /><div className="card glass">
+        <div className="dock"><GuideTip />{catchUp && <div className="card glass row" style={{ marginBottom: 8, background: 'var(--rh-warning-bg)' }}><Icon n="history" /><div className="grow small"><b>Catch-up mode</b> · {overdueN} overdue, oldest first. New lessons pause.</div><button className="btn sm" onClick={() => start(todaySpec)}>Start</button></div>}<div className="card glass">
           {J.due.count ? <><span className="tile apricot"><Icon n="refresh" /></span>
             <div className="grow"><b className="disp">{J.due.count} point{J.due.count === 1 ? '' : 's'} to revisit</b><div className="tiny muted">Due review · {J.due.range} · {J.due.minutes} min</div></div>
-            <button className="btn sm" onClick={() => start(J.quests[1].spec!)}>Review</button></> :
+            <button className="btn sm" onClick={() => start(todaySpec)}>Today</button></> :
             <><Glim pose="clap" size={48} /><div className="grow"><b className="disp">Nothing due right now</b><div className="tiny muted">Reviews return here when they are ready.</div></div>
               {draft && <button className="btn sm apricot" onClick={() => nav('/practice/session')}>Continue quest</button>}</>}
         </div></div>
@@ -141,12 +147,13 @@ function JourneyInner({ m }: { m: Manual }) {
       <aside className="jy-ctx" aria-label="Chapter and today">
         <div className="tabletpanel"><ChapterPanel m={m} l={panel} J={J} /></div>
         <div className="deskrail col gap16">
+          <TodayCard catchUp={catchUp} overdue={overdueN} onGo={() => start(todaySpec)} />
           <div className="card col gap8"><div className="row between"><p className="eyebrow">Today's quests</p><span className="chip str"><Icon n="sprout" />{doneQ} of 3</span></div>
             {J.quests.map(q => <button key={q.id} className="li row" style={{ border: 0, background: 'transparent', padding: '6px 0', textAlign: 'left', color: 'inherit' }} disabled={!q.spec} onClick={() => q.spec && start(q.spec)}>
               <span className={`tile ${q.done ? 'green' : ''}`} style={{ width: 34, height: 34, borderRadius: 10 }}><Icon n={q.done ? 'check' : q.ico} className="s" /></span><span className="small b">{q.t}</span></button>)}</div>
-          <Link to="/journey/stages/0" className="card col gap8" style={{ color: 'inherit' }}><p className="eyebrow">Quarter 1 test</p>
+           <Link to={`/journey/stages/${m.stages.indexOf(q1)}`} className="card col gap8" style={{ color: 'inherit' }}><p className="eyebrow">{q1.name}</p>
             <div className="row" style={{ alignItems: 'flex-end' }}><b className="disp" style={{ fontSize: 34, lineHeight: '34px', color: 'var(--rh-action)' }}>{Math.max(0, daysUntil(q1.date))}</b><div className="tiny muted">days · {shortDate(new Date(q1.date + 'T00:00'))}<br />Lessons {q1.lessons[0]}–{q1.lessons[1]}</div></div>
-            <div className="bar thin"><i style={{ width: `${Math.min(100, gap.readiness / .95 * 100)}%` }} /></div><p className="tiny muted">Readiness {Math.round(gap.readiness * 100)}% Secure · target 95%</p></Link>
+            <div className="bar thin"><i style={{ width: `${Math.min(100, gap.readiness / .95 * 100)}%` }} /></div><p className="tiny muted">Readiness {Math.round(gap.readiness * 100)}% · target 95% · next mock {mockAt <= Date.now() ? 'due now' : shortDate(new Date(mockAt))}</p></Link>
           {reading && <Link to="/journey/readings" className="card col gap8" style={{ color: 'inherit', background: 'var(--rh-apricot-bg)', borderColor: 'transparent' }}>
             <p className="eyebrow" style={{ color: 'var(--rh-apricot-deep)' }}>Further reading · {reading.d}</p><b className="disp" style={{ fontSize: 17 }}>{reading.r}</b><Passage refText={reading.r} clamp /><p className="tiny muted">For devotion · never graded</p></Link>}
         </div>
@@ -174,9 +181,11 @@ function ChapterPanel({ m, l, J, onGo }: { m: Manual; l: LessonMeta; J: JT; onGo
   const seen = Object.entries(cards).filter(([k, c]) => k.startsWith(`${m.code}|${m.code}:${l.id}.`) && c.seen > 0).length
   const open = J.unlocked(l), done = J.isDone(l), read = !!readings[`${m.code}|read|${l.id}`]
   const go = (s: SessionSpec) => { onGo?.(); start(s) }
+  const S3 = useStore(), lv = lessonLevel(m, l.id, cards, S3.log, S3.checks, read, S3.learn[`${m.code}|${l.id}`] ?? [])
   return <div className="col gap8">
     <p className="eyebrow">Chapter {l.n} · {lessonDate(l.date)?.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) ?? l.date}</p>
     <h2>{niceTitle(l.title)}</h2>
+    <div className="row gap8 wrap"><span className={`chip ${lv.mastered ? 'ok' : lv.level >= 3 ? 'str' : lv.level ? '' : 'plain'}`}>{lv.mastered ? 'Mastered' : `L${lv.level} · ${lv.name}`}</span><button className="btn link xs" onClick={() => { onGo?.(); nav(`/practice/learn/${l.id}`) }}>Four-day cycle</button></div>
     <p className="small muted">Memory verse · {verseRef(l)} · Bible passage · {l.bp}</p>
     <div className="mt8">
       <button className="cyc" onClick={() => { onGo?.(); nav(`/library/${l.id}`) }}><span className="tile green"><Icon n="book" /></span><span className="grow"><span className="nm">Learn</span><span className="tiny muted" style={{ display: 'block' }}>Read the lesson{words ? ` · ${words} words` : ''}</span></span>{read ? <Icon n="check" style={{ color: 'var(--rh-correct)' }} /> : <Icon n="chev" className="faint" />}</button>
@@ -247,21 +256,30 @@ export function Readings() {
   </div>
 }
 
+function TodayCard({ catchUp, overdue, onGo }: { catchUp: boolean; overdue: number; onGo: () => void }) {
+  return <div className="card col gap8" style={catchUp ? { background: 'var(--rh-warning-bg)', borderColor: 'transparent' } : undefined}>
+    <p className="eyebrow">{catchUp ? 'Catch-up mode' : 'One button'}</p><b className="disp">{catchUp ? `${overdue} overdue, oldest first` : 'Today'}</b>
+    <p className="tiny muted">{catchUp ? 'New lessons pause until the backlog is under your limit. Spacing is never broken to clear it faster.' : 'Due reviews first, then repairs, then new points within your daily cap.'}</p>
+    <button className="btn block" onClick={onGo}>{catchUp ? 'Start catch-up' : 'Start today'}</button></div>
+}
+
 // ---- Stage countdown -------------------------------------------------------------------------------
 export function StageCountdown() {
   const m = useManualData(); const nav = useNavigate(); const { i = '0' } = useParams(); const { cards, sessionSize } = useStore()
   if (!m) return <Loading />
-  const st = m.stages[+i] ?? m.stages[0], g = readinessGap(m, st.lessons, cards), left = Math.max(0, daysUntil(st.date))
+  const checks = useStore(x => x.checks)
+  const st = m.stages[+i] ?? m.stages[0], g = readinessGap(m, st.lessons, cards), rf = readinessFor(m, st.lessons, cards, checks), left = Math.max(0, daysUntil(st.date))
   const ls = m.lessons.filter(l => l.n >= st.lessons[0] && l.n <= st.lessons[1])
   const need = Math.max(0, Math.ceil(.95 * g.total) - g.secure), perDay = Math.ceil(need / Math.max(1, left)), sittings = Math.max(1, Math.ceil(perDay / Math.max(1, sessionSize * .6)))
   return <div className="page col" style={{ maxWidth: 560 }}>
     <BackBar title={st.name} onBack={() => nav('/journey')} />
     <div className="col center" style={{ alignItems: 'center', gap: 4 }}><Glim pose="trophy" size={150} /><b className="disp" style={{ fontSize: 64, lineHeight: '64px', color: 'var(--rh-action)' }}>{left}</b>
       <p className="muted">days to go · {new Date(st.date + 'T00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-    <div className="card col"><div className="row between"><b>Readiness · Lessons {st.lessons[0]}–{st.lessons[1]}</b><b style={{ color: 'var(--rh-action)' }}>{Math.round(g.readiness * 100)}%</b></div>
-      <div className="bar"><i style={{ width: `${Math.min(100, g.readiness / .95 * 100)}%` }} /></div>
-      <div className="row wrap gap8">{ls.map(l => { const r = lessonStats(cards, m, l.id).readiness; return <span key={l.id} className={`chip ${r >= .95 ? 'ok' : r >= .4 ? 'str' : r > 0 ? '' : 'plain'}`} title={`${Math.round(r * 100)}% secure`}>L{l.n}</span> })}</div>
-      <p className="tiny muted">Readiness = share of this stage's points that are Secure. The target is 95%.</p></div>
+    <div className="card col"><div className="row between"><b>Readiness · Lessons {st.lessons[0]}–{st.lessons[1]}</b><b style={{ color: 'var(--rh-action)' }}>{Math.round(rf.readiness * 100)}%</b></div>
+      <div className="bar"><i style={{ width: `${Math.min(100, rf.readiness / .95 * 100)}%` }} /></div>
+      <div className="row wrap gap8">{ls.map(l => { const r = rf.per.find(x => x.l.id === l.id)?.r ?? 0; return <span key={l.id} className={`chip ${r >= .95 ? 'ok' : r >= .4 ? 'str' : r > 0 ? '' : 'plain'}`} title={`${Math.round(r * 100)}% ready`}>L{l.n}</span> })}</div>
+      <p className="tiny muted">Readiness = today's chance of recall across every point, plus your latest mastery check and coverage. Only real recall moves it. Target 95%.</p>
+      {rf.below.length > 0 && <p className="small">Gap: {rf.below.length} lesson{rf.below.length === 1 ? '' : 's'} below target · weakest L{[...rf.below].sort((a, b) => a.r - b.r)[0].l.n}</p>}</div>
     <div className="card row"><span className="tile"><Icon n="calendar" /></span><div className="grow"><b>Suggested pace</b><div className="tiny muted">{need === 0 ? 'At target — keep reviews going' : `${sittings} sitting${sittings === 1 ? '' : 's'} a day · ${need.toLocaleString()} points to secure`}</div></div><Link className="btn sec sm" to="/journey/planner">Plan</Link></div>
     <div className="card row"><span className="tile apricot"><Icon n="scale" /></span><div><b>Competition marking</b><div className="tiny muted">Spelling and hyphens count · capitals and punctuation do not</div></div></div>
   </div>
@@ -285,6 +303,10 @@ export function MasteryCheck() {
         <circle cx="70" cy="70" r="52" stroke="var(--rh-action)" strokeDasharray={seg(st.secure + st.strengthening)} /><circle cx="70" cy="70" r="52" stroke="var(--rh-node-done)" strokeDasharray={seg(st.secure)} /></g></svg>
         <div className="c"><div><b>{pct}%</b><span className="tiny muted">Secure</span></div></div></div>
       <h2>Lesson {l.n} · {niceTitle(l.title)}</h2><p className="small muted">A mixed check across the whole lesson. No whole-lesson retyping.</p></div>
+    {(() => { const S4 = useStore.getState(), lv = lessonLevel(m, id, cards, S4.log, S4.checks, !!S4.readings[`${m.code}|read|${id}`], S4.learn[`${m.code}|${id}`] ?? []); const hist = S4.checks[`${m.code}|${id}`] ?? []
+      return <div className="card col gap8"><div className="row between"><b>Mastery level</b><span className={`chip ${lv.mastered ? 'ok' : 'str'}`}>{lv.mastered ? 'Mastered' : `L${lv.level} · ${lv.name}`}</span></div>
+        <div className="row wrap gap4">{Object.entries(DIRECTIONS).map(([d, v]) => <span key={d} className={`chip ${lv.dirs[d] ? 'ok' : 'plain'}`} title={v.name}>{d}</span>)}</div>
+        <p className="tiny muted">Bidirectional needs every direction passed unaided; Mastered needs two checks of 98% or more at least a week apart.{hist.length ? ` Last checks: ${hist.slice(-3).map(h => Math.round(h.score * 100) + '%').join(', ')}.` : ''}</p></div> })()}
     <div className="col gap8">{CATS.map(([k, t, ic, tone]) => { const [s, c] = stateOf(keys[k]); return <div key={k} className="card row" style={{ padding: 12 }}>
       <span className={`tile ${tone}`} style={{ width: 38, height: 38 }}><Icon n={ic} className="s" /></span><b className="grow">{t} ({keys[k].length})</b><span className={`chip ${c}`}>{s}</span></div> })}</div>
     <button className="btn block mt8" onClick={() => start({ kind: 'check', manual: m.code, lessons: [id], count: 25, title: `Lesson ${l.n} · Check` })}>Start 25 questions</button>

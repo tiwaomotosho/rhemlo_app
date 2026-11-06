@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PlanStatus, Timeline } from './Plan'
 import { daysUntil, dueInfo, lessonDate, niceTitle, readinessGap, weekLesson } from '@/lib/engine'
 import { day, lessonStats, manualStats, useStore, type SessionSpec } from '@/lib/store'
 import type { ManualCode } from '@/lib/types'
@@ -105,6 +106,8 @@ export function Planner() {
       {overdue.length > 0 ? <div className="card row" style={{ borderStyle: 'dashed' }}><span className="tile"><Icon n="history" /></span><div><b>{overdue.length} overdue point{overdue.length === 1 ? '' : 's'} · Lesson {ovL}</b><div className="tiny muted">Kept visible, never deleted to tidy the plan. Still here whenever you are ready.</div></div></div>
         : <div className="card row"><span className="tile green"><Icon n="check" /></span><div><b>Nothing overdue</b><div className="tiny muted">Reviews are on schedule.</div></div></div>}
     </div>
+    <PlanStatus m={m} />
+    <Timeline m={m} />
     {pace && <Sheet label="Change pace" onClose={() => setPace(false)}><div className="col"><h2>Change pace</h2>
       <p className="lbl">Sitting length</p><div className="seg">{[10, 20, 40].map(n => <button key={n} className={size === n ? 'on' : ''} onClick={() => S.set({ sessionSize: n })}>{n}</button>)}</div>
       <p className="lbl mt8">Study days a week</p><div className="seg">{[3, 5, 7].map(n => <button key={n} className={S.prefs.planDays === n ? 'on' : ''} onClick={() => S.set({ prefs: { ...S.prefs, planDays: n } })}>{n}</button>)}</div>
