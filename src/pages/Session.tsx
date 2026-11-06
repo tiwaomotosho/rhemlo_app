@@ -261,7 +261,8 @@ export default function Session() {
   const resp = item ? toResponse(item, a, mcq) : null
   const assisted = forced || hint > 0
   const titleToN = useCallback((t: string) => manual?.lessons.find(l => normText(l.title) === normText(t))?.n, [manual])
-  const leave = useCallback(() => nav('/journey', { replace: true }), [nav])
+  const back = draft?.spec.from ?? spec0?.from ?? (S.draft as { spec?: SessionSpec } | null)?.spec?.from ?? '/journey'
+  const leave = useCallback(() => nav(back, { replace: true }), [nav, back])
 
   const check = useCallback(() => {
     if (!item || !resp || grade || !draft) return
@@ -331,7 +332,7 @@ export default function Session() {
   if (!spec0 && !S.draft && !draft) return <Navigate to="/journey" replace />
   if (empty) return <div className="focus"><div className="fbody" style={{ justifyContent: 'center', paddingBottom: 40 }}>
     <StateCard img="caughtup" title={empty === 'review' ? 'No due review right now' : 'Nothing matches yet'} body={empty === 'review' ? 'Next items return when they are due. A quest keeps you moving meanwhile.' : 'No questions fit this choice. Add lessons or formats, or start a quest from the Journey.'}
-      action={<button className="btn block" onClick={() => nav('/journey', { replace: true })}>Back to journey</button>} /></div></div>
+      action={<button className="btn block" onClick={() => nav(back, { replace: true })}>{back.startsWith('/journey') ? 'Back to journey' : 'Back'}</button>} /></div></div>
   if (!draft || !items || !item) return <div className="focus"><div className="ftop"><div className="bar"><i style={{ width: 0 }} /></div></div><div className="fbody"><div className="skel" style={{ height: 28, width: '50%' }} /><div className="skel" style={{ height: 120 }} /><div className="skel" style={{ height: 56 }} /></div></div>
 
   const total = draft.queue.length, retrying = draft.queue.indexOf(item.u) < draft.index
@@ -440,7 +441,7 @@ export function Done() {
         <div className="row wrap gap8"><span className="chip ok"><Icon n={account ? 'cloud' : 'check'} />{account ? `Synced · ${new Date(account.lastSync).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : 'Saved on this device'}</span><span className="chip">Private · not ranked</span></div>
         {canNotify() && !askedPush && Notification.permission === 'default' && <div className="card row"><img src={asset('illustrations/states/state-notify-256.webp')} width={56} height={56} alt="" /><div className="grow"><b>Want a gentle reminder?</b><div className="tiny muted">One nudge a day at {prefs.remindAt}. Quiet hours respected.</div></div>
           <div className="col gap8"><button className="btn xs" onClick={async () => { set({ askedPush: true }); await askPermission() }}>Turn on</button><button className="btn link" style={{ minHeight: 32 }} onClick={() => set({ askedPush: true })}>Not now</button></div></div>}
-        <div className="row wrap gap8"><button className="btn" onClick={() => nav('/journey')}>Done for now</button><button className="btn sec" disabled={!uniq.length} onClick={again}>Review my misses</button><button className="btn link" onClick={() => nav('/journey')}>Back to journey</button></div>
+        <div className="row wrap gap8"><button className="btn" onClick={() => nav(spec?.from ?? (rec.kind === 'quest' || rec.kind === 'review' || rec.kind === 'today' ? '/journey' : '/practice'))}>Done for now</button><button className="btn sec" disabled={!uniq.length} onClick={again}>Review my misses</button><button className="btn link" onClick={() => nav('/journey')}>Back to journey</button></div>
       </div>
     </div>
   </div>

@@ -10,6 +10,8 @@ export interface Profile { name: string; handle: string; goal: Goal; pace: Pace;
 export interface SessionSpec {
   kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart' | 'quickfire' | 'repair' | 'trap' | 'listen' | 'discrimination' | 'learn' | 'today' | 'mock'; manual: ManualCode; lessons: string[]; count: number
   focus?: string[]; title: string; ranked?: boolean; only?: string[]; attemptId?: string; formats?: 'typed' | 'mcq' | 'mixed'; perItem?: number; learnStep?: string; section?: string
+  /** the page the sitting was started from; finishing or leaving returns there */
+  from?: string
 }
 export interface Draft {
   id: string; spec: SessionSpec; queue: string[]; index: number; right: number; startedAt: number

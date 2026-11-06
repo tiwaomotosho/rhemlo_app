@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { categoryOf, daysUntil, dueInfo, lessonDate, niceTitle, readinessGap, shortDate, weekLesson, type Category } from '@/lib/engine'
 import { loadItems, loadLesson, readPassage } from '@/lib/data'
 import { day, lessonStats, masteryOf, streakInfo, useStore, type SessionSpec } from '@/lib/store'
@@ -32,8 +32,8 @@ export const niceDate = (l: LessonMeta) => { const d = lessonDate(l.date); retur
 export const quarterOf = (m: Manual, n: number) => +(Object.entries(m.groups).find(([, r]) => n >= r[0] && n <= r[1])?.[0] ?? 1)
 
 export function useStart() {
-  const nav = useNavigate()
-  return (spec: SessionSpec) => nav('/practice/session', { state: { spec } })
+  const nav = useNavigate(); const { pathname } = useLocation()
+  return (spec: SessionSpec) => nav('/practice/session', { state: { spec: { ...spec, from: spec.from ?? (pathname.startsWith('/practice/session') ? undefined : pathname) } } })
 }
 const recallSpec = (m: Manual, l: LessonMeta, size: number): SessionSpec => ({ kind: 'quest', manual: m.code, lessons: [l.id], count: size, title: `Lesson ${l.n} · Recall` })
 
