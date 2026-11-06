@@ -53,7 +53,7 @@ VITE_SUPABASE_ANON_KEY=<anon key>
 
 ## What is local-only
 
-Progress, spaced-repetition boxes and the memory ladder live in `localStorage` (`rhemlo.v1`); export/restore is in **You**.
+Progress, spaced-repetition boxes and the memory ladder live in `localStorage` (`rhemlo.v1`); signed in, it syncs to the account (cloud) and merges safely across devices.
 With the demo server, community features work but are simulated; they become real when the live backend is configured.
 
 ## Marking

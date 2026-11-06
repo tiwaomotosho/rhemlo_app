@@ -73,7 +73,7 @@ function sections(demo: boolean, accounts: { email: string; password: string; wh
       <P><b>Appearance</b>: Light, Dark or System, text size, reduced motion, sounds, and day or night map.</P>
       <P><b>Notifications</b>: a daily reminder and due-review nudges, with quiet hours. Browser notifications are offered after a finished sitting.</P>
       <P><b>Downloads</b>: save a quarter of lessons for offline study on the published site.</P>
-      <P><b>Your data</b>: export a backup file, restore it, or erase this device.</P></> },
+      <P><b>Your data</b>: signed in, your progress is kept in the cloud and follows you to every device. You can export your answers or erase this device.</P></> },
     { id: 'demo', title: demo ? 'Demo mode and temporary use' : 'Accounts and sync', icon: 'info', body: demo ? <>
       <div className="card row" style={{ background: 'var(--rh-warning-bg)', borderColor: 'transparent' }}><span className="chip pend">Demo server</span><p className="small">Rhemlo is running in <b>demo mode</b> while its real servers are being set up.</p></div>
       <P><b>What is real:</b> the manual text, all 50,968 questions, the marking, your own answers, mastery, planner and offline downloads.</P>

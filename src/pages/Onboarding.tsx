@@ -13,22 +13,6 @@ const read = (): Draft => { try { return { goal: 'recall', name: '', handle: '',
 const save = (d: Partial<Draft>) => { try { sessionStorage.setItem(KEY, JSON.stringify({ ...read(), ...d })) } catch { /* private mode */ } }
 const isDark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches)
 
-function RestoreSheet({ onClose }: { onClose: () => void }) {
-  const file = useRef<HTMLInputElement>(null); const set = useStore(s => s.set); const nav = useNavigate(); const [msg, setMsg] = useState('')
-  const restore = async (f?: File) => {
-    if (!f) return
-    try { const d = JSON.parse(await f.text()); if (d.v !== 1 || !d.cards) throw 0; set({ ...d, onboarded: true }); nav('/journey', { replace: true }) } catch { setMsg('That file is not a Rhemlo backup.') }
-  }
-  return <Sheet label="Sign in" onClose={onClose}><div className="col">
-    <Glim pose="peek" size={96} /><h2>Welcome back</h2>
-    <p className="muted">Sign-in and sync open when the Rhemlo server is connected. Until then your progress lives on the device you studied on.</p>
-    <p className="muted">If you exported a backup from <b>You → Your data</b>, restore it here.</p>
-    <button className="btn block" onClick={() => file.current?.click()}><Icon n="cloud" />Restore a backup</button>
-    <input ref={file} type="file" accept="application/json" hidden onChange={e => restore(e.target.files?.[0])} />
-    {msg && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{msg}</p>}
-    <button className="btn link" onClick={onClose}>Not now</button></div></Sheet>
-}
-
 export function Welcome() {
   const nav = useNavigate(); const [restore, setRestore] = useState(false); const dark = isDark()
   const hero = dark ? 'worlds/maps/meadow-night/meadow-night-800.webp' : 'worlds/scenes/hero-sunrise/hero-sunrise-800.webp'
@@ -91,12 +75,11 @@ export function Goal() {
 
 export function SignInSheet({ onClose }: { onClose: () => void }) {
   const nav = useNavigate(); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false)
-  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [restore, setRestore] = useState(false)
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false)
   const go = async (e?: string, p?: string) => {
     setBusy(true); setErr('')
     try { await signIn(e ?? email, p ?? pw); nav('/journey', { replace: true }) } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
   }
-  if (restore) return <RestoreSheet onClose={onClose} />
   return <Sheet label="Sign in" onClose={onClose}><form className="col" onSubmit={e => { e.preventDefault(); go() }}>
     <div className="row"><Glim pose="peek" size={72} /><div><h2>Welcome back</h2><p className="small muted">Your progress follows your account.</p></div></div>
     <div><label className="lbl" htmlFor="si-e">Email</label><input id="si-e" className="field" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
@@ -109,7 +92,6 @@ export function SignInSheet({ onClose }: { onClose: () => void }) {
         <span className="grow"><b className="small">{a.email}</b><span className="tiny muted" style={{ display: 'block' }}>{a.who}</span></span><span className="btn sec xs">Use</span></button>)}
       <p className="tiny muted">Password for all demo accounts: <b>{api.demoAccounts()[0]?.password}</b>. Demo people and their activity are simulated.</p></div>}
     <PasswordlessRow email={email} onDone={() => nav('/journey', { replace: true })} onErr={setErr} />
-    <button type="button" className="btn link" onClick={() => setRestore(true)}>Restore a backup file instead</button>
   </form></Sheet>
 }
 

@@ -68,7 +68,7 @@ export default function You() {
       <div className="li"><span className="tile" style={{ width: 38, height: 38 }}><Icon n="clock" className="s" /></span><span className="grow"><b className="small">Sitting length</b><span className="tiny muted" style={{ display: 'block' }}>Every sitting has a real finish line</span></span>
         <div className="seg" style={{ width: 170 }}>{[10, 20, 40].map(n => <button key={n} className={S.sessionSize === n ? 'on' : ''} onClick={() => S.set({ sessionSize: n })}>{n}</button>)}</div></div>
       {S.account && <button className="li" onClick={async () => { await signOut(); nav('/', { replace: true }) }}><span className="tile red" style={{ width: 38, height: 38 }}><Icon n="signout" className="s" /></span><span className="grow"><b className="small">Sign out</b><span className="tiny muted" style={{ display: 'block' }}>{S.account.email} · progress is synced first</span></span></button>}
-      <button className="li" onClick={() => setData(true)}><span className="tile" style={{ width: 38, height: 38 }}><Icon n="cloud" className="s" /></span><span className="grow"><b className="small">Your data</b><span className="tiny muted" style={{ display: 'block' }}>Export, restore or erase what is on this device</span></span><Icon n="chev" className="faint" /></button>
+      <button className="li" onClick={() => setData(true)}><span className="tile" style={{ width: 38, height: 38 }}><Icon n="cloud" className="s" /></span><span className="grow"><b className="small">Your data</b><span className="tiny muted" style={{ display: 'block' }}>Where your progress is kept · export your answers · erase this device</span></span><Icon n="chev" className="faint" /></button>
     </div>
     {signin && <SignInSheet onClose={() => setSignin(false)} />}
     {manualSheet}
@@ -78,19 +78,13 @@ export default function You() {
 }
 
 function DataSheet({ onClose, onErase }: { onClose: () => void; onErase: () => void }) {
-  const S = useStore(); const file = useRef<HTMLInputElement>(null); const [msg, setMsg] = useState(''); const [sure, setSure] = useState(false)
-  const exportData = () => {
-    const { profile, manual, theme, sessionSize, cards, done, ladder, history, points, activeDays, prefs, readings, joined } = S
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ v: 1, profile, manual, theme, sessionSize, cards, done, ladder, history, points, activeDays, prefs, readings, joined }, null, 1)], { type: 'application/json' }))
-    Object.assign(document.createElement('a'), { href: url, download: `rhemlo-progress-${new Date().toISOString().slice(0, 10)}.json` }).click(); URL.revokeObjectURL(url); setMsg('Backup saved to your downloads.')
-  }
-  const importData = async (f?: File) => { if (!f) return; try { const d = JSON.parse(await f.text()); if (d.v !== 1 || !d.cards) throw 0; S.set({ ...d, onboarded: true }); setMsg('Progress restored.') } catch { setMsg('That file is not a Rhemlo backup.') } }
+  const S = useStore(); const nav = useNavigate(); const [sure, setSure] = useState(false)
   return <Sheet label="Your data" onClose={onClose}><div className="col"><h2>Your data</h2>
-    <p className="small muted">Everything lives in this browser. Export a backup before clearing site data or changing devices; accounts and sync come with the Rhemlo server.</p>
-    <div className="row gap8"><button className="btn sec grow" onClick={exportData}><Icon n="download" className="s" />Export backup</button><button className="btn sec grow" onClick={() => file.current?.click()}><Icon n="cloud" className="s" />Restore</button></div>
-    <input ref={file} type="file" accept="application/json" hidden onChange={e => importData(e.target.files?.[0])} />{msg && <p className="small" role="status">{msg}</p>}
-    {!sure ? <button className="btn link" style={{ color: 'var(--rh-incorrect)' }} onClick={() => setSure(true)}>Erase all progress on this device…</button>
-      : <div className="card lav col"><b>Erase everything on this device?</b><p className="small muted">This cannot be undone. Export a backup first if you might want it.</p><div className="row gap8"><button className="btn sec grow" onClick={() => setSure(false)}>Keep it</button><button className="btn bad grow" onClick={() => { S.reset(); onErase() }}>Erase</button></div></div>}
+    {S.account ? <p className="small muted">Your progress is saved to your account and follows you to every device you sign in on. Last synced {new Date(S.account.lastSync).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}.{isDemo ? ' On the demo server, the account copy is kept in this browser.' : ''}</p>
+      : <p className="small muted">You are not signed in, so progress is saved on this device only. Sign in to keep it in the cloud.</p>}
+    <button className="btn sec block" onClick={() => { onClose(); nav('/journey/insights') }}><Icon n="download" className="s" />Export your answers (CSV or JSON)</button>
+    {!sure ? <button className="btn link" style={{ color: 'var(--rh-incorrect)' }} onClick={() => setSure(true)}>Erase progress on this device…</button>
+      : <div className="card lav col"><b>Erase everything on this device?</b><p className="small muted">{S.account ? 'This signs you out here. Your account copy stays in the cloud; sign in again to get it back.' : 'This cannot be undone: without an account there is no other copy.'}</p><div className="row gap8"><button className="btn sec grow" onClick={() => setSure(false)}>Keep it</button><button className="btn bad grow" onClick={async () => { if (S.account) await signOut(); else S.reset(); onErase() }}>Erase</button></div></div>}
   </div></Sheet>
 }
 
