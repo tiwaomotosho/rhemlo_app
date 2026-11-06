@@ -14,7 +14,7 @@ const save = (d: Partial<Draft>) => { try { sessionStorage.setItem(KEY, JSON.str
 const isDark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches)
 
 export function Welcome() {
-  const nav = useNavigate(); const [restore, setRestore] = useState(false); const dark = isDark()
+  const nav = useNavigate(); const [signin, setSignin] = useState(false); const dark = isDark()
   const hero = dark ? 'worlds/maps/meadow-night/meadow-night-800.webp' : 'worlds/scenes/hero-sunrise/hero-sunrise-800.webp'
   const heroL = dark ? 'worlds/maps/meadow-night/meadow-night-1254.webp' : 'worlds/scenes/hero-sunrise/hero-sunrise-1254.webp'
   return <div className="wel">
@@ -26,7 +26,7 @@ export function Welcome() {
         <h1>Your next chapter starts here.</h1>
         <p className="muted">Learn your Sunday School manual word for word, one small quest at a time.</p>
         <button className="btn block" onClick={() => nav('/join/goal')}>Get started</button>
-        <button className="btn sec block" onClick={() => setRestore(true)}>I already have an account</button>
+        <button className="btn sec block" onClick={() => setSignin(true)}>I already have an account</button>
         <p className="tiny faint">No app store needed. Works in your browser.</p>
       </div>
     </div>
@@ -35,7 +35,7 @@ export function Welcome() {
         <div className="row"><Glim pose="read" size={60} still cw="classic" /><span className="disp" style={{ fontSize: 30 }}>Rhemlo</span></div>
         <h1>Little quests.<br /><span>Lasting light.</span></h1>
         <p className="muted" style={{ fontSize: 19, lineHeight: '30px', maxWidth: 480 }}>Master your Sunday School manual word for word through short quests, precise feedback, weekly leagues and Quiz Nights with your church.</p>
-        <div className="row"><button className="btn" onClick={() => nav('/join/goal')}>Get started</button><button className="btn sec" onClick={() => setRestore(true)}>Sign in</button></div>
+        <div className="row"><button className="btn" onClick={() => nav('/join/goal')}>Get started</button><button className="btn sec" onClick={() => setSignin(true)}>Sign in</button></div>
         <div className="row wrap gap8">{[['target', 'Exact recall'], ['lantern', 'Real stopping points'], ['fair', 'Private by default']].map(([b, t]) =>
           <span key={b} className="promise"><img src={asset(`emblems/badges/badge-${b}-128.webp`)} alt="" />{t}</span>)}</div>
       </div>
@@ -45,7 +45,7 @@ export function Welcome() {
         <Glim pose="wave" motion="wave" once size={300} cw="classic" style={{ position: 'absolute', left: '38%', bottom: 0 }} />
       </div>
     </div>
-    {restore && <SignInSheet onClose={() => setRestore(false)} />}
+    {signin && <SignInSheet onClose={() => setSignin(false)} />}
   </div>
 }
 
