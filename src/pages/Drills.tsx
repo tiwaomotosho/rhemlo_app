@@ -11,6 +11,7 @@ import { useStore } from '@/lib/store'
 import type { Item, Lesson, Manual } from '@/lib/types'
 import { BackBar, Icon, Loading, useManualData } from '@/ui/bits'
 import { useStart, verseRef } from './Journey'
+import { ScopeBar, useScope } from '@/ui/Scope'
 
 // ---- Learn a lesson: the four-day cycle (PRD 6.3) --------------------------------------------------
 export function LearnLesson() {
@@ -53,8 +54,8 @@ export function Matching() {
   const m = useManualData(); const nav = useNavigate(); const { done } = useStore()
   const [kind, setKind] = useState('number'); const [pairs, setPairs] = useState<Pair[] | null>(null); const [round, setRound] = useState(0)
   const [pickL, setPickL] = useState<number | null>(null); const [matched, setMatched] = useState<number[]>([]); const [bad, setBad] = useState<[number, number] | null>(null); const [moves, setMoves] = useState(0); const [t0, setT0] = useState(Date.now())
-  const lessons = useMemo(() => { if (!m) return []; const d = m.lessons.filter(l => done[`${m.code}|${l.id}`]); return (d.length >= 6 ? d : m.lessons.slice(0, 12)).map(l => l.id) }, [m, done])
-  useEffect(() => { if (!m) return; setPairs(null); setMatched([]); setMoves(0); setPickL(null); setT0(Date.now()); pairsFor(m, kind, lessons, kind + round + Date.now()).then(setPairs) }, [m, kind, round]) // eslint-disable-line
+  const sc = useScope(m), lessons = sc.ids; void done
+  useEffect(() => { if (!m) return; setPairs(null); setMatched([]); setMoves(0); setPickL(null); setT0(Date.now()); pairsFor(m, kind, lessons, kind + round + Date.now()).then(setPairs) }, [m, kind, round, lessons.join()]) // eslint-disable-line
   const right = useMemo(() => pairs ? shuffleSeed(pairs.map((p, i) => ({ ...p, i })), 'r' + round + kind) : [], [pairs]) // eslint-disable-line
   if (!m) return <Loading />
   const tapR = (i: number) => { if (pickL === null || matched.includes(i)) return; setMoves(x => x + 1); if (i === pickL) { setMatched(x => [...x, i]); setPickL(null); play('correct') } else { setBad([pickL, i]); play('wrong'); setTimeout(() => { setBad(null); setPickL(null) }, 600) } }
@@ -62,7 +63,8 @@ export function Matching() {
   return <div className="page col gap16" style={{ maxWidth: 760 }}>
     <BackBar title="Matching" onBack={() => nav('/practice')} />
     <div className="seg">{([['number', 'Lesson ↔ number'], ['verse', 'Lesson ↔ memory verse'], ['refs', 'Point ↔ reference']] as const).map(([k, t]) => <button key={k} className={kind === k ? 'on' : ''} onClick={() => setKind(k)}>{t}</button>)}</div>
-    <p className="tiny muted">A warm-up from lessons you have cleared. It does not change your memory schedule.</p>
+    <ScopeBar m={m} />
+    <p className="tiny muted">A warm-up from your practice scope. It does not change your memory schedule.</p>
     {!pairs ? <div className="skel" style={{ height: 300 }} /> : finished ? <div className="card col center" style={{ alignItems: 'center' }}><h2>All matched</h2><p className="muted">{moves} taps · {Math.round((Date.now() - t0) / 1000)} seconds</p><button className="btn" onClick={() => setRound(r => r + 1)}>Next round</button></div> :
       <div className="grid2" style={{ alignItems: 'start' }}>
         <div className="col gap8">{pairs.map((p, i) => <button key={i} className={`opt ${matched.includes(i) ? 'right' : pickL === i ? 'sel' : bad?.[0] === i ? 'wrong' : ''}`} disabled={matched.includes(i)} onClick={() => setPickL(i)}><span className="grow small">{p.l}</span></button>)}</div>
@@ -74,12 +76,14 @@ export function Matching() {
 export function Flashcards() {
   const m = useManualData(); const nav = useNavigate(); const S = useStore()
   const [cards, setCards] = useState<Item[] | null>(null); const [i, setI] = useState(0); const [flip, setFlip] = useState(false); const [tally, setTally] = useState([0, 0])
-  useEffect(() => { if (!m) return; const ls = m.lessons.filter(l => S.done[`${m.code}|${l.id}`]).map(l => l.id); Promise.all((ls.length ? ls : ['L01']).map(l => loadItems(m.code, l))).then(x => setCards(shuffleSeed(x.flat().filter(it => ['Q05', 'Q07', 'Q09', 'Q10', 'Q12', 'Q29', 'Q31', 'Q14'].includes(it.t) && (it.a.text || it.a.items)), String(Date.now())).slice(0, 20))) }, [m?.code]) // eslint-disable-line
+  const sc = useScope(m)
+  useEffect(() => { if (!m) return; const ls = sc.ids; Promise.all(ls.map(l => loadItems(m.code, l))).then(x => setCards(shuffleSeed(x.flat().filter(it => ['Q05', 'Q07', 'Q09', 'Q10', 'Q12', 'Q29', 'Q31', 'Q14'].includes(it.t) && (it.a.text || it.a.items)), String(Date.now())).slice(0, 20))) }, [m?.code, sc.ids.join()]) // eslint-disable-line
   if (!m || !cards) return <Loading />
   const c = cards[i]
   const rate = (knew: boolean) => { S.recordAnswer(m.code, c, knew, true, { mode: 'flashcard' }); setTally(t => [t[0] + (knew ? 1 : 0), t[1] + 1]); setFlip(false); setI(i + 1) }
   return <div className="page col gap16" style={{ maxWidth: 560 }}>
     <BackBar title="Flashcards" onBack={() => nav('/practice')} />
+    <ScopeBar m={m} />
     {!c ? <div className="card col center" style={{ alignItems: 'center' }}><h2>Deck done</h2><p className="muted">You knew {tally[0]} of {tally[1]}. Self-rated cards count as assisted, so they move your schedule less than a typed answer.</p><Link className="btn" to="/practice">Back to Practice</Link></div> : <>
       <p className="tiny muted center">{i + 1} of {cards.length} · Lesson {+lessonOfKey(c.s).slice(1)}</p>
       <button className="card col center" style={{ minHeight: 260, justifyContent: 'center', alignItems: 'center', gap: 12, color: 'inherit' }} onClick={() => setFlip(!flip)} aria-label={flip ? 'Show the question' : 'Show the answer'}>
@@ -93,19 +97,21 @@ export function Flashcards() {
 
 // ---- Discrimination drill (confusable lessons) ---------------------------------------------------------
 export function Discrimination() {
-  const m = useManualData(); const nav = useNavigate(); const start = useStart(); const { log } = useStore()
+  const m = useManualData(); const nav = useNavigate(); const start = useStart(); const { log } = useStore(); const sc = useScope(m)
   if (!m) return <Loading />
   const byTitle = new Map(m.lessons.map(l => [normText(l.title), l]))
   const counts = new Map<string, number>()
   for (const e of log) { if (e.ok || e.m !== m.code || !e.wrote || !['Q15', 'Q10', 'Q08', 'Q31', 'Q30', 'Q29'].includes(e.t)) continue
     const a = lessonOfKey(e.s), w = byTitle.get(normText(e.wrote)) ?? m.lessons.find(l => String(l.n) === e.wrote!.trim()); if (!w || w.id === a) continue
+    if (!sc.ids.includes(a) && !sc.ids.includes(w.id)) continue
     const k = [a, w.id].sort().join('|'); counts.set(k, (counts.get(k) ?? 0) + 1) }
   const pairs = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
-  const fallback = m.lessons.slice(0, 12).flatMap((l, i, a) => i % 2 ? [] : a[i + 1] ? [[`${l.id}|${a[i + 1].id}`, 0] as [string, number]] : [])
+  const fallback = m.lessons.filter(l => sc.ids.includes(l.id)).slice(0, 12).flatMap((l, i, a) => i % 2 ? [] : a[i + 1] ? [[`${l.id}|${a[i + 1].id}`, 0] as [string, number]] : [])
   const name = (id: string) => { const l = m.lessons.find(x => x.id === id)!; return `L${l.n} ${niceTitle(l.title)}` }
   return <div className="page col gap16" style={{ maxWidth: 640 }}>
     <BackBar title="Discrimination drill" onBack={() => nav('/practice')} />
     <p className="small muted">Side-by-side practice for lessons that get mixed up: which lesson, shared references and outline points.</p>
+    <ScopeBar m={m} />
     <p className="eyebrow">{pairs.length ? 'Lessons you have confused' : 'Neighbouring lessons'}</p>
     <div className="col gap8">{(pairs.length ? pairs : fallback).map(([k, n]) => { const [a, b] = k.split('|'); return <button key={k} className="card row" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => start({ kind: 'discrimination', manual: m.code, lessons: [a, b], count: 16, title: `${name(a)} vs ${name(b)}` })}>
       <span className="tile apricot"><Icon n="scale" /></span><span className="grow small"><b>{name(a)}</b><br /><b>{name(b)}</b>{n ? <span className="tiny muted" style={{ display: 'block' }}>Mixed up {n} time{n === 1 ? '' : 's'}</span> : null}</span><Icon n="chev" className="faint" /></button> })}</div>

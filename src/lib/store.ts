@@ -20,7 +20,7 @@ export interface Prefs {
   textScale: number; reduceMotion: boolean; mapWorld: 'theme' | 'day' | 'night'
   notif: { study: boolean; due: boolean; circle: boolean; quiz: boolean; league: boolean }; quiet: [string, string]; channel: 'inapp' | 'push' | 'email'
   keepPrivate: boolean; leagues: boolean; planDays: number; remindAt: string; sound: boolean
-  phases: Phase[]; newCap: number; reviewCap: number; overdueLimit: number; adaptive: boolean; mcqCount: number; birthYear?: number; guardian?: boolean; dmFrom: 'everyone' | 'connections' | 'nobody'; visibility: 'public' | 'hidden'; selfGrade: boolean
+  phases: Phase[]; newCap: number; reviewCap: number; overdueLimit: number; adaptive: boolean; mcqCount: number; birthYear?: number; guardian?: boolean; scope?: Record<string, { quarters: string[]; lessons: string[] }>; dmFrom: 'everyone' | 'connections' | 'nobody'; visibility: 'public' | 'hidden'; selfGrade: boolean
 }
 export const DEFAULT_PREFS: Prefs = { textScale: 1, reduceMotion: false, mapWorld: 'theme', notif: { study: true, due: true, circle: false, quiz: false, league: false }, quiet: ['22:00', '07:00'], channel: 'inapp', keepPrivate: true, leagues: false, planDays: 5, remindAt: '18:30', sound: false,
   phases: DEFAULT_PHASES, newCap: 40, reviewCap: 200, overdueLimit: 150, adaptive: true, mcqCount: 4, dmFrom: 'connections', visibility: 'public', selfGrade: true }

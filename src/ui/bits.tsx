@@ -73,6 +73,7 @@ const P: Record<string, ReactNode> = {
   send: <path d="m4 12 16-8-6 16-2.5-6.5L4 12Z" />, mute: <><path d="M4 9v6h4l5 4V5L8 9H4ZM17 9l5 6M22 9l-5 6" /></>,
   door: <><path d="M14 4H6v16h8M10 12h11M18 9l3 3-3 3" /></>,
   plus: <path d="M12 5v14M5 12h14" />, filter: <path d="M4 5h16l-6 8v6l-4-2v-4L4 5Z" />,
+  bolt: <path d="M13 2.5 4.5 13.5H12l-1 8 8.5-11H12l1-8Z" />,
   trophy: <><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" /><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4" /></>,
   chat: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h0A2.5 2.5 0 0 1 3 13.5" /><path d="M8 8.5h8M8 12h5" /></>,
   inbox: <><path d="M3 13.5 5.5 5h13l2.5 8.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4.5Z" /><path d="M3 13.5h5l1.5 2.5h5l1.5-2.5h5" /></>,

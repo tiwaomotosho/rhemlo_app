@@ -7,6 +7,7 @@ import type { Item, Manual } from '@/lib/types'
 import { BackBar, Glim, Icon, Loading, StatPills, useManualData } from '@/ui/bits'
 import { useStart, verseRef } from './Journey'
 import { nextMockDate } from './Mock'
+import { ScopeBar, useScope } from '@/ui/Scope'
 
 const FOCUS_ICON: Record<string, string> = { verses: 'quote', outlines: 'listn', references: 'bookmark', sentences: 'letter', spelling: 'spell', listening: 'speaker' }
 const CAT_LABEL: Record<string, [string, string, string]> = { refs: ['References', 'bookmark', 'apricot'], outline: ['Outline', 'listn', 'green'], verse: ['Memory verse', 'quote', ''], sentences: ['Key sentences', 'letter', ''] }
@@ -29,11 +30,11 @@ export function useWeakSpots(m: Manual | null) {
 
 export default function Practice() {
   const m = useManualData(); const { cards, done, sessionSize, mocks } = useStore(); const start = useStart(); const nav = useNavigate()
-  const weak = useWeakSpots(m)
+  const weak = useWeakSpots(m); const sc = useScope(m)
   if (!m) return <Loading />
   const due = dueInfo(cards, m.code)
-  const cur = m.lessons.find(l => !done[`${m.code}|${l.id}`]) ?? m.lessons[0]
-  const learned = (() => { const d = m.lessons.filter(l => done[`${m.code}|${l.id}`] || Object.keys(cards).some(k => k.startsWith(`${m.code}|${m.code}:${l.id}.`))).map(l => l.id); return d.length ? d : [cur.id] })()
+  const cur = sc.cur ?? m.lessons.find(l => !done[`${m.code}|${l.id}`]) ?? m.lessons[0]
+  const learned = sc.ids
   const leeches = Object.entries(cards).filter(([k, c]) => k.startsWith(m.code + '|') && c.leech).length
   const nextMock = nextMockDate(mocks.filter(x => x.manual === m.code))
   return <div className="page col gap16" style={{ maxWidth: 760 }}>
@@ -53,6 +54,7 @@ export default function Practice() {
       <div className="grow"><b className="disp" style={{ fontSize: 17 }}>Mock exam (CBT)</b><div className="tiny" style={{ opacity: .85 }}>Timed, mixed typed and choice, sources hidden, marked at the end{nextMock <= Date.now() ? ' · scheduled mock due' : ''}</div></div>
       <Link className="btn apricot sm" to="/practice/mock">Set up</Link></div>
     <p className="eyebrow mt8">Study modes</p>
+    <ScopeBar m={m} />
     <div className="modegrid">{([
       ['bolt', 'Quick-fire', 'Rapid answers, 12 s each', () => start({ kind: 'quickfire', manual: m.code, lessons: learned, count: 20, perItem: 12, title: 'Quick-fire' })],
       ['refresh', 'Repair drill', leeches ? `${leeches} stubborn point${leeches === 1 ? '' : 's'} and recent misses` : 'Recent misses', () => start({ kind: 'repair', manual: m.code, lessons: learned, count: sessionSize, title: 'Repair drill' })],
