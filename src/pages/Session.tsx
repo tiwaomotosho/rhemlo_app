@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { buildSession, KIND_LABEL, lessonOfKey, niceTitle, shuffleSeed } from '@/lib/engine'
 import { loadItems, loadManual } from '@/lib/data'
-import { gradeItem, normText, typedRefs, type Grade } from '@/lib/grade'
+import { classify, gradeItem, normText, typedRefs, wordDiff, type Grade } from '@/lib/grade'
 import { useStore, type Draft, type SessionSpec } from '@/lib/store'
 import type { Item, Manual, Response, SittingRecord } from '@/lib/types'
 import { ContextSheet, Glim, Icon, Sheet, StateCard, asset } from '@/ui/bits'
@@ -57,13 +57,14 @@ function Prompt({ item, cur, lessonsN }: { item: Item; cur: number; lessonsN: (n
 }
 
 // ---- answer area -------------------------------------------------------------------------------------
-type AState = { text: string; vals: string[]; sel: string; chosen: number[]; pick: number | null; book: string; cv: string; typeRef: boolean; order: number[] }
+type AState = { text: string; vals: string[]; sel: string; chosen: number[]; pick: number | null; book: string; cv: string; typeRef: boolean; order: number[]; multi: string[] }
 function useAnswer(item: Item) {
   const n = item.p.input.count ?? 1
-  return useState<AState>({ text: '', vals: Array(n).fill(''), sel: '', chosen: [], pick: null, book: '', cv: '', typeRef: false, order: (item.p.shuffled ?? []).map((_, i) => i) })
+  return useState<AState>({ text: '', vals: Array(n).fill(''), sel: '', chosen: [], pick: null, book: '', cv: '', typeRef: false, order: (item.p.shuffled ?? []).map((_, i) => i), multi: [] })
 }
 export function toResponse(item: Item, a: AState, mcq: boolean): Response | null {
   const k = item.p.input.kind
+  if (k === 'multi') return a.multi.length ? { kind: 'multi', values: a.multi } : null
   if (mcq) return a.sel ? { kind: 'choice', value: a.sel } : null
   if (k === 'fields') return a.vals.every(v => v.trim()) ? { kind: 'fields', values: a.vals } : null
   if (k === 'order') return { kind: 'order', values: a.order.map(i => item.p.shuffled![i]) }
@@ -82,13 +83,19 @@ function FieldBox({ id, label: lab, value, onChange, state, inputRef, onFocus, .
     <input id={id} ref={inputRef} className="field" value={value} readOnly={state !== undefined} onFocus={onFocus} onChange={e => onChange(e.target.value)} {...OFF} {...rest} /></div></div>
 }
 
-function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold }: { item: Item; a: AState; setA: (f: (a: AState) => AState) => void; mcq: boolean; grade: Grade | null; setCur: (n: number) => void; titleToN: (t: string) => number | undefined; hold?: boolean }) {
+function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold, options }: { item: Item; a: AState; setA: (f: (a: AState) => AState) => void; mcq: boolean; grade: Grade | null; setCur: (n: number) => void; titleToN: (t: string) => number | undefined; hold?: boolean; options: string[] }) {
   const k = item.p.input.kind, locked = !!grade || !!hold, n = item.p.input.count ?? 1
   const refs = useRef<(HTMLInputElement | HTMLTextAreaElement | null)[]>([])
   useEffect(() => { if (!locked && matchMedia('(min-width:640px)').matches) refs.current[0]?.focus({ preventScroll: true }) }, [item.u, mcq]) // eslint-disable-line
-  const options = useMemo(() => shuffleSeed([item.a.text ?? '', ...item.d].filter(Boolean), item.u), [item])
   const note = item.p.input.note && !mcq ? <p className="hint"><Icon n="spell" />{k === 'spot_error' ? 'Your device will not autocorrect here. That is on purpose.' : item.p.input.note.includes('reference picker') ? '“1 tim 4:8” and “1 Timothy 4:8” both work. Capitals and spacing are forgiven; numbers are not.' : item.p.input.note.replace(/^One box each, in order\. /, '')}</p> : null
   const right = (o: string) => normText(o) === normText(item.a.text ?? '')
+
+  if (k === 'multi') return <div className="col gap8" role="group" aria-label="Choose all that apply">{options.map((o, i) => {
+    const on = a.multi.includes(o), right = (item.a.items ?? []).some(x => normText(x) === normText(o))
+    const st = locked ? (right ? 'right' : on ? 'wrong' : '') : on ? 'sel' : ''
+    return <button key={o} role="checkbox" aria-checked={on} className={`opt ${st}`} disabled={locked} onClick={() => setA(x => ({ ...x, multi: on ? x.multi.filter(y => y !== o) : [...x.multi, o] }))}>
+      <span className="k" style={{ borderRadius: 6 }}>{on ? '✓' : ''}</span><span className="grow">{o}</span>{st === 'right' && <Icon n="check" style={{ color: 'var(--rh-correct)' }} />}</button>
+  })}<p className="hint"><Icon n="info" />Select every right answer, then check. More than one is right.</p></div>
 
   if (mcq) return <div className="col gap8" role="radiogroup" aria-label="Choices">{options.map((o, i) => {
     const st = locked ? (right(o) ? 'right' : a.sel === o ? 'wrong' : '') : a.sel === o ? 'sel' : ''
@@ -158,7 +165,7 @@ function Answer({ item, a, setA, mcq, grade, setCur, titleToN, hold }: { item: I
   }
 
   const long = k === 'long_text', exp = words(item.a.text ?? '')
-  const lab = item.t === 'Q04' ? 'Your verse' : item.t === 'Q22' ? 'Your sentence' : k === 'lesson' ? 'Lesson number or title' : item.t === 'Q01' || item.t === 'Q06' || item.t === 'Q17' ? 'Your word' : 'Your answer'
+  const lab = item.t === 'Q04' ? 'Your verse' : item.t === 'Q22' ? 'Your sentence' : k === 'number' ? 'Lesson number' : k === 'lesson' ? 'Lesson number or title' : item.t === 'Q01' || item.t === 'Q06' || item.t === 'Q17' ? 'Your word' : 'Your answer'
   return <div className="col">
     {long ? <div><label className="lbl" htmlFor="ans">{lab}</label><div className={`fwrap ${locked ? (grade?.correct ? 'ok' : 'bad') : ''}`}>
       <textarea id="ans" ref={e => { refs.current[0] = e }} className="field" rows={4} value={a.text} readOnly={locked} {...OFF} onChange={e => setA(x => ({ ...x, text: e.target.value }))} /></div>
@@ -182,6 +189,27 @@ function explain(w: string, e: string) {
   return 'Two letters are swapped or changed.'
 }
 const PRAISE = ['Answer saved.', 'Saved. On to the next.', 'Answer saved. Nicely recalled.']
+const hashStr = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
+/** Where each wrong option came from (PRD 9.4 / FR-CP-06 "how the options were chosen"). */
+function why(item: Item, o: string, titleToN: (t: string) => number | undefined, past: string[]): string {
+  const ans = item.a.text ?? ''
+  if (past.some(p => normText(p) === normText(o))) return 'You wrote this before'
+  if (item.t === 'Q33') return 'A look-alike spelling'
+  if (item.t === 'Q36' || item.t === 'Q32') return normText(o).split(' ').sort().join(' ') === normText(ans).split(' ').sort().join(' ') ? 'Same points, swapped order' : 'Points from another lesson'
+  const ro = typedRefs(o)[0], ra = typedRefs(ans)[0]
+  if (ro && ra) { const [bo, co] = [ro.replace(/\s+\d.*$/, ''), ro.split(':')[0]], [ba, ca] = [ra.replace(/\s+\d.*$/, ''), ra.split(':')[0]]
+    return co === ca ? 'A neighbouring verse' : bo === ba ? 'Same book, another chapter' : 'Another reference from the manual' }
+  const n = titleToN(o); if (n) return `The title of Lesson ${n}`
+  if (/^\d+$/.test(o)) return `Lesson ${o}`
+  return item.t === 'Q15' || item.t === 'Q10' ? 'An easily confused lesson' : 'Another point from the manual'
+}
+function WhyOptions({ item, options, picked, titleToN, past }: { item: Item; options: string[]; picked: string; titleToN: (t: string) => number | undefined; past: string[] }) {
+  const [open, setOpen] = useState(false)
+  const wrong = options.filter(o => normText(o) !== normText(item.a.text ?? ''))
+  return <div className="mt8">{!open ? <button className="btn link" style={{ minHeight: 32, padding: 0 }} onClick={() => setOpen(true)}>Why these options?</button>
+    : <dl className="diffgrid" style={{ gridTemplateColumns: '1fr auto' }}>{wrong.map(o => <FragmentWhy key={o} o={o} w={why(item, o, titleToN, past)} you={o === picked} />)}</dl>}</div>
+}
+const FragmentWhy = ({ o, w, you }: { o: string; w: string; you: boolean }) => <><dt style={{ fontWeight: you ? 800 : 500, color: 'var(--rh-text)' }}>{o.length > 70 ? o.slice(0, 70) + '…' : o}{you ? ' (your choice)' : ''}</dt><dd className="tiny muted" style={{ fontWeight: 600 }}>{w}</dd></>
 
 // ---- the sitting -----------------------------------------------------------------------------------
 export default function Session() {
@@ -192,6 +220,8 @@ export default function Session() {
   const [grade, setGrade] = useState<Grade | null>(null); const [ctx, setCtx] = useState(false); const [forced, setForced] = useState(false)
   const [report, setReport] = useState(false); const [cur, setCur] = useState(0)
   const booted = useRef(false); const dRef = useRef<Draft | null>(null)
+  const shownAt = useRef(Date.now()); const [hint, setHint] = useState(0); const [typedTypes, setTypedTypes] = useState<Record<string, boolean>>({}); const runs = useRef<Record<string, number>>({}); const [notice, setNotice] = useState('')
+  const [slip, setSlip] = useState(false); const [left, setLeft] = useState<number | null>(null)
   const save = (d: Draft) => { dRef.current = d; setDraft(d); S.setDraft(d) }
 
   useEffect(() => {
@@ -213,16 +243,35 @@ export default function Session() {
 
   const item = draft && items ? items.get(draft.queue[draft.index]) : undefined
   const [a, setA] = useAnswerFor(item)
-  const mcq = !!item && (item.p.input.kind === 'choice' || !item.f.includes('typed') || forced)
+  const fmt = draft?.spec.formats
+  const mcq = !!item && item.p.input.kind !== 'multi' && (item.p.input.kind === 'choice' || !item.f.includes('typed') || forced || (fmt === 'mcq' && item.f.includes('mcq')) || (fmt === 'mixed' && item.f.includes('mcq') && (hashStr(item.u) % 2 === 0)) || (draft?.spec.kind === 'quickfire' && item.f.includes('mcq'))) && !(typedTypes[item.t] && item.f.includes('typed') && item.p.input.kind !== 'choice')
+  const card = item && draft ? S.cards[`${draft.spec.manual}|${item.s}`] : undefined
+  const options = useMemo(() => {
+    if (!item) return []
+    const n = Math.max(3, Math.min(5, S.prefs.mcqCount)) - 1
+    const past = S.log.filter(e => e.u === item.u && !e.ok && e.wrote && !e.mcq && e.wrote.length < 120).map(e => e.wrote!).filter((w, i, arr) => arr.indexOf(w) === i && normText(w) !== normText(item.a.text ?? ''))
+    const pool = [...past.slice(0, 1), ...item.d].filter((x, i, arr) => arr.findIndex(y => normText(y) === normText(x)) === i).slice(0, n)
+    const right = item.p.input.kind === 'multi' ? (item.a.items ?? []) : [item.a.text ?? '']
+    return shuffleSeed([...right, ...pool].filter(Boolean), `${item.u}:${card?.seen ?? 0}`) // position changes on every attempt (FR-MC-03)
+  }, [item?.u, card?.seen]) // eslint-disable-line
+  useEffect(() => { shownAt.current = Date.now(); setHint(0); setSlip(false); setLeft(draft?.spec.perItem ?? null) }, [item?.u, draft?.index]) // eslint-disable-line
+  useEffect(() => { if (item && draft?.spec.kind === 'listen' && item.p.speak) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(item.p.speak); u.rate = .95; speechSynthesis.speak(u) } }, [item?.u]) // eslint-disable-line
   const resp = item ? toResponse(item, a, mcq) : null
+  const assisted = forced || hint > 0
   const titleToN = useCallback((t: string) => manual?.lessons.find(l => normText(l.title) === normText(t))?.n, [manual])
   const leave = useCallback(() => nav('/journey', { replace: true }), [nav])
 
   const check = useCallback(() => {
     if (!item || !resp || grade || !draft) return
-    const g = gradeItem(item, resp); setGrade(g)
+    const g = gradeItem(item, resp); setGrade(g); const ms = Date.now() - shownAt.current
     if (!draft.spec.ranked) play(g.correct ? 'correct' : 'wrong')
-    S.recordAnswer(draft.spec.manual, item, g.correct, forced)
+    const err = g.correct ? undefined : classify(g.wrote.join(' '), g.expected.join(' '), mcq ? 'choice' : item.p.input.kind, item.a.text).kind
+    S.recordAnswer(draft.spec.manual, item, g.correct, assisted, { ms, mcq, err, wrote: g.correct ? undefined : g.wrote.join(' · ').slice(0, 200), expected: g.correct ? undefined : g.expected.join(' · ').slice(0, 200), trap: !g.correct ? item.a.trap : undefined, mode: draft.spec.kind })
+    // honest adaptation (FR-AD-03): step up after five quick right answers of a kind in a row, told why
+    if (S.prefs.adaptive && !draft.spec.ranked) {
+      const r = runs.current; r[item.t] = g.correct && ms < 15000 && mcq ? (r[item.t] ?? 0) + 1 : 0
+      if (r[item.t] >= 5 && item.f.includes('typed') && !typedTypes[item.t]) { setTypedTypes(x => ({ ...x, [item.t]: true })); setNotice(`Harder: five quick ${label(item.t).toLowerCase()} answers in a row, so these are typed now. Turn this off in Settings.`) }
+    }
     if (g.correct && ['Q27', 'Q28', 'Q04', 'Q06'].includes(item.t) && (item.t !== 'Q06' || draft.spec.kind === 'ladder')) S.markLadder(draft.spec.manual, lessonOfKey(item.s), item.t.toLowerCase() as 'q27')
     const retry = !g.correct && !draft.again.includes(item.u) && !draft.spec.ranked
     save({ ...draft, right: draft.right + (g.correct ? 1 : 0), queue: retry ? [...draft.queue, item.u] : draft.queue, again: retry ? [...draft.again, item.u] : draft.again, answered: [...draft.answered, item.u], rankedAnswers: draft.spec.ranked ? [...(draft.rankedAnswers ?? []), { u: item.u, value: JSON.stringify(resp), ms: Date.now() - draft.startedAt }] : draft.rankedAnswers,
@@ -244,6 +293,16 @@ export default function Session() {
     } else save({ ...d, index: d.index + 1 })
   }, [grade]) // eslint-disable-line
 
+  useEffect(() => {
+    if (left === null || grade || !item) return
+    if (left <= 0) { // time is up: an empty answer is marked like any other
+      const g = gradeItem(item, resp ?? { kind: 'text', value: '' }); setGrade(g); play('wrong')
+      S.recordAnswer(draft!.spec.manual, item, g.correct, assisted, { ms: (draft!.spec.perItem ?? 0) * 1000, mcq, err: g.correct ? undefined : 'wrong word', mode: draft!.spec.kind })
+      save({ ...draft!, right: draft!.right + (g.correct ? 1 : 0), answered: [...draft!.answered, item.u], misses: g.correct ? draft!.misses : [...draft!.misses, { u: item.u, wrote: resp ? g.wrote.join(' · ') : '(time up)', expected: g.expected.join(' · '), t: item.t }] })
+      return
+    }
+    const t = setTimeout(() => setLeft(l => (l ?? 1) - 1), 1000); return () => clearTimeout(t)
+  }, [left, grade]) // eslint-disable-line
   const stepBack = () => { // Q04 → back to the fade rung of the same verse, no penalty
     const d = dRef.current; if (!d || !item) return
     loadItems(d.spec.manual, lessonOfKey(item.s)).then(its => { const f = its.find(i => i.t === 'Q28' && i.s === item.s) ?? its.find(i => i.t === 'Q28'); if (!f) return
@@ -277,21 +336,30 @@ export default function Session() {
   const single = !!grade && !grade.correct && !grade.parts && grade.wrote.length === 1 && grade.expected.length === 1
   const near = single && item.p.input.kind !== 'reference' && lev1(normText(grade!.wrote[0]), normText(grade!.expected[0]))
   const refNear = single && item.p.input.kind === 'reference' && (() => { const w = typedRefs(grade!.wrote[0])[0], e = grade!.expected[0]; return !!w && w.split(':')[0] === e.split(':')[0] })()
-  const title = !grade ? '' : grade.correct ? 'That is the one.' : near ? 'One spelling to fix.' : refNear ? 'Close. Check the verse.' : 'Not quite.'
+  const cls = grade && !grade.correct && single ? classify(grade.wrote[0], grade.expected[0], mcq ? 'choice' : item.p.input.kind, item.a.text) : null
+  const title = !grade ? '' : grade.correct ? 'That is the one.' : near || cls?.kind === 'spelling' || cls?.kind === 'name' ? 'One spelling to fix.' : cls?.kind === 'hyphenation' ? 'One hyphen to fix.' : cls?.kind === 'order' ? 'Right words, wrong order.' : refNear ? 'Close. Check the verse.' : 'Not quite.'
+  const longDiff = grade && !grade.correct && single && item.p.input.kind === 'long_text' ? wordDiff(grade.wrote[0], grade.expected[0]) : null
+  const slipsToday = S.overrides.filter(o => o.at > Date.now() - 86400000).length
+  const initials = (item.a.text ?? item.a.items?.join(' · ') ?? '').split(/\s+/).map(w => w.match(/[\p{L}\p{N}]/u)?.[0] ? w.replace(/(?<=^[^\p{L}\p{N}]*[\p{L}\p{N}])[\p{L}\p{N}'’-]+/u, '…') : w).join(' ')
   const willReturn = !grade?.correct && draft.queue.lastIndexOf(item.u) > draft.index
   return <div className="focus">
     <div className="ftop">
       <button className="iconbtn xbtn" aria-label="Save and leave" onClick={leave}><Icon n="x" /></button>
       <button className="btn sec sm saveleave" onClick={leave}><Icon n="x" className="s" />Save &amp; leave</button>
       <div className="bar" role="progressbar" aria-label="Sitting progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={draft.index + (grade ? 1 : 0)}><i style={{ width: `${((draft.index + (grade ? 1 : 0)) / total) * 100}%` }} /></div>
+      {left !== null && !grade && <span className="chip due" role="timer" aria-label={`${left} seconds left`}><Icon n="clock" />{left}s</span>}
       <span className="cnt" aria-label={`Question ${draft.index + 1} of ${total}`}>{draft.index + 1}/{total}</span></div>
     <div className="fbody">
       <div className="qmeta"><span className="chip"><Icon n="feather" />{label(item.t)} · {item.t}</span>{retrying && <span className="chip due">Again</span>}<span className="ctx">{ctxText}</span></div>
       <h1 className="qtitle">{item.p.instruction}</h1>
       {(item.t === 'Q27' || item.t === 'Q25') && <p className="qsub">{item.t === 'Q27' ? 'Extra words are not part of the verse.' : 'Drag, or use Move up and Move down.'}</p>}
       <Prompt item={item} cur={cur} lessonsN={n => `L${n}`} />
-      <Answer key={`${item.u}${draft.index}${forced}`} item={item} a={a} setA={setA} mcq={mcq} grade={ranked ? null : grade} hold={ranked && !!grade} setCur={setCur} titleToN={titleToN} />
+      <Answer key={`${item.u}${draft.index}${forced}${mcq}`} item={item} a={a} setA={setA} mcq={mcq} grade={ranked ? null : grade} hold={ranked && !!grade} setCur={setCur} titleToN={titleToN} options={options} />
       {!grade && !forced && !ranked && item.f.includes('mcq') && item.f.includes('typed') && item.d.length > 0 && <div className="row wrap gap8"><button className="chip lg plain" onClick={() => setForced(true)}><Icon n="listn" />Switch to choices</button><span className="tiny muted">for this item only · counts as assisted</span></div>}
+      {!grade && !ranked && !mcq && item.p.input.kind !== 'word_bank' && item.p.input.kind !== 'order' && ((card?.fails ?? 0) >= 3 || retrying) && <div className="row wrap gap8">
+        {hint === 0 ? <button className="chip lg plain" onClick={() => setHint(1)}><Icon n="letter" />Show first letters</button> : <p className="hint" style={{ width: '100%' }}><Icon n="letter" />{initials}</p>}
+        <span className="tiny muted">Help is offered after three misses · counts as assisted</span></div>}
+      {notice && <p className="hint" role="status"><Icon n="info" />{notice}</p>}
       <div className="shortcuts"><span><span className="kbd">Tab</span>next blank</span><span><span className="kbd">Enter</span>check</span><span><span className="kbd">Esc</span>save &amp; leave</span>{mcq && <span><span className="kbd">1–4</span>choose</span>}</div>
     </div>
     {grade && ranked ? <div className="fb" style={{ background: 'var(--rh-surface2)', borderColor: 'var(--rh-line2)' }} role="status" aria-live="polite"><div className="in"><div className="head"><Icon n="lock" className="hic" style={{ color: 'var(--rh-action)' }} /><h3 style={{ color: 'var(--rh-text)' }}>Answer accepted.</h3></div><p className="small muted mt8">Ranked attempt: results and explanations appear after you finish.</p><button className="btn block mt16" onClick={next} autoFocus>{draft.index + 1 >= total ? 'Submit attempt' : 'Next question'}</button></div></div> :
@@ -303,7 +371,12 @@ export default function Session() {
         {grade.correct ? <p className="small muted mt8">{item.t === 'Q27' ? 'Built in order. Fade unlocks next.' : item.t === 'Q28' ? 'All words correct. Full recall unlocks next.' : forced ? 'Answer saved as assisted.' : PRAISE[draft.index % PRAISE.length]}</p> : <>
           {grade.parts && grade.parts.length > 1 && item.p.input.kind !== 'order' ? <dl className="diffgrid">{grade.expected.map((e, i) => !grade.parts![i] && <FragmentRow key={i} k={item.p.input.labels?.[i] ?? `Box ${i + 1}`} w={grade.wrote[i] ?? ''} e={e} />)}</dl>
             : <dl className="diffgrid"><dt>You wrote</dt><dd>{single ? <Marked t={grade.wrote[0]} o={grade.expected[0]} bad /> : grade.wrote.join(' · ') || '—'}</dd><dt>Expected</dt><dd className="okm">{single ? <Marked t={grade.expected[0]} o={grade.wrote[0]} bad={false} /> : grade.expected.join(' · ')}</dd></dl>}
-          <p className="small muted">{near ? `${explain(grade.wrote[0], grade.expected[0])} Spelling counts, so this ` : 'This '}{willReturn ? 'returns later in this sitting.' : 'comes back in your reviews.'}</p></>}
+          {longDiff && <p className="small" style={{ lineHeight: '26px' }}><b>{Math.round(longDiff.exact * 100)}% exact · </b>{longDiff.ops.map((o, i) => <span key={i} style={{ marginRight: 4, ...(o.op === 'same' ? {} : o.op === 'missing' ? { color: 'var(--rh-correct)', textDecoration: 'underline' } : o.op === 'extra' ? { color: 'var(--rh-incorrect)', textDecoration: 'line-through' } : { color: 'var(--rh-incorrect)', textDecoration: 'underline wavy' }) }} title={o.op === 'wrong' ? `expected “${o.e}”` : o.op}>{o.op === 'wrong' ? `${o.w}→${o.e}` : o.w}</span>)}</p>}
+          <p className="small muted">{near ? `${explain(grade.wrote[0], grade.expected[0])} Spelling counts, so this ` : cls?.note ? `${cls.note} This ` : 'This '}{willReturn ? 'returns later in this sitting.' : 'comes back in your reviews.'}</p>
+          {mcq && <WhyOptions item={item} options={options} picked={a.sel} titleToN={titleToN} past={S.log.filter(e => e.u === item.u && e.wrote).map(e => e.wrote!)} />}
+          {!mcq && S.prefs.selfGrade && !ranked && draft.spec.kind !== 'mock' && slipsToday < 3 && (cls?.kind === 'spelling' || cls?.kind === 'hyphenation') && (slip
+            ? <div className="card lav col gap8"><p className="small">Count this as a typing slip? It is logged, counts as assisted, and you can do this {3 - slipsToday} more time{3 - slipsToday === 1 ? '' : 's'} today.</p><div className="row gap8"><button className="btn sec xs" onClick={() => setSlip(false)}>No, keep it wrong</button><button className="btn xs" onClick={() => { S.set({ overrides: [...S.overrides, { at: Date.now(), u: item.u, reason: 'typing slip' }] }); S.recordAnswer(draft.spec.manual, item, true, true, { ms: 0, mode: 'override' }); setGrade({ ...grade, correct: true }); save({ ...draft, right: draft.right + 1, misses: draft.misses.filter(x => x.u !== item.u), queue: draft.queue.filter((u, i) => i <= draft.index || u !== item.u), again: draft.again.filter(u => u !== item.u) }) }}>Yes, typing slip</button></div></div>
+            : <button className="btn link" style={{ minHeight: 32, padding: 0 }} onClick={() => setSlip(true)}>I knew this: it was a typing slip</button>)}</>}
         <div className="acts">{refs.length > 0 && <button className="chip lg plain" onClick={() => setCtx(true)}><Icon n="book" />Read {refs[0].replace(/:.*$/, '').length > 20 ? 'in context' : `${refs[0].replace(/:.*$/, '')} in context`}</button>}
           {!grade.correct && <button className="chip lg plain" onClick={() => setReport(true)}><Icon n="flag" />Report</button>}</div>
         <button className={`btn block ${grade.correct ? 'good' : 'bad'}`} onClick={next} autoFocus>{grade.correct && <Icon n="check" className="s" />}{draft.index + 1 >= total ? 'Finish' : 'Next question'}</button>
@@ -317,7 +390,7 @@ function useAnswerFor(item?: Item) {
   const fallback: Item = { u: '', t: '', f: [], p: { instruction: '', input: { kind: 'text' } }, a: {}, d: [], g: [], s: '', tg: '' }
   const [st, setSt] = useAnswer(item ?? fallback)
   const last = useRef(item?.u)
-  useEffect(() => { if (item && item.u !== last.current) { last.current = item.u; const n = item.p.input.count ?? 1; setSt({ text: '', vals: Array(n).fill(''), sel: '', chosen: [], pick: null, book: '', cv: '', typeRef: false, order: (item.p.shuffled ?? []).map((_, i) => i) }) } }, [item, setSt])
+  useEffect(() => { if (item && item.u !== last.current) { last.current = item.u; const n = item.p.input.count ?? 1; setSt({ text: '', vals: Array(n).fill(''), sel: '', chosen: [], pick: null, book: '', cv: '', typeRef: false, order: (item.p.shuffled ?? []).map((_, i) => i), multi: [] }) } }, [item, setSt])
   return [st, setSt] as const
 }
 

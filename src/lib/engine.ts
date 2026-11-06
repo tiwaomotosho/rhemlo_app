@@ -1,13 +1,15 @@
 import { loadItems, loadManual } from './data'
 import type { Card, Item, Manual } from './types'
-import { day, type Ladder, type SessionSpec } from './store'
+import { day, useStore, type Ladder, type SessionSpec } from './store'
 
 export const FOCUS: Record<string, { label: string; types: string[] }> = {
   verses: { label: 'Memory verses', types: ['Q04', 'Q06', 'Q27', 'Q28', 'Q05', 'Q09'] },
-  outlines: { label: 'Outlines', types: ['Q07', 'Q08', 'Q13', 'Q14'] },
-  references: { label: 'References', types: ['Q05', 'Q09', 'Q10', 'Q11', 'Q12', 'Q16', 'Q23'] },
+  outlines: { label: 'Outlines', types: ['Q07', 'Q08', 'Q13', 'Q14', 'Q31', 'Q36', 'Q34'] },
+  lessons: { label: 'Titles & numbers', types: ['Q29', 'Q30', 'Q31', 'Q15', 'Q10', 'Q08'] },
+  references: { label: 'References', types: ['Q05', 'Q09', 'Q10', 'Q11', 'Q12', 'Q16', 'Q23', 'Q32', 'Q34', 'Q37'] },
   sentences: { label: 'Key sentences', types: ['Q01', 'Q02', 'Q03', 'Q15', 'Q22', 'Q25'] },
-  spelling: { label: 'Spelling traps', types: ['Q26', 'Q06', 'Q01'] },
+  spelling: { label: 'Spelling traps', types: ['Q26', 'Q33', 'Q17', 'Q06', 'Q01'] },
+  traps: { label: 'Traps', types: ['Q23', 'Q33', 'Q36', 'Q32', 'Q16'] },
   listening: { label: 'Listening', types: ['Q24'] },
 }
 export const KIND_LABEL: Record<string, string> = {
@@ -15,6 +17,7 @@ export const KIND_LABEL: Record<string, string> = {
   Q07: 'Outline', Q08: 'Which lesson by outline', Q09: 'Verse reference', Q10: 'Verse of which lesson', Q11: 'What it supports',
   Q12: 'Reference support', Q13: 'List recall', Q14: 'Next in list', Q15: 'Which lesson', Q16: 'Cross-lesson', Q22: 'First letters',
   Q23: 'Which is the verse', Q24: 'Listening', Q25: 'Sentence order', Q26: 'Spot the error', Q27: 'Build the verse', Q28: 'Fade',
+  Q29: 'Lesson title', Q30: 'Lesson number', Q31: 'Outline point', Q32: 'Respectively', Q33: 'Spelling choice', Q34: 'List point', Q36: 'Outline order', Q37: 'Select all',
 }
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
 export const shuffleSeed = <T,>(a: T[], seed: string) => { const r = [...a]; let h = hash(seed); for (let i = r.length - 1; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1);[r[i], r[j]] = [r[j], r[i]] } return r }
@@ -22,15 +25,25 @@ export const lessonOfKey = (s: string) => s.match(/:(L\d+)/)?.[1] ?? ''
 
 const tier = (it: Item) => (it.g[0] === 'tier:2' ? 2 : it.g[0] === 'tier:3' ? 3 : 1)
 const LADDER_TYPES = new Set(['Q27', 'Q28', 'Q04'])
+/** Kinds per study mode (PRD 9.7). */
+export const MODE_TYPES: Record<string, string[]> = {
+  quickfire: ['Q01', 'Q05', 'Q06', 'Q09', 'Q10', 'Q12', 'Q14', 'Q15', 'Q17', 'Q23', 'Q29', 'Q30', 'Q31', 'Q33'],
+  trap: ['Q23', 'Q33', 'Q36', 'Q32', 'Q16', 'Q15', 'Q10'],
+  listen: ['Q24'],
+  discrimination: ['Q16', 'Q15', 'Q10', 'Q31', 'Q08'],
+}
+const PARTS = (s: string, t: string) => /\.MV$/.test(s) ? 'verse' : /\.OUT/.test(s) || t === 'Q29' || t === 'Q30' ? 'outline' : /\.L\d|LIST/.test(s) ? 'lists' : /\.R\d+$/.test(s) || ['Q05', 'Q09', 'Q11', 'Q12', 'Q16', 'Q24', 'Q32', 'Q34', 'Q37'].includes(t) ? 'refs' : t === 'Q25' ? 'order' : t === 'Q26' || t === 'Q33' || t === 'Q17' ? 'spelling' : /INT/.test(s) ? 'intro' : /CON/.test(s) ? 'conclusion' : 'sections'
 
 /** Items eligible for a spec, with the honest pool size. */
 export async function buildSession(spec: SessionSpec, cards: Record<string, Card>, ladder: Record<string, Ladder>): Promise<{ items: Item[]; pool: number }> {
-  const types = spec.focus?.length ? new Set(spec.focus.flatMap(f => FOCUS[f]?.types ?? [])) : null
+  const S = useStore.getState()
+  const types = spec.focus?.length ? new Set(spec.focus.flatMap(f => FOCUS[f]?.types ?? [])) : MODE_TYPES[spec.kind] ? new Set(MODE_TYPES[spec.kind]) : null
   const lessons = spec.lessons
   const lists = await Promise.all(lessons.map(l => loadItems(spec.manual, l)))
   // Q04 (full verse) is only served once Q27 (build) and Q28 (fade) are right for that lesson
   const rungOpen = (i: Item) => { const l = ladder[`${spec.manual}|${lessonOfKey(i.s)}`]; return !!(l?.q27 && l?.q28) }
-  const allowed = (i: Item) => (types ? types.has(i.t) : !LADDER_TYPES.has(i.t)) && (i.t !== 'Q04' || rungOpen(i))
+  const fmtOk = (i: Item) => !spec.formats || spec.formats === 'mixed' || i.f.includes(spec.formats) || (spec.formats === 'typed' && i.p.input.kind !== 'choice' && i.f.includes('typed'))
+  const allowed = (i: Item) => (types ? types.has(i.t) : !LADDER_TYPES.has(i.t)) && (i.t !== 'Q04' || rungOpen(i)) && fmtOk(i)
   let pool = lists.flat().filter(allowed)
   if (spec.only) { const keep = new Set(spec.only); const its = lists.flat().filter(i => keep.has(i.u)); return { items: its, pool: its.length } }
   const now = Date.now(), seed = spec.kind === 'daily' ? `daily${day()}` : `${spec.kind}${now >> 16}`
@@ -44,15 +57,29 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
   const byCard = new Map<string, Item[]>()
   for (const it of pool) { const k = it.s; if (!byCard.has(k)) byCard.set(k, []); byCard.get(k)!.push(it) }
   // score each card: due (seen & overdue) first, then new, then not yet due; never more than one item per card
+  const since = now - 14 * 86400000
+  const recentMiss = new Set(S.log.filter(e => !e.ok && e.at > since && e.m === spec.manual).map(e => e.s))
+  // new items within the planner's daily cap, paused while the backlog is large (FR-SC-04)
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+  const firstSeen = new Map<string, number>(); for (const e of S.log) if (!firstSeen.has(e.s)) firstSeen.set(e.s, e.at)
+  const newToday = [...firstSeen.values()].filter(t => t >= todayStart.getTime()).length
+  const overdue = Object.entries(cards).filter(([k, c]) => k.startsWith(spec.manual + '|') && c.seen > 0 && c.due <= now).length
+  let newRoom = ['quest', 'today', 'learn'].includes(spec.kind) ? (overdue > S.prefs.overdueLimit ? 0 : Math.max(0, S.prefs.newCap - newToday)) : Infinity
   const cardsArr = [...byCard.entries()].map(([k, its]) => {
-    const c = cards[`${spec.manual}|${k}`]; const dueNow = c && c.seen > 0 && c.due <= now
-    const score = spec.kind === 'review' ? (dueNow ? 0 : 9) : spec.kind === 'restart' ? (c && c.seen ? 5 - c.box : 9) : dueNow ? 0 : !c || c.seen === 0 ? 1 : 2
-    return { k, its, score, jitter: hash(k + seed) }
+    const c = cards[`${spec.manual}|${k}`]; const dueNow = c && c.seen > 0 && c.due <= now, isNew = !c || c.seen === 0
+    const score = spec.kind === 'review' ? (dueNow ? 0 : 9) : spec.kind === 'restart' ? (c && c.seen ? 5 - c.box : 9)
+      : spec.kind === 'repair' ? (c?.leech ? 0 : recentMiss.has(k) ? 1 : 9)
+      : spec.kind === 'mock' ? 1
+      : recentMiss.has(k) ? 0 : dueNow ? 1 : isNew ? 2 : 3 // FR-TP-04: missed in the last 14 days, then due, then unseen
+    return { k, its, score, isNew, part: PARTS(k, its[0].t), lesson: lessonOfKey(k), jitter: hash(k + seed) }
   })
+  if (spec.kind === 'repair') cardsArr.splice(0, cardsArr.length, ...cardsArr.filter(c => c.score < 9))
+  if (newRoom !== Infinity) { const keep = cardsArr.filter(c => !c.isNew || newRoom-- > 0); cardsArr.splice(0, cardsArr.length, ...keep) }
   if (spec.kind === 'restart') cardsArr.splice(0, cardsArr.length, ...cardsArr.filter(c => c.score < 9))
   if (spec.kind === 'review') { const due = cardsArr.filter(c => c.score === 0); pool = due.flatMap(c => c.its) }
   cardsArr.sort((a, b) => a.score - b.score || a.jitter - b.jitter)
   const eligible = spec.kind === 'review' ? cardsArr.filter(c => c.score === 0) : cardsArr
+  if (spec.kind === 'review' && overdue > S.prefs.overdueLimit) eligible.sort((a, b) => (cards[`${spec.manual}|${a.k}`]?.due ?? 0) - (cards[`${spec.manual}|${b.k}`]?.due ?? 0)) // catch-up: oldest first
   const chosen: Item[] = []
   // round-robin by type so a sitting is varied, easier tiers first inside each type
   const queues = new Map<string, Item[]>()
@@ -60,11 +87,19 @@ export async function buildSession(spec: SessionSpec, cards: Record<string, Card
     const pick = [...c.its].sort((a, b) => tier(a) - tier(b) || hash(a.u + seed) - hash(b.u + seed))[0]
     if (!queues.has(pick.t)) queues.set(pick.t, []); queues.get(pick.t)!.push(pick)
   }
+  if (spec.kind === 'check' || spec.kind === 'mock') {
+    // sample every part of the lesson(s) and balance across lessons, one question per sentence
+    const groups = new Map<string, Item[]>()
+    for (const c of shuffleSeed(eligible, seed)) { const g = spec.kind === 'check' ? c.part : `${c.lesson}|${c.part}`; const pick = shuffleSeed(c.its, seed)[0]; if (!groups.has(g)) groups.set(g, []); groups.get(g)!.push(pick) }
+    const gs = shuffleSeed([...groups.keys()], seed)
+    while (chosen.length < spec.count && [...groups.values()].some(q => q.length)) for (const g of gs) { const q = groups.get(g)!; if (q.length && chosen.length < spec.count) chosen.push(q.shift()!) }
+    return { items: spec.kind === 'mock' ? shuffleSeed(chosen, seed) : chosen, pool: eligible.length }
+  }
   const order = shuffleSeed([...queues.keys()], seed)
   while (chosen.length < spec.count && [...queues.values()].some(q => q.length)) {
     for (const t of order) { const q = queues.get(t)!; if (q.length && chosen.length < spec.count) { chosen.push(q.shift()!) } }
   }
-  chosen.sort((a, b) => tier(a) - tier(b))
+  if (spec.kind !== 'quickfire' && spec.kind !== 'trap') chosen.sort((a, b) => tier(a) - tier(b))
   if (spec.kind === 'quest' && spec.lessons.length === 1) {
     const lad = ladder[`${spec.manual}|${spec.lessons[0]}`] ?? {}
     const rung = !lad.q27 ? 'Q27' : !lad.q28 ? 'Q28' : !lad.q04 ? 'Q04' : null

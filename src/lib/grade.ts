@@ -105,6 +105,11 @@ export function gradeItem(item: Item, r: Response): Grade {
     const correct = normText(r.value) === normText(a.text ?? '')
     return { correct, expected: [a.text ?? ''], wrote: [r.value] }
   }
+  if (r.kind === 'multi') {
+    const exp = (a.items ?? []) as string[], got = r.values
+    const parts = got.map(v => exp.some(e => normText(e) === normText(v)))
+    return { correct: got.length === exp.length && parts.every(Boolean), parts, expected: exp, wrote: got }
+  }
   if (r.kind === 'order') {
     const exp = (a.items ?? []) as string[]
     const parts = exp.map((e, i) => normText(e) === normText(r.values[i] ?? ''))
@@ -132,6 +137,10 @@ export function gradeItem(item: Item, r: Response): Grade {
     const exp = ((a.refs ?? []) as { key: string }[]).map(x => x.key)
     return { correct: sameSet(typedRefs(value), exp), expected: exp.length ? exp : [a.text ?? ''], wrote: [value] }
   }
+  if (kind === 'number') {
+    const n = (value.match(/\d+/) ?? [''])[0]
+    return { correct: n === String(a.text), expected: [`Lesson ${a.text}`], wrote: [value] }
+  }
   if (kind === 'lesson') {
     const nv = normText(value)
     const acc = ((a.accept ?? []) as string[]).map(normText)
@@ -139,4 +148,49 @@ export function gradeItem(item: Item, r: Response): Grade {
   }
   const exp = a.norm ?? normText(a.text ?? '')
   return { correct: normText(value) === exp, expected: [a.text ?? ''], wrote: [value] }
+}
+
+// ---- Error analysis (FR-GR-04/05/07, FR-AD-04) --------------------------------------------------
+export type DiffOp = { op: 'same' | 'missing' | 'extra' | 'wrong'; w: string; e?: string }
+/** Word-level diff on normalised words (LCS), pairing adjacent missing+extra as "wrong". */
+export function wordDiff(wrote: string, expected: string): { ops: DiffOp[]; exact: number } {
+  const a = normWords(wrote), b = normWords(expected), n = a.length, m = b.length
+  const L = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1])
+  const raw: DiffOp[] = []; let i = 0, j = 0
+  while (i < n && j < m) { if (a[i] === b[j]) { raw.push({ op: 'same', w: b[j] }); i++; j++ } else if (L[i + 1][j] >= L[i][j + 1]) raw.push({ op: 'extra', w: a[i++] }); else raw.push({ op: 'missing', w: b[j++] }) }
+  while (i < n) raw.push({ op: 'extra', w: a[i++] }); while (j < m) raw.push({ op: 'missing', w: b[j++] })
+  const ops: DiffOp[] = []
+  for (let k = 0; k < raw.length; k++) {
+    const x = raw[k], y = raw[k + 1]
+    if (y && ((x.op === 'extra' && y.op === 'missing') || (x.op === 'missing' && y.op === 'extra'))) { ops.push({ op: 'wrong', w: x.op === 'extra' ? x.w : y.w, e: x.op === 'missing' ? x.w : y.w }); k++ } else ops.push(x)
+  }
+  return { ops, exact: m ? ops.filter(o => o.op === 'same').length / m : 0 }
+}
+const lev = (a: string, b: string) => { const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...new Array(b.length).fill(0)]); for (let j = 1; j <= b.length; j++) d[0][j] = j
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length] }
+export type ErrorKind = 'spelling' | 'hyphenation' | 'wrong word' | 'omission' | 'insertion' | 'order' | 'name' | 'reference number' | 'wrong lesson' | 'wrong choice'
+/** Classify a wrong answer and say how close it was, in plain words. A spelling error is still wrong. */
+export function classify(wrote: string, expected: string, kind?: string, rawExpected?: string): { kind: ErrorKind; note: string } {
+  if (kind === 'reference') {
+    const w = typedRefs(wrote).join('; '), e = expected
+    if (w && w.split(' ').slice(0, -1).join(' ') === e.split(' ').slice(0, -1).join(' ')) return { kind: 'reference number', note: 'Right book, wrong chapter or verse number.' }
+    return { kind: 'reference number', note: w ? 'A different reference.' : 'That could not be read as a reference.' }
+  }
+  if (kind === 'lesson' || kind === 'number') return { kind: 'wrong lesson', note: 'A different lesson.' }
+  if (kind === 'choice') return { kind: 'wrong choice', note: '' }
+  const A = normText(wrote), B = normText(expected)
+  if (A.replace(/-/g, ' ') === B.replace(/-/g, ' ') || A.replace(/-/g, '') === B.replace(/-/g, '')) return { kind: 'hyphenation', note: 'Only a hyphen differs. Hyphens count.' }
+  const aw = normWords(wrote), bw = normWords(expected)
+  if (aw.length === bw.length && [...aw].sort().join(' ') === [...bw].sort().join(' ')) return { kind: 'order', note: 'Right words, wrong order.' }
+  const { ops } = wordDiff(wrote, expected)
+  const wrong = ops.filter(o => o.op === 'wrong'), miss = ops.filter(o => o.op === 'missing'), extra = ops.filter(o => o.op === 'extra')
+  if (wrong.length === 1 && !miss.length && !extra.length) {
+    const d = lev(wrong[0].w, wrong[0].e!), isName = new RegExp(`\b${wrong[0].e![0].toUpperCase()}${wrong[0].e!.slice(1)}\b`).test(rawExpected ?? '')
+    if (d <= 2) return { kind: isName ? 'name' : 'spelling', note: d === 1 ? 'One letter off. Spelling counts.' : 'Two letters off. Spelling counts.' }
+    return { kind: 'wrong word', note: `One word differs: “${wrong[0].w}” for “${wrong[0].e}”.` }
+  }
+  if (!wrong.length && miss.length && !extra.length) return { kind: 'omission', note: `${miss.length} word${miss.length === 1 ? '' : 's'} missing.` }
+  if (!wrong.length && !miss.length && extra.length) return { kind: 'insertion', note: `${extra.length} extra word${extra.length === 1 ? '' : 's'}.` }
+  return { kind: 'wrong word', note: `${wrong.length + miss.length} word${wrong.length + miss.length === 1 ? '' : 's'} differ from the manual.` }
 }

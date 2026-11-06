@@ -30,9 +30,19 @@ export type Response =
   | { kind: 'choice'; value: string }
   | { kind: 'order'; values: string[] }
   | { kind: 'bank'; values: string[] }
+  | { kind: 'multi'; values: string[] }
 
-export interface Card { box: number; due: number; seen: number; right: number; last: number }
+export interface Card {
+  box: number; due: number; seen: number; right: number; last: number
+  // FSRS state (ts-fsrs)
+  stability?: number; difficulty?: number; scheduled?: number; steps?: number; reps?: number; lapses?: number; state?: number
+  // Rhemlo evidence
+  typedOk?: number; mcqOk?: number; fails?: number; leech?: boolean; ms?: number
+}
+/** One answer, append-only (merged by timestamp when syncing). */
+export interface LogEntry { at: number; m: string; s: string; u: string; t: string; ok: boolean; ms: number; mcq: boolean; assisted: boolean; err?: string; wrote?: string; expected?: string; trap?: string; mode?: string }
+export interface MockRecord { id: string; at: number; manual: string; lessons: string[]; count: number; limitS: number; usedS: number; score: number; right: number; total: number; byLesson: Record<string, [number, number]>; byType: Record<string, [number, number]>; byFormat: Record<string, [number, number]>; full: boolean; assignment?: string }
 export interface SittingRecord {
-  id: string; at: number; manual: ManualCode; kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart'; lesson?: string; title?: string
+  id: string; at: number; manual: ManualCode; kind: string; lesson?: string; title?: string
   total: number; right: number; misses: { u: string; wrote: string; expected: string; t?: string }[]; minutes: number
 }

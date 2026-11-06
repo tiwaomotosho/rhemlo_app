@@ -1,14 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Card, Item, ManualCode, Manual, SittingRecord } from './types'
+import type { Card, Item, LogEntry, ManualCode, Manual, MockRecord, SittingRecord } from './types'
+import { DEFAULT_PHASES, phaseAt, review, type Phase } from './srs'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Goal = 'recall' | 'competition' | 'habit'
 export type Pace = 'light' | 'steady' | 'focused'
 export interface Profile { name: string; handle: string; goal: Goal; pace: Pace; glim: string }
 export interface SessionSpec {
-  kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart'; manual: ManualCode; lessons: string[]; count: number
-  focus?: string[]; title: string; ranked?: boolean; only?: string[]; attemptId?: string
+  kind: 'quest' | 'review' | 'target' | 'ladder' | 'daily' | 'check' | 'restart' | 'quickfire' | 'repair' | 'trap' | 'listen' | 'discrimination' | 'learn' | 'today' | 'mock'; manual: ManualCode; lessons: string[]; count: number
+  focus?: string[]; title: string; ranked?: boolean; only?: string[]; attemptId?: string; formats?: 'typed' | 'mcq' | 'mixed'; perItem?: number
 }
 export interface Draft {
   id: string; spec: SessionSpec; queue: string[]; index: number; right: number; startedAt: number
@@ -19,12 +20,13 @@ export interface Prefs {
   textScale: number; reduceMotion: boolean; mapWorld: 'theme' | 'day' | 'night'
   notif: { study: boolean; due: boolean; circle: boolean; quiz: boolean; league: boolean }; quiet: [string, string]; channel: 'inapp' | 'push' | 'email'
   keepPrivate: boolean; leagues: boolean; planDays: number; remindAt: string; sound: boolean
+  phases: Phase[]; newCap: number; reviewCap: number; overdueLimit: number; adaptive: boolean; mcqCount: number; birthYear?: number; guardian?: boolean; dmFrom: 'everyone' | 'connections' | 'nobody'; visibility: 'public' | 'hidden'; selfGrade: boolean
 }
-export const DEFAULT_PREFS: Prefs = { textScale: 1, reduceMotion: false, mapWorld: 'theme', notif: { study: true, due: true, circle: false, quiz: false, league: false }, quiet: ['22:00', '07:00'], channel: 'inapp', keepPrivate: true, leagues: false, planDays: 5, remindAt: '18:30', sound: false }
+export const DEFAULT_PREFS: Prefs = { textScale: 1, reduceMotion: false, mapWorld: 'theme', notif: { study: true, due: true, circle: false, quiz: false, league: false }, quiet: ['22:00', '07:00'], channel: 'inapp', keepPrivate: true, leagues: false, planDays: 5, remindAt: '18:30', sound: false,
+  phases: DEFAULT_PHASES, newCap: 40, reviewCap: 200, overdueLimit: 150, adaptive: true, mcqCount: 4, dmFrom: 'connections', visibility: 'public', selfGrade: true }
 
 export const day = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const DAY = 86400000
-const INTERVAL_DAYS = [0, 1, 3, 7, 14, 30]
 
 interface State {
   onboarded: boolean; profile: Profile; manual: ManualCode; theme: Theme; sessionSize: number
@@ -33,9 +35,10 @@ interface State {
   draft: Draft | null; seenIds: Record<string, true>
   prefs: Prefs; lastActive: number; prevActive: number; readings: Record<string, true>; joined: number; downloads: string[]
   account: { email: string; userId: string; role: string; lastSync: number } | null; inbox: { id: string; at: number; title: string; body: string }[]; askedPush: boolean; guideSeen: boolean; flash: string
+  log: LogEntry[]; mocks: MockRecord[]; checks: Record<string, { at: number; score: number }[]>; overrides: { at: number; u: string; reason: string }[]; mockDraft: unknown
   set: (p: Partial<State>) => void
   finishOnboarding: (p: Profile, manual: ManualCode) => void
-  recordAnswer: (manual: ManualCode, item: Item, correct: boolean, assisted: boolean) => void
+  recordAnswer: (manual: ManualCode, item: Item, correct: boolean, assisted: boolean, extra?: Partial<LogEntry>) => void
   markLadder: (manual: ManualCode, lesson: string, rung: keyof Ladder) => void
   completeSitting: (rec: SittingRecord) => void
   setDraft: (d: Draft | null) => void
@@ -47,18 +50,18 @@ const initial = {
   points: 0, activeDays: [], arenaOptIn: false, reminders: false, draft: null, seenIds: {},
   prefs: DEFAULT_PREFS, lastActive: 0, prevActive: 0, readings: {}, joined: 0, downloads: [] as string[],
   account: null as State['account'], inbox: [] as State['inbox'], askedPush: false, guideSeen: false, flash: '',
+  log: [] as LogEntry[], mocks: [] as MockRecord[], checks: {} as State['checks'], overrides: [] as State['overrides'], mockDraft: null as unknown,
 }
 export const useStore = create<State>()(persist((set, get) => ({
   ...initial,
   set: p => set(p),
   finishOnboarding: (profile, manual) => set({ onboarded: true, profile, manual, joined: Date.now(), lastActive: Date.now() }),
-  recordAnswer: (manual, item, correct, assisted) => {
-    const key = `${manual}|${item.s}`, now = Date.now(), c = get().cards[key] ?? { box: 0, due: now, seen: 0, right: 0, last: 0 }
-    let box = c.box
-    if (!correct) box = 0
-    else if (!assisted) box = Math.min(INTERVAL_DAYS.length - 1, box + 1)   // help given counts less: no step up
-    const next: Card = { box, seen: c.seen + 1, right: c.right + (correct ? 1 : 0), last: now, due: correct ? now + INTERVAL_DAYS[box] * DAY : now + 10 * 60000 }
-    set({ cards: { ...get().cards, [key]: next } })
+  recordAnswer: (manual, item, correct, assisted, extra = {}) => {
+    const key = `${manual}|${item.s}`, now = Date.now(), S = get()
+    const retention = phaseAt(S.prefs.phases, now).retention
+    const next = review(S.cards[key], { correct, assisted, mcq: !!extra.mcq, ms: extra.ms ?? 0, retention }, now)
+    const entry: LogEntry = { at: now, m: manual, s: item.s, u: item.u, t: item.t, ok: correct, ms: extra.ms ?? 0, mcq: !!extra.mcq, assisted, ...extra }
+    set({ cards: { ...S.cards, [key]: next }, log: [...S.log, entry].slice(-6000) })
   },
   markLadder: (manual, lesson, rung) => { const k = `${manual}|${lesson}`; set({ ladder: { ...get().ladder, [k]: { ...get().ladder[k], [rung]: true } } }) },
   completeSitting: rec => {
@@ -69,7 +72,7 @@ export const useStore = create<State>()(persist((set, get) => ({
   },
   setDraft: draft => set({ draft }),
   reset: () => set({ ...initial }),
-}), { name: 'rhemlo.v1', version: 2, migrate: (p) => ({ ...(p as object), prefs: { ...DEFAULT_PREFS, ...((p as { prefs?: Partial<Prefs> }).prefs ?? {}) } }) as never }))
+}), { name: 'rhemlo.v1', version: 3, migrate: (p) => ({ ...(p as object), prefs: { ...DEFAULT_PREFS, ...((p as { prefs?: Partial<Prefs> }).prefs ?? {}) } }) as never }))
 
 // ---- derived helpers ----------------------------------------------------------------------------
 export type Mastery = 'secure' | 'strengthening' | 'learning' | 'new'
@@ -99,5 +102,5 @@ export function streakInfo(days: string[]) {
 }
 
 /** The part of the state that syncs to the account (never the session or draft). */
-export const SYNC_KEYS = ['profile', 'manual', 'theme', 'sessionSize', 'cards', 'done', 'ladder', 'history', 'points', 'activeDays', 'prefs', 'readings', 'joined', 'arenaOptIn'] as const
+export const SYNC_KEYS = ['profile', 'manual', 'theme', 'sessionSize', 'cards', 'done', 'ladder', 'history', 'points', 'activeDays', 'prefs', 'readings', 'joined', 'arenaOptIn', 'log', 'mocks', 'checks', 'overrides'] as const
 export const snapshotOf = () => { const s = useStore.getState() as unknown as Record<string, unknown>; return Object.fromEntries(SYNC_KEYS.map(k => [k, s[k]])) }

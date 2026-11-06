@@ -32,3 +32,13 @@ test('grade text / fields / reference', () => {
   expect(gradeItem(it({ refs: [{ key: 'Colossians 1:17' }] }, 'reference'), { kind: 'text', value: 'COL 1:17' }).correct).toBe(true)
   expect(gradeItem(it({ refs: [{ key: 'Colossians 1:17' }] }, 'reference'), { kind: 'text', value: 'Col 1:18' }).correct).toBe(false)
 })
+import { classify, wordDiff } from './grade'
+test('error classification and word diff', () => {
+  expect(classify('profitteth', 'profiteth').kind).toBe('spelling')
+  expect(classify('god breathed', 'God-breathed').kind).toBe('hyphenation')
+  expect(classify('all things before', 'before all things').kind).toBe('order')
+  expect(classify('he is before things', 'he is before all things').kind).toBe('omission')
+  expect(classify('Col 1:18', 'Colossians 1:17', 'reference').kind).toBe('reference number')
+  const d = wordDiff('and he is before all thing', 'And he is before all things')
+  expect(d.exact).toBeCloseTo(5 / 6)
+})

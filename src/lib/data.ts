@@ -1,4 +1,5 @@
 import type { Item, Lesson, Manual, ManualCode } from './types'
+import { extraItems } from './extra'
 
 const manuals = new Map<string, Promise<Manual>>()
 const lessons = new Map<string, Promise<Lesson>>()
@@ -11,7 +12,14 @@ async function getJSON<T>(url: string): Promise<T> {
 }
 export const loadManual = (c: ManualCode) => { if (!manuals.has(c)) manuals.set(c, getJSON<Manual>(`/data/${c}/manual.json`)); return manuals.get(c)! }
 export const loadLesson = (c: ManualCode, id: string) => { const k = c + id; if (!lessons.has(k)) lessons.set(k, getJSON<Lesson>(`/data/${c}/lessons/${id}.json`)); return lessons.get(k)! }
-export const loadItems = (c: ManualCode, id: string) => { const k = c + id; if (!items.has(k)) items.set(k, getJSON<Item[]>(`/data/${c}/items/${id}.json`)); return items.get(k)! }
+export const loadItems = (c: ManualCode, id: string) => {
+  const k = c + id
+  if (!items.has(k)) items.set(k, (async () => {
+    const [base, m, l] = await Promise.all([getJSON<Item[]>(`/data/${c}/items/${id}.json`), loadManual(c), loadLesson(c, id)])
+    try { return [...base, ...extraItems(m, l, base)] } catch { return base }
+  })())
+  return items.get(k)!
+}
 
 // ---- KJV text for "read in context" ------------------------------------------------------------
 let kjv: Promise<Map<string, string>> | null = null
