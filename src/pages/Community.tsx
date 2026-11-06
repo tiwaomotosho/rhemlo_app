@@ -170,7 +170,8 @@ export function RoomPlay() {
   const size = Math.max(1, (room?.options.cap ?? 30) - 1), { people, answers } = useRoom('room-' + code, Math.min(size, 99))
   const q = qs && i >= 0 ? qs[i] : null, secs = room?.options.seconds ?? 20
   const pts = (ok: boolean, t: number, isTyped?: boolean) => ok ? (isTyped ? 750 : 500) + Math.round(250 * Math.max(0, 1 - t / (secs * 1000))) : 0
-  const settle = () => { if (!q || reveal) return; setReveal(true); const opts = q.typed ? [q.answer, '—'] : q.options
+  const settled = useRef(-1)
+  const settle = () => { if (!q || reveal || settled.current === i) return; settled.current = i; setReveal(true); const opts = q.typed ? [q.answer, '—'] : q.options
     const as = answers(i, q.answer, opts); setScores(s => { const n = { ...s }; for (const a of as) n[a.p.handle] = (n[a.p.handle] ?? 0) + pts(same(a.value, q.answer), a.ms, q.typed)
       if (!host) { const mine = q.typed ? typed : pick ?? ''; const ok = !!mine && same(mine, q.answer); n.__you = (n.__you ?? 0) + pts(ok, ms || secs * 1000, q.typed); play(ok ? 'correct' : 'wrong') } return n })
     if (q.ref) readPassage(q.ref).then(p => setVerse(p ? p.verses.map(v => v.t).join(' ').slice(0, 320) : '')) }
@@ -183,7 +184,7 @@ export function RoomPlay() {
   if (i < 0) return <div className="page col gap16 center" style={{ maxWidth: 560, alignItems: 'center' }}>
     <BackBar title={`Room ${room.code}`} onBack={() => nav('/arena')} /><Glim pose="announce" size={130} />
     <h1>{host ? 'Your room is open.' : `You joined ${room.hostName}’s room.`}</h1><p className="muted">{people.length + (host ? 0 : 1)} of {room.options.cap} players · {qs!.length} questions · {secs}s each · {room.options.formats.map(f => f === 'mcq' ? 'choice' : 'typed').join(' and ')}</p>
-    {host && <div className="card center"><p className="eyebrow">Room code</p><b className="disp" style={{ fontSize: 40, letterSpacing: '.3em' }}>{room.code}</b></div>}
+    {host && <div className="card center col gap8"><p className="eyebrow">Room code</p><b className="disp" style={{ fontSize: 40, lineHeight: '44px', letterSpacing: '.3em' }}>{room.code}</b></div>}
     <button className="btn block" onClick={() => setI(0)}>{host ? 'Start the first question' : 'Ready'}</button><DemoNote t="players in rooms are simulated" /></div>
   if (i >= qs!.length) return <div className="page col gap16 center" style={{ maxWidth: 560, alignItems: 'center' }}><Glim pose="champion" motion="cheer" once size={140} /><h1>Room complete.</h1>{!host && <p className="muted">You finished {ord(myRank)} of {rows.length}.</p>}
     <div className="card list" style={{ width: '100%', padding: '2px 14px' }}>{board.map((b, k) => <div key={b.h} className="li"><b style={{ width: 24 }}>{k + 1}</b><span className="grow small b">{b.h}</span><b>{b.s.toLocaleString()}</b></div>)}</div>

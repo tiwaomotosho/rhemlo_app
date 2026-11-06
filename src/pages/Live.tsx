@@ -68,9 +68,10 @@ export function Board({ rows, you }: { rows: { user: PublicUser | { handle: stri
 }
 
 export function useCountdown(seconds: number, running: boolean, onEnd: () => void) {
-  const [left, setLeft] = useState(seconds); const end = useRef(onEnd); end.current = onEnd
-  useEffect(() => { setLeft(seconds) }, [seconds, running])
-  useEffect(() => { if (!running) return; const t = setInterval(() => setLeft(l => { if (l <= 1) { clearInterval(t); setTimeout(() => end.current(), 0); return 0 } if (l <= 4) play('tick'); return l - 1 }), 1000); return () => clearInterval(t) }, [running])
+  const [left, setLeft] = useState(seconds); const end = useRef(onEnd); end.current = onEnd; const now = useRef(seconds)
+  useEffect(() => { now.current = seconds; setLeft(seconds) }, [seconds, running])
+  // side effects live in the interval, never inside a state updater (React may run updaters twice)
+  useEffect(() => { if (!running) return; const t = setInterval(() => { now.current -= 1; const l = Math.max(0, now.current); setLeft(l); if (l <= 0) { clearInterval(t); end.current() } else if (l <= 3) play('tick') }, 1000); return () => clearInterval(t) }, [running])
   return left
 }
 export const LiveBadge = ({ text }: { text: string }) => <span className="chip lg plain"><Icon n="radio" />{text}</span>

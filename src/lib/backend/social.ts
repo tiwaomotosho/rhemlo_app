@@ -97,6 +97,9 @@ const wait = (ms = 160) => new Promise(r => setTimeout(r, ms))
 const code6 = () => Array.from({ length: 6 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join('')
 const thread = (a: string, b: string) => [a, b].sort().join('~')
 const notify = (uid: string, i: Omit<InboxItem, 'id' | 'at'>) => { const d = load(); (d.inbox[uid] ??= []).unshift({ id: crypto.randomUUID(), at: Date.now(), ...i }); d.inbox[uid] = d.inbox[uid].slice(0, 80) }
+// demo personas are adults with ages on file; new accounts start with no age, so the under-18 rules apply until they add one
+const PERSONA_SAFETY: Record<string, Safety> = { 'd-tiwa_lamp': { birthYear: 2001, dmFrom: 'connections', visibility: 'public' }, 'd-bro.femi': { birthYear: 1986, dmFrom: 'connections', visibility: 'public' }, 'd-sis.ada': { birthYear: 1990, dmFrom: 'connections', visibility: 'public' }, 'd-admin.ola': { birthYear: 1978, dmFrom: 'connections', visibility: 'public' } }
+const safetyOf = (id: string) => load().safety[id] ?? PERSONA_SAFETY[id]
 const isMinor = (s?: Safety) => !s?.birthYear || new Date().getFullYear() - s.birthYear < 18 // unknown age is treated as under 18
 const friendsOf = (uid: string): string[] => { try { return JSON.parse(localStorage.getItem('rhemlo.demo.server') ?? '{}').friends?.[uid] ?? [] } catch { return [] } }
 const activeSanction = (uid: string, kinds: Sanction['kind'][]) => load().sanctions.find(x => x.uid === uid && kinds.includes(x.kind) && (!x.until || x.until > Date.now()))
@@ -125,7 +128,7 @@ export const demoSocial: Social = {
   },
   async seasons() { return load().seasons },
   async my_leagues() { const u = me(); const d = load()
-    if (!d.leagues.some(l => l.id === 'pl-seed')) { d.leagues.push({ id: 'pl-seed', name: 'Province 12 Youth Cup', code: 'P12CUP', owner: 'd-bro.femi', members: DEMO_USERS.filter(x => x.role === 'learner').slice(0, 14).map(x => x.id), createdAt: Date.UTC(2026, 8, 6), note: 'Season-long, all lessons. Winner reads at the province finale.' }); save() }
+    if (!d.leagues.some(l => l.id === 'pl-seed')) { d.leagues.push({ id: 'pl-seed', name: 'Province 12 Youth Cup', code: 'P12CUP', owner: 'd-bro.femi', members: [...DEMO_USERS.filter(x => x.role === 'learner').slice(0, 14).map(x => x.id), 'd-tiwa_lamp'], createdAt: Date.UTC(2026, 8, 6), note: 'Season-long, all lessons. Winner reads at the province finale.' }); save() }
     return d.leagues.filter(l => l.members.includes(u.userId) || l.owner === u.userId) },
   async create_league(name, note) { const u = me(), d = load(); const l: PrivateLeague = { id: crypto.randomUUID(), name: name.trim().slice(0, 40) || 'My league', code: code6(), owner: u.userId, members: [u.userId], createdAt: Date.now(), note }; d.leagues.push(l); save(); return l },
   async league_preview(code) { await wait(); await demoSocial.my_leagues().catch(() => []); const l = load().leagues.find(x => x.code === code.toUpperCase()); if (!l) throw new Error('No league uses that invite code. Check the link with whoever sent it.'); return { ...l, ownerUser: who(l.owner) } },
@@ -139,7 +142,7 @@ export const demoSocial: Social = {
   async mark_read(ids) { const u = me(); for (const i of load().inbox[u.userId] ?? []) if (ids.includes(i.id)) i.read = true; save() },
   async set_safety(s) { load().safety[me().userId] = s; save() },
   async can_message(id) {
-    const u = me(), d = load(), mine = d.safety[u.userId], theirs = d.safety[id] ?? { dmFrom: 'connections', visibility: 'public' }
+    const u = me(), mine = safetyOf(u.userId), theirs = safetyOf(id) ?? { dmFrom: 'connections', visibility: 'public' }
     if (activeSanction(u.userId, ['mute', 'suspend', 'ban'])) return { ok: false, why: 'Messaging is paused on your account. Check your inbox for the notice.' }
     if (isMinor(mine) && !mine?.guardian) return { ok: false, why: 'Under-18s need a guardian’s consent before direct messages. Request it in You → Privacy.' }
     const connected = friendsOf(u.userId).includes(id) || friendsOf(id).includes(u.userId) || ['d-bro.femi'].includes(id)
@@ -155,8 +158,8 @@ export const demoSocial: Social = {
   },
   async dm(id) {
     const u = me(), d = load(); d.seen[`${u.userId}|${id}`] = Date.now(); save()
-    const seed: DM[] = id === 'd-bro.femi' && !d.dms.some(m => thread(m.from, m.to) === thread(u.userId, id)) ? [{ id: 'seed-1', from: id, to: u.userId, text: 'Well done on this week’s lesson. Remember the Quarter 1 mock is due Saturday.', at: Date.now() - 3 * 3600000 }] : []
-    return [...seed, ...d.dms.filter(m => thread(m.from, m.to) === thread(u.userId, id))]
+    if (id === 'd-bro.femi' && !d.dms.some(m => thread(m.from, m.to) === thread(u.userId, id))) { d.dms.push({ id: crypto.randomUUID(), from: id, to: u.userId, text: 'Well done on this week’s lesson. Remember the Quarter 1 mock is due Saturday.', at: Date.now() - 3 * 3600000 }); save() }
+    return d.dms.filter(m => thread(m.from, m.to) === thread(u.userId, id))
   },
   async send_dm(id, text, sticker) {
     const u = me(), d = load(); const can = await demoSocial.can_message(id); if (!can.ok) throw new Error(can.why)
@@ -178,6 +181,7 @@ export const demoSocial: Social = {
   },
   async submit_mock(id, score, usedS) { const u = me(), d = load(); const list = (d.subs[id] ??= []); const i = list.findIndex(s => s.uid === u.userId); const s: Submission = { uid: u.userId, user: u.user, score, at: Date.now(), usedS }; if (i >= 0) list[i] = s; else list.push(s); save() },
   async submissions(id) {
+    if (id === 'mk-seed') await demoSocial.mocks_for('grace-youth')
     const m = load().mocks.find(x => x.id === id); if (!m) return []
     const sim = DEMO_USERS.filter(x => x.role === 'learner').slice(0, 22).filter(x => demoRnd(x.handle, id, 'sub') < x.activity + .1).map(x => { const score = Math.min(1, Math.max(.3, x.skill + (demoRnd(x.handle, id) - .5) * .2)), usedS = Math.round(m.minutes * 60 * (.55 + demoRnd(x.handle, id, 't') * .4))
       return { uid: x.id, user: who(x.id), score, at: m.at + Math.floor(demoRnd(x.handle, id, 'a') * 4) * DAY, usedS, flagged: usedS < m.minutes * 60 * .6 && score > .95 ? 'Very fast and near-perfect: check fair play' : undefined } })
