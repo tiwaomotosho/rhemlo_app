@@ -316,8 +316,10 @@ input[type=range].slider{width:100%;height:36px;accent-color:var(--rh-action)}
 .stat{background:var(--rh-surface);border:1.5px solid var(--rh-line);border-radius:18px;padding:14px;box-shadow:var(--rh-shadow-card)}
 .stat .v{font:900 26px/30px var(--rh-font-display)}
 .stat .d{font-size:12px;line-height:16px;color:var(--rh-text2);margin-top:2px}
-.badges{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
-.badges img{width:56px;height:56px;flex:none}
+/* badges wrap onto rows and keep their square shape (a shrinking button used to squeeze them narrow) */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:10px 8px;padding:4px 0}
+.badges>*{display:grid;place-items:center;min-width:0}
+.badges img{width:100%;max-width:64px;height:auto;aspect-ratio:1/1;object-fit:contain}
 .stylepick{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px}
 .stylepick button{position:relative;width:74px;height:84px;border-radius:18px;border:2px solid var(--rh-line2);background:var(--rh-surface);flex:none;display:grid;place-items:center;padding:0}
 .stylepick button.on{border-color:var(--rh-action);box-shadow:0 0 0 3px color-mix(in srgb,var(--rh-action) 25%,transparent)}
