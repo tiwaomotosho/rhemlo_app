@@ -6,6 +6,7 @@ import { day, lessonStats, masteryOf, streakInfo, useStore, type SessionSpec } f
 import type { LessonMeta, Manual, ManualCode } from '@/lib/types'
 import { BackBar, ContextSheet, Glim, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
 import { GuideTip } from './Guide'
+import { useSlide, useSwipe } from '@/ui/swipe'
 import { lessonLevel, readinessFor, DIRECTIONS } from '@/lib/mastery'
 import { nextMockDate } from './Mock'
 import { useManualSwitch, manualLabel } from '@/ui/ManualSwitch'
@@ -72,6 +73,9 @@ function JourneyInner({ m }: { m: Manual }) {
   useEffect(() => { getAnchors().then(setAnchors) }, [])
   const curG = Math.max(0, J.groups.findIndex(g => g.lessons.some(l => l.id === J.cur.id)))
   const [qi, setQi] = useState<number | null>(null); const gi = qi ?? curG; const g = J.groups[gi]
+  const slide = useSlide()
+  const toQuarter = (i: number) => { if (i < 0 || i >= J.groups.length || i === gi) return; slide.mark(i > gi ? 'next' : 'prev'); setQi(i) }
+  const swipe = useSwipe({ onLeft: () => toQuarter(gi + 1), onRight: () => toQuarter(gi - 1) })
   const dark = prefs.mapWorld === 'night' || (prefs.mapWorld === 'theme' && (theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)))
   const world = WORLDS[(g.q - 1) % 4], key = `${world[0]}-${dark ? 'night' : 'day'}`
   const pos = useMemo(() => anchors ? spread(anchors[key].nodes_norm, g.lessons.length + 1) : [], [anchors, key, g])
@@ -107,9 +111,9 @@ function JourneyInner({ m }: { m: Manual }) {
       <div className="grow"><p className="eyebrow">Quarter {quarterOf(m, J.cur.n)} · Chapter {J.groups[curG].lessons.indexOf(J.cur) + 1} of {J.groups[curG].lessons.length}</p><h2>{niceTitle(J.cur.title)}</h2><p className="tiny" style={{ opacity: .9 }}>{niceDate(J.cur).replace(/^\w+, /, '')} · Memory verse {verseRef(J.cur)}</p></div>
       <span className="bk"><Icon n="book" /></span></button>
     <div className="jy-body">
-      <div className="jy-mapcol">
+      <div className="jy-mapcol" {...swipe}>
         <div className="mapscroll" ref={scroller} aria-label={`Quest map, Quarter ${g.q}`}>
-          <div className="mapcanvas" style={{ aspectRatio: `1 / ${S}` }}>
+          <div key={slide.key} className={`mapcanvas ${slide.cls}`} style={{ aspectRatio: `1 / ${S}` }}>
             <img className="paint" alt="" src={asset(`worlds/maps/${key}/${key}-1254.webp`)} style={{ width: `${S * 100}%`, left: `${(0.5 - S * CX) * 100}%` }} />
             {g.lessons.map((l, i) => {
               const p = pos[i]; if (!p) return null
@@ -134,7 +138,7 @@ function JourneyInner({ m }: { m: Manual }) {
           <h2 style={{ marginTop: -4 }}>{niceTitle(J.cur.title)}</h2><p className="tiny muted" style={{ marginTop: -6 }}>Memory verse · {verseRef(J.cur)}</p>
           <div className="row gap8"><Link className="btn sec sm grow" to={`/library/${J.cur.id}`}><Icon n="book" className="s" />Read lesson</Link><button className="btn sm grow" onClick={() => start(recallSpec(m, J.cur, sessionSize))}>Continue quest</button></div>
         </div></div>
-        <div className="qswitch" role="group" aria-label="Quarter">{J.groups.map((x, i) => <button key={x.q} className={i === gi ? 'on' : ''} aria-pressed={i === gi} onClick={() => setQi(i)}>Q{x.q}</button>)}
+        <div className="qswitch" role="group" aria-label="Quarter">{J.groups.map((x, i) => <button key={x.q} className={i === gi ? 'on' : ''} aria-pressed={i === gi} onClick={() => toQuarter(i)}>Q{x.q}</button>)}
           <button onClick={() => setSheet('list')} aria-label="List view of all lessons"><Icon n="listn" className="s" /></button></div>
         <div className="dock"><GuideTip />{catchUp && <div className="card glass row" style={{ marginBottom: 8, background: 'var(--rh-warning-bg)' }}><Icon n="history" /><div className="grow small"><b>Catch-up mode</b> · {overdueN} overdue, oldest first. New lessons pause.</div><button className="btn sm" onClick={() => start(todaySpec)}>Start</button></div>}<div className="card glass">
           {J.due.count ? <><span className="tile apricot"><Icon n="refresh" /></span>

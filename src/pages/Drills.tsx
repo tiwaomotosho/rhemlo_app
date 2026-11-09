@@ -12,6 +12,7 @@ import type { Item, Lesson, Manual } from '@/lib/types'
 import { BackBar, Icon, Loading, useManualData } from '@/ui/bits'
 import { useStart, verseRef } from './Journey'
 import { ScopeBar, useScope } from '@/ui/Scope'
+import { useSwipe } from '@/ui/swipe'
 
 // ---- Learn a lesson: the four-day cycle (PRD 6.3) --------------------------------------------------
 export function LearnLesson() {
@@ -78,19 +79,21 @@ export function Flashcards() {
   const [cards, setCards] = useState<Item[] | null>(null); const [i, setI] = useState(0); const [flip, setFlip] = useState(false); const [tally, setTally] = useState([0, 0])
   const sc = useScope(m)
   useEffect(() => { if (!m) return; const ls = sc.ids; Promise.all(ls.map(l => loadItems(m.code, l))).then(x => setCards(shuffleSeed(x.flat().filter(it => ['Q05', 'Q07', 'Q09', 'Q10', 'Q12', 'Q29', 'Q31', 'Q14'].includes(it.t) && (it.a.text || it.a.items)), String(Date.now())).slice(0, 20))) }, [m?.code, sc.ids.join()]) // eslint-disable-line
+  const swipe = useSwipe({ onLeft: () => swipeCard(false), onRight: () => swipeCard(true) })
   if (!m || !cards) return <Loading />
   const c = cards[i]
   const rate = (knew: boolean) => { S.recordAnswer(m.code, c, knew, true, { mode: 'flashcard' }); setTally(t => [t[0] + (knew ? 1 : 0), t[1] + 1]); setFlip(false); setI(i + 1) }
+  const swipeCard = (knew: boolean) => { if (!c) return; if (!flip) setFlip(true); else rate(knew) }
   return <div className="page col gap16" style={{ maxWidth: 560 }}>
     <BackBar title="Flashcards" onBack={() => nav('/practice')} />
     <ScopeBar m={m} />
     {!c ? <div className="card col center" style={{ alignItems: 'center' }}><h2>Deck done</h2><p className="muted">You knew {tally[0]} of {tally[1]}. Self-rated cards count as assisted, so they move your schedule less than a typed answer.</p><Link className="btn" to="/practice">Back to Practice</Link></div> : <>
       <p className="tiny muted center">{i + 1} of {cards.length} · Lesson {+lessonOfKey(c.s).slice(1)}</p>
-      <button className="card col center" style={{ minHeight: 260, justifyContent: 'center', alignItems: 'center', gap: 12, color: 'inherit' }} onClick={() => setFlip(!flip)} aria-label={flip ? 'Show the question' : 'Show the answer'}>
+      <button {...swipe} className="card col center" style={{ minHeight: 260, justifyContent: 'center', alignItems: 'center', gap: 12, color: 'inherit' }} onClick={() => setFlip(!flip)} aria-label={flip ? 'Show the question' : 'Show the answer'}>
         <p className="eyebrow">{flip ? 'Answer' : 'Question'}</p>
         {!flip ? <><b className="disp" style={{ fontSize: 19 }}>{c.p.instruction}</b>{(c.p.text || c.p.ref || c.p.title || c.p.previous) && <p className="small">{c.p.text ?? c.p.ref ?? c.p.title ?? c.p.previous}</p>}</>
           : <b className="disp" style={{ fontSize: 22, color: 'var(--rh-action)' }}>{c.a.text ?? c.a.items?.join(' · ')}</b>}
-        <span className="tiny faint">Tap to flip</span></button>
+        <span className="tiny faint">{flip ? 'Swipe right if you knew it, left if not' : 'Tap or swipe to flip'}</span></button>
       {flip && <div className="row gap8"><button className="btn sec grow" onClick={() => rate(false)}>Not yet</button><button className="btn grow" onClick={() => rate(true)}>Knew it</button></div>}</>}
   </div>
 }

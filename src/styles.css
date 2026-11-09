@@ -517,3 +517,16 @@ html,body{overflow-x:clip}
 .bpbody{padding:0 18px 14px;border-top:1px solid var(--rh-line)}
 .bptext{font:500 calc(16px * var(--rh-text-scale,1))/1.65 var(--rh-font-body);margin:10px 0 8px}
 .bptext sup{font-size:10.5px;font-weight:800;color:var(--rh-action);margin-right:3px}
+
+/* Swipe navigation: the new quarter, lesson or tab slides in from the side it came from */
+@keyframes rh-slide-next{from{opacity:.35;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes rh-slide-prev{from{opacity:.35;transform:translateX(-28px)}to{opacity:1;transform:none}}
+.slide-next{animation:rh-slide-next .24s ease-out}
+.slide-prev{animation:rh-slide-prev .24s ease-out}
+.reduce-motion .slide-next,.reduce-motion .slide-prev{animation:none}
+.swipehint{display:flex;justify-content:center;gap:6px;margin:6px 0 0}
+.swipehint i{width:6px;height:6px;border-radius:3px;background:var(--rh-line);transition:width .2s,background .2s}
+.swipehint i.on{width:18px;background:var(--rh-action)}
+@media (min-width:1024px){.swipehint{display:none}}
+.sheet.dragging{transition:none}
+.sheet{transition:transform .2s ease-out}

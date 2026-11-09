@@ -1,6 +1,7 @@
 // Admin console (PRD 9.17: manuals publish/license/retire, seasons, organisations and access,
 // guardian consents, moderation actions) and steward content verification (FR-IN-06..09).
 import { useEffect, useState } from 'react'
+import { useTabSwipe } from '@/ui/swipe'
 import { useNavigate } from 'react-router-dom'
 import { isDemo, social, type Anomaly, type CatalogueManual, type Consent, type Org, type PublicUser, type Sanction, type Season, type Verification } from '@/lib/backend'
 import { loadItems, loadLesson } from '@/lib/data'
@@ -14,11 +15,12 @@ const dt = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'nume
 
 export function Admin() {
   const acc = useStore(s => s.account); const nav = useNavigate(); const [tab, setTab] = useState<'manuals' | 'seasons' | 'orgs' | 'consents' | 'moderation'>('manuals')
+  const ts = useTabSwipe(['manuals', 'seasons', 'orgs', 'consents', 'moderation'] as const, tab, setTab)
   if (acc?.role !== 'admin') return <div className="page" style={{ maxWidth: 520 }}><StateCard img="locked" title="Admin console" body={`For platform administrators only.${isDemo ? ' In this demo, sign in as ola@demo.rhemlo.app.' : ''}`} action={<button className="btn sec block" onClick={() => nav('/you')}>Back to You</button>} /></div>
   return <div className="page col gap16">
     <div className="pagehead"><div><p className="eyebrow">Admin console</p><h1>Rhemlo administration</h1></div></div>
-    <div className="tabs" role="tablist">{([['manuals', 'Manuals'], ['seasons', 'Seasons'], ['orgs', 'Organisations'], ['consents', 'Consents'], ['moderation', 'Moderation']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t}</button>)}</div>
-    {tab === 'manuals' ? <Manuals /> : tab === 'seasons' ? <Seasons /> : tab === 'orgs' ? <Orgs /> : tab === 'consents' ? <Consents /> : <Moderation />}
+    <div className="tabs" role="tablist">{([['manuals', 'Manuals'], ['seasons', 'Seasons'], ['orgs', 'Organisations'], ['consents', 'Consents'], ['moderation', 'Moderation']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => ts.pick(k)}>{t}</button>)}</div>
+    <div key={ts.key} {...ts.swipe} className={ts.cls}>{tab === 'manuals' ? <Manuals /> : tab === 'seasons' ? <Seasons /> : tab === 'orgs' ? <Orgs /> : tab === 'consents' ? <Consents /> : <Moderation />}</div>
     <DemoNote />
   </div>
 }

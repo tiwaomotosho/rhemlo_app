@@ -99,7 +99,16 @@ export function Sheet({ onClose, children, label, wide }: { onClose: () => void;
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
     addEventListener('keydown', k, true); return () => { removeEventListener('keydown', k, true); prev?.focus?.() }
   }, [onClose])
-  return <div className="scrim" onClick={onClose}><div ref={ref} tabIndex={-1} className="sheet" style={wide ? { maxWidth: 720 } : undefined} role="dialog" aria-modal aria-label={label} onClick={e => e.stopPropagation()}><div className="grab" />{children}</div></div>
+  // drag down to close (phones): only from the top of the sheet's scroll, so scrolling inside it still works
+  const drag = useRef<{ y: number; t: number; dy: number } | null>(null)
+  const move = (dy: number) => { const el = ref.current; if (!el) return; el.style.transform = dy > 0 ? `translateY(${dy}px)` : ''; el.classList.toggle('dragging', dy > 0) }
+  const touch = {
+    onTouchStart: (e: React.TouchEvent) => { drag.current = (ref.current?.scrollTop ?? 0) <= 0 && !(e.target as HTMLElement).closest('input, textarea, select') ? { y: e.touches[0].clientY, t: Date.now(), dy: 0 } : null },
+    onTouchMove: (e: React.TouchEvent) => { const d = drag.current; if (!d) return; d.dy = Math.max(0, e.touches[0].clientY - d.y); if (d.dy > 6) move(d.dy) },
+    onTouchEnd: () => { const d = drag.current; drag.current = null; if (!d) return
+      if (d.dy > 110 || (d.dy > 50 && Date.now() - d.t < 250)) onClose(); else move(0) },
+  }
+  return <div className="scrim" onClick={onClose}><div ref={ref} tabIndex={-1} className="sheet" style={wide ? { maxWidth: 720 } : undefined} role="dialog" aria-modal aria-label={label} onClick={e => e.stopPropagation()} {...touch}><div className="grab" />{children}</div></div>
 }
 export const Toggle = ({ on, onChange, label, disabled }: { on: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) =>
   <button className="toggle" role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => onChange(!on)} />

@@ -22,7 +22,8 @@ function sections(demo: boolean, accounts: { email: string; password: string; wh
       <P>Each stop on the painted map is a real lesson. A quarter has its lessons and a quarter check at the top.</P>
       <div className="row wrap" style={{ gap: 6 }}><Node cls="done" icon="check" label="Done" /><Node cls="review" icon="refresh" label="Review due" /><Node cls="current" icon="star" label="Current" /><Node cls="" icon="lock" label="Locked" /><Node cls="stage" icon="flag" label="Quarter check" /></div>
       <P>Tap any stop to open its chapter: <b>Learn → Recall → Review → Check</b>. A lesson opens when the one before it is cleared; reading is always open.</P>
-      <P>The bar above the menu shows <b>points to revisit</b>. The list button on the map shows every lesson as a plain list.</P></> },
+      <P>The bar above the menu shows <b>points to revisit</b>. The list button on the map shows every lesson as a plain list.</P>
+      <P><b>On a phone, swipe</b> left or right on the map to change quarter. The same works in the Library (quarters), a lesson (next or previous lesson), the mock exam (questions), flashcards (after flipping: right if you knew it, left if not) and tabbed pages. Drag any panel down to close it.</P></> },
     { id: 'sitting', title: 'Answering questions', icon: 'feather', body: <>
       <P>A sitting is a set number of questions (10, 20 or 40) with a real finish line. The counter shows where you are, such as <b>7/20</b>.</P>
       <p className="hint"><Icon n="spell" />Spelling and hyphens count. Capitals and punctuation do not. Your keyboard will not autocorrect, on purpose.</p>

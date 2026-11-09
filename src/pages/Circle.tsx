@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useTabSwipe } from '@/ui/swipe'
 import { api, isDemo, social, type MockSet, type Circle as CircleT, type Coop, type FeedItem, type Message, type PublicUser, type Report } from '@/lib/backend'
 import { useStore } from '@/lib/store'
 import { inQuiet } from '@/lib/notify'
@@ -12,10 +13,11 @@ const ago = (t: number) => { const m = Math.round((Date.now() - t) / 60000); ret
 
 export default function Circle() {
   const { account } = useStore(); const [tab, setTab] = useState<'friends' | 'coop' | 'circles'>('friends')
+  const ts = useTabSwipe(['friends', 'coop', 'circles'] as const, tab, setTab)
   return <div className="page col gap16" style={{ maxWidth: 640 }}>
     <div className="pagehead"><h1>Circle</h1><StatPills /></div>
-    <div className="tabs" role="tablist">{([['friends', 'Friends'], ['coop', 'Co-op'], ['circles', 'Circles']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t}</button>)}</div>
-    {!account ? <NeedAccount what="Circle" /> : tab === 'friends' ? <Friends /> : tab === 'coop' ? <CoopView /> : <Circles />}
+    <div className="tabs" role="tablist">{([['friends', 'Friends'], ['coop', 'Co-op'], ['circles', 'Circles']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => ts.pick(k)}>{t}</button>)}</div>
+    <div key={ts.key} {...ts.swipe} className={`col gap16 ${ts.cls}`}>{!account ? <NeedAccount what="Circle" /> : tab === 'friends' ? <Friends /> : tab === 'coop' ? <CoopView /> : <Circles />}</div>
     <DemoNote />
   </div>
 }

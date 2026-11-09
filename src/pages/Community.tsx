@@ -1,6 +1,7 @@
 // Leaderboards and seasons, private leagues with invite links, inbox, direct messages with
 // under-18 safeguards, and host rooms of up to 100 (PRD 9.12–9.14, CP-12).
 import { useEffect, useRef, useState } from 'react'
+import { useTabSwipe } from '@/ui/swipe'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { isDemo, social, type BoardRow, type BoardScope, type DM, type InboxItem, type PrivateLeague, type Room, type RoomOptions, type RoomReveal, type RoomState, type Thread, type PublicUser } from '@/lib/backend'
 import { readPassage } from '@/lib/data'
@@ -26,13 +27,14 @@ export function Boards() {
   const { account, manual } = useStore(); const nav = useNavigate(); const [scope, setScope] = useState<BoardScope>('week'); const [rows, setRows] = useState<BoardRow[] | null>(null); const [season, setSeason] = useState('')
   useEffect(() => { if (!account) return; setRows(null); social.leaderboard(scope, manual).then(setRows); social.seasons().then(s => setSeason(s.find(x => x.active)?.name ?? '')) }, [scope, account, manual])
   const mine = rows?.find(r => r.you)
+  const ts = useTabSwipe(['week', 'season', 'all', 'friends', 'org'] as const, scope, setScope)
   return <div className="page col gap16" style={{ maxWidth: 680 }}>
     <BackBar title="Leaderboards" onBack={() => nav('/arena')} />
-    <div className="tabs" role="tablist">{([['week', 'This week'], ['season', 'Season'], ['all', 'All time'], ['friends', 'Friends'], ['org', 'Parish']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={scope === k} className={scope === k ? 'on' : ''} onClick={() => setScope(k)}>{t}</button>)}</div>
-    {!account ? <NeedAccount what="leaderboards" /> : !rows ? <div className="skel" style={{ height: 300 }} /> : <>
+    <div className="tabs" role="tablist">{([['week', 'This week'], ['season', 'Season'], ['all', 'All time'], ['friends', 'Friends'], ['org', 'Parish']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={scope === k} className={scope === k ? 'on' : ''} onClick={() => ts.pick(k)}>{t}</button>)}</div>
+    <div key={ts.key} {...ts.swipe} className={`col gap16 ${ts.cls}`}>{!account ? <NeedAccount what="leaderboards" /> : !rows ? <div className="skel" style={{ height: 300 }} /> : <>
       <div className="card row"><Glim pose="trophy" size={64} /><div className="grow"><p className="eyebrow">{scope === 'season' ? season : scope === 'all' ? 'Since the first season' : scope === 'org' ? 'Grace Parish Youth' : scope === 'friends' ? 'You and your connections' : 'Monday to Sunday'}</p><b className="disp">{mine ? `You are ${ord(mine.rank)} of ${rows.length}` : 'Not ranked yet'}</b><div className="tiny muted">{mine?.points.toLocaleString() ?? 0} verified points · ties share a place</div></div></div>
       <Rows rows={rows.slice(0, 50)} />
-      {mine && mine.rank > 50 && <Rows rows={[mine]} />}</>}
+      {mine && mine.rank > 50 && <Rows rows={[mine]} />}</>}</div>
     <p className="hint"><Icon n="shield" />Hidden learners appear as “Hidden learner”. Change yours in You → Privacy. Only server-verified answers score.</p>
     <DemoNote />
   </div>

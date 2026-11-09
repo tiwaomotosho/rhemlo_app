@@ -9,6 +9,7 @@ import { BackBar, Icon, Loading, Sheet, useManualData } from '@/ui/bits'
 import { useManualSwitch } from '@/ui/ManualSwitch'
 import { api } from '@/lib/backend'
 import { useStart, verseRef } from './Journey'
+import { useSlide, useSwipe } from '@/ui/swipe'
 import { lessonLevel } from '@/lib/mastery'
 
 export function masteryChip(cards: Record<string, Card>, m: Manual, id: string): [string, string] {
@@ -95,6 +96,9 @@ function ManualCard() {
 
 export function Library() {
   const m = useManualData(); const [q, setQ] = useState(''); const [quarter, setQuarter] = useState(1); const { cards, log, checks, readings, learn } = useStore()
+  const slide = useSlide(); const qs = m ? Object.keys(m.groups).map(Number) : []
+  const toQuarter = (n: number) => { if (!qs.includes(n) || n === quarter) return; slide.mark(n > quarter ? 'next' : 'prev'); setQuarter(n) }
+  const swipe = useSwipe({ onLeft: () => toQuarter(quarter + 1), onRight: () => toQuarter(quarter - 1) })
   if (!m) return <Loading />
   const f = q.trim().toLowerCase(), range = m.groups[String(quarter)]
   const rows = m.lessons.filter(l => f ? `${l.n} ${l.title} ${l.mv} ${l.bp} ${l.outline.join(' ')} ${verseRef(l)}`.toLowerCase().includes(f) : l.n >= range[0] && l.n <= range[1])
@@ -102,8 +106,8 @@ export function Library() {
     <div className="pagehead"><h1>Library</h1><Link to="/library/index" className="btn sec sm"><Icon n="listn" className="s" />Index</Link></div>
     <ManualCard />
     <div className="fwrap"><Icon n="search" className="s" /><input className="field" style={{ paddingLeft: 42 }} type="search" placeholder="Search lessons, verses, references" aria-label="Search the manual" value={q} onChange={e => setQ(e.target.value)} autoComplete="off" spellCheck={false} /></div>
-    {!f && <div className="tabs" role="tablist">{Object.keys(m.groups).map(k => <button key={k} role="tab" aria-selected={quarter === +k} className={quarter === +k ? 'on' : ''} onClick={() => setQuarter(+k)}>Q{k}</button>)}</div>}
-    <div className="card list" style={{ padding: '2px 14px' }}>{rows.map(l => { const [t, c] = masteryChip(cards, m, l.id); return <Link key={l.id} to={`/library/${l.id}`} className="li">
+    {!f && <div className="tabs" role="tablist">{Object.keys(m.groups).map(k => <button key={k} role="tab" aria-selected={quarter === +k} className={quarter === +k ? 'on' : ''} onClick={() => toQuarter(+k)}>Q{k}</button>)}</div>}
+    <div key={slide.key} {...(f ? {} : swipe)} className={`card list ${f ? '' : slide.cls}`} style={{ padding: '2px 14px' }}>{rows.map(l => { const [t, c] = masteryChip(cards, m, l.id); return <Link key={l.id} to={`/library/${l.id}`} className="li">
       <span className="tile" style={{ background: c === 'ok' || c === 'str' ? 'var(--rh-pistachio-bg)' : 'var(--rh-raised)', color: c === 'ok' || c === 'str' ? 'var(--rh-pistachio-deep)' : 'var(--rh-action)' }}><b className="disp">{l.n}</b></span>
       <span className="grow"><b>{niceTitle(l.title)}</b><span className="row gap8 mt8"><Approved /><span className={`chip ${c}`}>{t}</span>{(() => { const lv = lessonLevel(m, l.id, cards, log, checks, !!readings[`${m.code}|read|${l.id}`], learn[`${m.code}|${l.id}`] ?? []); return lv.level > 0 && <span className={`chip ${lv.mastered ? 'ok' : 'plain'}`} title="Mastery level">{lv.mastered ? 'Mastered' : `L${lv.level} ${lv.name}`}</span> })()}</span></span><Icon n="chev" className="faint" /></Link> })}
       {!rows.length && <p className="muted" style={{ padding: 14 }}>No lessons match “{q}”.</p>}</div>
@@ -156,6 +160,10 @@ export function Reader() {
     const add = (r: string, where: string) => { if (!seen.has(r)) { seen.add(r); out.push({ r, where }) } }
     add(verseRef(l as never), 'Memory verse'); if (l.bp) add(l.bp, 'Bible passage')
     l.sections.forEach(s => s.b.forEach(b => [b.x ?? '', ...(b.i ?? [])].forEach(t => typedRefs(t).forEach(r => add(r, s.h || 'Introduction'))))); return out }, [l])
+  const slide = useSlide()
+  const idx = m ? m.lessons.findIndex(x => x.id === id) : -1
+  const goLesson = (d: 1 | -1) => { const t = m?.lessons[idx + d]; if (!t) return; slide.mark(d > 0 ? 'next' : 'prev'); nav(`/library/${t.id}`) }
+  const swipe = useSwipe({ onLeft: () => goLesson(1), onRight: () => goLesson(-1) })
   if (!m || !l) return <Loading />
   const i = m.lessons.findIndex(x => x.id === id), meta = m.lessons[i], prev = m.lessons[i - 1], nxt = m.lessons[i + 1]
   const q = +(Object.entries(m.groups).find(([, r]) => meta.n >= r[0] && meta.n <= r[1])?.[0] ?? 1), qr = m.groups[String(q)]
@@ -166,7 +174,7 @@ export function Reader() {
   return <div className="lib3">
     <nav className="ll" aria-label="Lessons this quarter"><p className="eyebrow" style={{ padding: '0 10px 8px' }}>Quarter {q}</p>
       {m.lessons.filter(x => x.n >= qr[0] && x.n <= qr[1]).map(x => <Link key={x.id} to={`/library/${x.id}`} className={`lessonlink ${x.id === id ? 'on' : ''}`}><span className="n">{x.n}</span>{niceTitle(x.title)}</Link>)}</nav>
-    <article className="lc col gap16" style={{ maxWidth: 640, margin: '0 auto', width: '100%', padding: undefined }}>
+    <article key={id} {...swipe} className={`lc col gap16 ${slide.cls}`} style={{ maxWidth: 640, margin: '0 auto', width: '100%', padding: undefined }}>
       <div className="topbar mobonly"><button className="iconbtn" aria-label="Back to library" onClick={() => nav('/library')}><Icon n="back" /></button><div className="t">Lesson {meta.n}</div>
         <button className="iconbtn" aria-pressed={size} aria-label="Larger text" onClick={() => setSize(!size)}><b className="disp">Tт</b></button></div>
       <div className="row gap8"><div className="tabs grow" role="tablist">{([['read', 'Read'], ['outline', 'Outline'], ['refs', 'References']] as const).map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t}</button>)}</div><span className="mobonly" /><Approved /></div>

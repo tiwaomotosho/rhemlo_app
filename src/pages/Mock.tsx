@@ -8,6 +8,7 @@ import { buildSession, KIND_LABEL, lessonOfKey, niceTitle, shuffleSeed } from '@
 import { loadItems, loadManual } from '@/lib/data'
 import { gradeItem, normText } from '@/lib/grade'
 import { social } from '@/lib/backend'
+import { useSlide, useSwipe } from '@/ui/swipe'
 import { useStore } from '@/lib/store'
 import { phaseAt } from '@/lib/srs'
 import { syncNow } from '@/lib/sync'
@@ -133,6 +134,8 @@ export function MockExam() {
   const it = d && items ? items.get(d.items[d.i]) : undefined
   useEffect(() => { if (it && d && !d.shown[it.u]) update(x => ({ ...x, shown: { ...x.shown, [it.u]: Date.now() } })) }, [it?.u]) // eslint-disable-line
   const go = useCallback((i: number) => update(x => ({ ...x, i: Math.max(0, Math.min(x.items.length - 1, i)) })), [update])
+  const slide = useSlide()
+  const swipe = useSwipe({ onLeft: () => { if (d && d.i < d.items.length - 1) { slide.mark('next'); go(d.i + 1) } }, onRight: () => { if (d && d.i > 0) { slide.mark('prev'); go(d.i - 1) } } })
   const flag = useCallback(() => it && update(x => ({ ...x, flags: x.flags.includes(it.u) ? x.flags.filter(y => y !== it.u) : [...x.flags, it.u] })), [it, update])
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -162,8 +165,8 @@ export function MockExam() {
       <div className="row gap8"><button className="iconbtn" aria-label="Smaller text" onClick={() => setSize(s => Math.max(.9, s - .1))}><b>A−</b></button><button className="iconbtn" aria-label="Larger text" onClick={() => setSize(s => Math.min(1.4, s + .1))}><b>A+</b></button></div>
     </header>
     {warn && <div className="exwarn" role="alert"><Icon n="alert" className="s" />{warn}</div>}
-    <div className="exbody">
-      <main className="exq">
+    <div className="exbody" {...swipe}>
+      <main key={d.i} className={`exq ${slide.cls}`}>
         <div className="row between"><b className="disp">Question {d.i + 1} of {d.items.length}</b><button className={`chip lg ${d.flags.includes(it.u) ? 'due' : 'plain'}`} aria-pressed={d.flags.includes(it.u)} onClick={flag}><Icon n="flag" />{d.flags.includes(it.u) ? 'Flagged' : 'Flag for review'}</button></div>
         <h1 className="qtitle mt16">{it.p.instruction}</h1>
         <div className="col gap16 mt16"><Prompt item={{ ...it, p: { ...it.p, context: undefined } }} cur={0} lessonsN={n => `L${n}`} />
