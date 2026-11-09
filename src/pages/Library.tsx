@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { loadLesson, readInContext } from '@/lib/data'
+import { loadLesson, readInContext, readPassage } from '@/lib/data'
 import { niceTitle } from '@/lib/engine'
 import { typedRefs } from '@/lib/grade'
 import { lessonStats, useStore } from '@/lib/store'
@@ -110,6 +110,34 @@ export function Library() {
   </div>
 }
 
+/** "Acts 2:1-4; 41-47" or "Genesis 2:7-8, 15" -> one reference per part: later parts inherit the book and chapter before them. */
+function passageParts(text: string) {
+  let book = '', chap = ''
+  return text.split(/\s*[;,]\s*/).filter(Boolean).map(p => {
+    const full = p.match(/^(.*?\D)\s+(\d+):(.+)$/), cv = p.match(/^(\d+):(.+)$/)
+    if (full) { book = full[1].trim(); chap = full[2]; return p.trim() }
+    if (cv && book) { chap = cv[1]; return `${book} ${p.trim()}` }
+    return book && chap ? `${book} ${chap}:${p.trim()}` : p.trim()
+  })
+}
+
+/** The lesson's Bible passage in its own section: collapsed by default, the KJV text when opened. */
+function BiblePassage({ refText }: { refText: string }) {
+  const [open, setOpen] = useState(false)
+  const [parts, setParts] = useState<{ ref: string; verses: { n: number; t: string }[] }[] | null>(null)
+  useEffect(() => { if (open && !parts) Promise.all(passageParts(refText).map(readPassage)).then(x => setParts(x.filter(Boolean) as { ref: string; verses: { n: number; t: string }[] }[])) }, [open, parts, refText])
+  return <section className="bpcard">
+    <button className="bphead" aria-expanded={open} aria-controls="bp-body" onClick={() => setOpen(!open)}>
+      <span className="grow" style={{ textAlign: 'left' }}><span className="eyebrow">Bible passage</span><b>{refText}</b></span>
+      <span className="tiny">{open ? 'Hide' : 'Read'}</span><Icon n="chev" style={{ transform: `rotate(${open ? -90 : 90}deg)`, transition: 'transform .2s' }} /></button>
+    {open && <div id="bp-body" className="bpbody">
+      {!parts ? <div className="skel" style={{ height: 80 }} /> : !parts.length ? <p className="small muted">This passage could not be found in the KJV text.</p>
+        : parts.map(p => <div key={p.ref}>{parts.length > 1 && <p className="tiny b muted" style={{ margin: '6px 0 2px' }}>{p.ref}</p>}
+            <p className="bptext">{p.verses.map(v => <span key={v.n}><sup>{v.n}</sup>{v.t} </span>)}</p></div>)}
+      <p className="tiny faint">King James Version · public domain · for reading; only what the manual prints is tested</p></div>}
+  </section>
+}
+
 export function Reader() {
   const { id = 'L01' } = useParams(); const nav = useNavigate(); const m = useManualData(); const start = useStart()
   const { sessionSize, cards, readings, set, prefs } = useStore()
@@ -145,7 +173,8 @@ export function Reader() {
       <p className="eyebrow">Lesson {meta.n} · {date}</p>
       <div className="row gap8 mobonly"><span className={`chip ${mc}`}>{mt}</span></div>
       <h1 style={{ fontSize: 32, lineHeight: '36px' }}>{niceTitle(l.title)}</h1>
-      <div className="mvcard"><p className="eyebrow">Memory verse</p><q>{mvText}</q><p className="src"><button className="reflink" onClick={e => openRef(verseRef(meta), e.currentTarget)}>{verseRef(meta)}</button> · Bible passage {l.bp ? <button className="reflink" onClick={e => openRef(l.bp, e.currentTarget)}>{l.bp}</button> : null}</p></div>
+      <div className="mvcard"><p className="eyebrow">Memory verse</p><q>{mvText}</q><p className="src"><button className="reflink" onClick={e => openRef(verseRef(meta), e.currentTarget)}>{verseRef(meta)}</button></p></div>
+      {l.bp && <BiblePassage key={id} refText={l.bp} />}
       {tab === 'read' && <div className="reader" style={{ ['--rh-text-scale' as string]: scale }}>
         {l.sections.map((s, si) => <section key={s.k + si} className={`rsec ${s.k}`}><h2 className="rhead">{headOf(l, s)}</h2>{s.k === 'questions' && <p className="tiny muted" style={{ margin: '-6px 0 10px' }}>For class discussion · never graded</p>}
           {s.b.map((b, j) => b.t === 'l' ? <ol key={j} className={s.k === 'questions' ? 'qlist' : ''}>{b.i?.map((x, k) => <li key={k}>{linkify(x, openRef)}</li>)}</ol> : <p key={j}>{linkify(b.x ?? '', openRef)}</p>)}</section>)}
