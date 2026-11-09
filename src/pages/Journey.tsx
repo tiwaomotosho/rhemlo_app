@@ -112,6 +112,7 @@ function JourneyInner({ m }: { m: Manual }) {
       <span className="bk"><Icon n="book" /></span></button>
     <div className="jy-body">
       <div className="jy-mapcol" {...swipe}>
+        <div className="mapwrap">
         <div className="mapscroll" ref={scroller} aria-label={`Quest map, Quarter ${g.q}`}>
           <div key={slide.key} className={`mapcanvas ${slide.cls}`} style={{ aspectRatio: `1 / ${S}` }}>
             <img className="paint" alt="" src={asset(`worlds/maps/${key}/${key}-1254.webp`)} style={{ width: `${S * 100}%`, left: `${(0.5 - S * CX) * 100}%` }} />
@@ -140,6 +141,7 @@ function JourneyInner({ m }: { m: Manual }) {
         </div></div>
         <div className="qswitch" role="group" aria-label="Quarter">{J.groups.map((x, i) => <button key={x.q} className={i === gi ? 'on' : ''} aria-pressed={i === gi} onClick={() => toQuarter(i)}>Q{x.q}</button>)}
           <button onClick={() => setSheet('list')} aria-label="List view of all lessons"><Icon n="listn" className="s" /></button></div>
+        </div>
         <div className="dock"><GuideTip />{catchUp && <div className="card glass row" style={{ marginBottom: 8, background: 'var(--rh-warning-bg)' }}><Icon n="history" /><div className="grow small"><b>Catch-up mode</b> · {overdueN} overdue, oldest first. New lessons pause.</div><button className="btn sm" onClick={() => start(todaySpec)}>Start</button></div>}<div className="card glass">
           {J.due.count ? <><span className="tile apricot"><Icon n="refresh" /></span>
             <div className="grow"><b className="disp">{J.due.count} point{J.due.count === 1 ? '' : 's'} to revisit</b><div className="tiny muted">Due review · {J.due.range} · {J.due.minutes} min</div></div>
