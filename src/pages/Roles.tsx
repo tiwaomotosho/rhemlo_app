@@ -99,7 +99,7 @@ function StewardInner() {
       <div className="row wrap gap8">{['Import', 'Parse', 'Generate', 'Review', 'Approve', 'Publish'].map((s, i) => <span key={s} className="chip ok"><Icon n="check" />{i + 1}. {s}</span>)}</div>
       <p className="tiny muted">48 lessons · {code === 'AD2627' ? '25,004' : '25,964'} questions · generator gen-1.0 · approved 21 Oct 2026 (owner confirmed every lesson reviewed)</p></div>)}
       <p className="hint"><Icon n="info" />Each step mirrors a command in the bundle’s CLI (`rhemlo.cli build`, `approve --all`). A new manual goes through the same steps before learners see it.</p></div>}
-    <div className="row gap8"><img src={asset('characters/glim/avatars/avatar-meadow-64.png')} width={28} height={28} alt="" /><span className="tiny muted">Approval is a steward decision; learner mastery never changes it.</span></div>
+    <div className="row gap8"><img src={asset('characters/glim/avatars/avatar-classic-64.png')} width={28} height={28} alt="" /><span className="tiny muted">Approval is a steward decision; learner mastery never changes it.</span></div>
     <DemoNote />
   </div>
 }

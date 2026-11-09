@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
 import { NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useStore } from '@/lib/store'
 import { GlimHead, Glim, Icon, useManualData } from '@/ui/bits'
@@ -40,7 +40,8 @@ function Shell() {
   return <div className="shell">
     <nav className="nav" aria-label="Main">
       <div className="brand"><GlimHead cw={cw} size={40} /><span className="word">Rhemlo</span></div>
-      {TABS.map(([k, label]) => <NavLink key={k} to={`/${k}`} className={`nl ${active === k && !sub ? 'on' : ''}`} aria-current={active === k ? 'page' : undefined}><span className="ic"><Icon n={k} /></span>{label}</NavLink>)}
+      {TABS.map(([k, label]) => <Fragment key={k}><NavLink to={`/${k}`} className={`nl ${active === k && !sub ? 'on' : ''}`} aria-current={active === k && !sub ? 'page' : undefined}><span className="ic"><Icon n={k} /></span>{label}</NavLink>
+        {k === 'journey' && <NavLink to="/library" className={`nl mobtab ${sub === 'library' ? 'on' : ''}`} aria-current={sub === 'library' ? 'page' : undefined}><span className="ic"><Icon n="book" /></span>Library</NavLink>}</Fragment>)}
       <div className="navsep" /><p className="eyebrow sub">Journey</p>
       {([['library', 'Library', 'book', '/library'], ['planner', 'Planner', 'calendar', '/journey/planner'], ['progress', 'Progress', 'chart', '/journey/progress'], ['insights', 'Insights', 'target', '/journey/insights']] as const).map(([k, l, ic, to]) =>
         <NavLink key={k} to={to} className={`nl sub2 ${sub === k ? 'on' : ''}`} style={{ display: undefined }}><span className="ic"><Icon n={ic} /></span>{l}</NavLink>)}

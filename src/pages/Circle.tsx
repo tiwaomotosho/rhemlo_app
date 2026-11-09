@@ -35,7 +35,7 @@ function Friends() {
       <input className="field" placeholder="@handle" value={q} onChange={e => setQ(e.target.value)} aria-label="Search by handle" autoComplete="off" />
       {found.map(u => { const is = friends.some(f => f.id === u.id); return <div key={u.id} className="row"><GlimHead cw={u.cw} size={36} /><b className="small grow">{u.handle}</b>{is ? <span className="chip ok">Friends</span> : <button className="btn sec xs" onClick={async () => { await api.request_connection(u.id); setMsg(`You and ${u.handle} are now friends.${isDemo ? ' (Demo requests are accepted at once.)' : ''}`); reload() }}>Add</button>}</div> })}
       {msg && <p className="tiny" role="status">{msg}</p>}</div>
-    <div className="card col gap8"><b>Your friends · {friends.length}</b><div className="row wrap gap8">{friends.map(f => <span key={f.id} className="chip lg plain"><img src={asset(`characters/glim/avatars/avatar-${f.cw}-64.png`)} width={20} height={20} alt="" />{f.handle}</span>)}</div></div>
+    <div className="card col gap8"><b>Your friends · {friends.length}</b><div className="row wrap gap8">{friends.map(f => <span key={f.id} className="chip lg plain"><img src={asset(`characters/glim/avatars/avatar-classic-64.png`)} width={20} height={20} alt="" />{f.handle}</span>)}</div></div>
   </>
 }
 
@@ -53,7 +53,7 @@ function CoopView() {
       <div className="bar green"><i style={{ width: `${(total / c.goal) * 100}%` }} /></div>
       <div className="grid2"><div><div className="row between tiny b"><span>You</span><span>{c.you} / 5</span></div><div className="bar thin"><i style={{ width: `${c.you * 20}%` }} /></div></div><div><div className="row between tiny b"><span>{c.partner.name}</span><span>{c.them} / 5</span></div><div className="bar thin apricot"><i style={{ width: `${c.them * 20}%` }} /></div></div></div>
       <p className="tiny muted">Max 5 per person · 1 per day · a sitting counts at 10+ unique answers</p></div>
-    <div className="card row"><Glim pose="stand" cw={c.reward} size={52} still /><div><b>Reward: {c.reward[0].toUpperCase() + c.reward.slice(1)} Glim</b><div className="tiny muted">+ 200 personal XP each · never verified points</div></div></div>
+    <div className="card row"><img src={asset('emblems/badges/badge-coop-128.webp')} width={52} height={52} alt="" /><div><b>Reward: the Co-op badge</b><div className="tiny muted">+ 200 personal XP each · never verified points</div></div></div>
     <button className="btn block" onClick={() => start({ kind: 'quest', manual: m.code, lessons: [cur.id], count: sessionSize, title: `Lesson ${cur.n} · Recall` })}>Start {sessionSize} questions</button>
     <p className="tiny faint center">Leave any time · no loss of learning. If a quest expires, nobody is blamed.</p>
   </div>
@@ -93,7 +93,7 @@ export function CircleHome() {
       <button className="btn sm" onClick={() => start({ kind: 'target', manual: m.code, lessons: a.lessons.length ? a.lessons : [cur.id], count: a.count, focus: a.focus, title: `Assignment · ${a.title}` })}>Start</button></div>)}
     <div className="card row"><span className="tile"><Icon n="radio" /></span><div className="grow"><b>Quiz Night · {new Date(g.quizNight.at).toLocaleDateString(undefined, { weekday: 'short' })} {new Date(g.quizNight.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</b><div className="tiny muted">Room {g.quizNight.room} · {g.quizNight.signedUp} signed up</div></div>
       <button className="btn sec sm" onClick={() => setReminded(true)}>{reminded ? 'Reminder set' : 'Remind'}</button></div>
-    <div className="row between"><div className="row" style={{ gap: 0 }}>{g.members.slice(0, 6).map((u, i) => <img key={u.id} src={asset(`characters/glim/avatars/avatar-${u.cw}-64.png`)} width={34} height={34} alt="" style={{ marginLeft: i ? -8 : 0, borderRadius: 99, background: 'var(--rh-surface2)', border: '2px solid var(--rh-bg)' }} />)}<span className="tiny muted" style={{ marginLeft: 8 }}>+{g.members.length - 6} members</span></div>
+    <div className="row between"><div className="row" style={{ gap: 0 }}>{g.members.slice(0, 6).map((u, i) => <img key={u.id} src={asset(`characters/glim/avatars/avatar-classic-64.png`)} width={34} height={34} alt="" style={{ marginLeft: i ? -8 : 0, borderRadius: 99, background: 'var(--rh-surface2)', border: '2px solid var(--rh-bg)' }} />)}<span className="tiny muted" style={{ marginLeft: 8 }}>+{g.members.length - 6} members</span></div>
       <Link className="chip lg" to={`/circle/${g.id}/chat`}><Icon n="send" />Chat</Link></div>
     {safety && <SafetySheet g={g} onClose={() => setSafety(false)} onLeft={() => nav('/circle')} />}
     <DemoNote />

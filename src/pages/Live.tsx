@@ -63,7 +63,7 @@ export function useRoom(seed: string, size: number) {
 
 export function Board({ rows, you }: { rows: { user: PublicUser | { handle: string; cw: string }; score: number; you?: boolean }[]; you?: string }) {
   return <div className="card list" style={{ padding: '2px 14px' }}>{rows.map((r, i) => <div key={r.user.handle + i} className="li" style={{ background: r.you ? 'var(--rh-raised)' : undefined, borderRadius: r.you ? 12 : 0, paddingLeft: r.you ? 8 : 4 }}>
-    <b style={{ width: 24 }}>{i + 1}</b><img className="avatar" style={{ width: 34, height: 34 }} src={asset(`characters/glim/avatars/avatar-${r.user.cw}-64.png`)} alt="" /><span className="grow small b">{r.user.handle}{r.you ? ' (you)' : ''}</span><b>{r.score}</b></div>)}
+    <b style={{ width: 24 }}>{i + 1}</b><img className="avatar" style={{ width: 34, height: 34 }} src={asset(`characters/glim/avatars/avatar-classic-64.png`)} alt="" /><span className="grow small b">{r.user.handle}{r.you ? ' (you)' : ''}</span><b>{r.score}</b></div>)}
     {you && <p className="tiny muted" style={{ padding: 8 }}>{you}</p>}</div>
 }
 

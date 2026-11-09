@@ -504,3 +504,6 @@ html,body{overflow-x:clip}
 @media (min-width:1024px){.modegrid{grid-template-columns:repeat(4,1fr)}}
 
 .heat{border-collapse:separate;border-spacing:3px;font:700 11px var(--rh-font-display)}.heat th{color:var(--rh-text2);padding:2px 4px;text-align:left}.heat td{width:34px;height:26px;border-radius:6px;text-align:center;color:var(--rh-text)}
+
+/* Library is its own tab on phones and tablets; on desktop it sits under Journey in the sidebar */
+@media (min-width:1024px){.nav a.nl.mobtab{display:none}}

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { loadManual } from '@/lib/data'
 import { masteryOf, streakInfo, useStore, type Theme } from '@/lib/store'
 import type { ManualCode } from '@/lib/types'
-import { BackBar, CW, Glim, Icon, Loading, Sheet, StatPills, Toggle, asset, useManualData, useToast } from '@/ui/bits'
+import { BackBar, Glim, Icon, Loading, Sheet, StatPills, Toggle, asset, useManualData, useToast } from '@/ui/bits'
 import { api, isDemo, social, type CatalogueManual, type Outbox } from '@/lib/backend'
 import { askPermission, canNotify, show } from '@/lib/notify'
 import { signOut, syncNow } from '@/lib/sync'
@@ -27,20 +27,9 @@ export function useBadges() {
     { k: 'coop', name: 'Together', how: 'Complete a co-op quest (opens with friends)', got: false },
   ]
 }
-export function useStyles() {
-  const { history, done, ladder, activeDays } = useStore(); const cleared = Object.keys(done).length
-  return [
-    { cw: 'classic', how: 'Always yours', got: true },
-    { cw: 'twilight', how: 'Clear 3 chapters', got: cleared >= 3 },
-    { cw: 'meadow', how: 'Study on 7 different days', got: activeDays.length >= 7 },
-    { cw: 'rosewood', how: 'Reach full recall on a memory verse', got: Object.values(ladder).some(l => l.q04) },
-    { cw: 'ocean', how: 'Answer 100 questions correctly', got: history.reduce((a, h) => a + h.right, 0) >= 100 },
-    { cw: 'midnight', how: 'Finish a quarter check', got: history.some(h => h.kind === 'check' && (h.title ?? '').startsWith('Quarter')) },
-  ]
-}
 
 export default function You() {
-  const S = useStore(); const nav = useNavigate(); const badges = useBadges(); const styles = useStyles(); const [toast, say] = useToast()
+  const S = useStore(); const nav = useNavigate(); const badges = useBadges(); const [toast, say] = useToast()
   const [data, setData] = useState(false); const [signin, setSignin] = useState(false); const [busy, setBusy] = useState(false); const [manualSheet, openManual] = useManualSwitch()
   const secure = Object.values(S.cards).filter(c => masteryOf(c) === 'secure').length
   return <div className="page col gap16" style={{ maxWidth: 760 }}>
@@ -54,10 +43,6 @@ export default function You() {
     {S.account && isDemo && <PasskeyCard email={S.account.email} />}
     {S.account && S.account.role !== 'learner' && <Link to={S.account.role === 'coach' ? '/coach' : S.account.role === 'admin' ? '/admin' : '/steward'} className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n={S.account.role === 'coach' ? 'people' : S.account.role === 'admin' ? 'key' : 'shield'} /></span><div className="grow"><b>{S.account.role === 'coach' ? 'Coach workspace' : S.account.role === 'admin' ? 'Admin console' : 'Content studio'}</b><div className="tiny muted">{S.account.role === 'coach' ? 'Your circle, set mocks, submissions and Quiz Night hosting' : S.account.role === 'admin' ? 'Manuals, seasons, organisations, consents and moderation' : 'Verification, anomalies, reports and the manual pipeline'}</div></div><Icon n="chev" className="faint" /></Link>}
     <div className="grid3"><div className="stat center"><div className="v">{S.points.toLocaleString()}</div><div className="d">personal XP</div></div><div className="stat center"><div className="v">{secure}</div><div className="d">Secure items</div></div><div className="stat center"><div className="v">{S.activeDays.length}</div><div className="d">study days</div></div></div>
-    <p className="eyebrow">Glim style</p>
-    <div className="stylepick">{styles.map(s => <button key={s.cw} className={`${S.profile.glim === s.cw ? 'on' : ''} ${s.got ? '' : 'lock'}`} aria-pressed={S.profile.glim === s.cw} aria-label={`${s.cw}${s.got ? '' : ', locked: ' + s.how}`}
-      onClick={() => s.got ? S.set({ profile: { ...S.profile, glim: s.cw } }) : say(`${s.cw[0].toUpperCase() + s.cw.slice(1)}: ${s.how}`)}>
-      <img src={asset(`characters/glim/colorways/${s.cw}/glim-stand-256.webp`)} width={64} height={64} alt="" />{!s.got && <Icon n="lock" className="s lk" />}</button>)}</div>
     <p className="eyebrow">Badges · {badges.filter(b => b.got).length} of {badges.length}</p>
     <div className="badges">{badges.map(b => <button key={b.k} title={`${b.name}: ${b.how}`} aria-label={`${b.name}, ${b.got ? 'earned' : 'locked: ' + b.how}`} onClick={() => say(`${b.name} · ${b.got ? 'earned' : b.how}`)} style={{ border: 0, background: 'transparent', padding: 0 }}>
       <img src={b.got ? asset(`emblems/badges/badge-${b.k}-128.webp`) : asset(`emblems/badges/locked/badge-${b.k}-locked.png`)} alt="" /></button>)}</div>

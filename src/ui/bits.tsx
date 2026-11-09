@@ -3,15 +3,15 @@ import { useStore, streakInfo } from '@/lib/store'
 import { loadManual, readInContext } from '@/lib/data'
 import type { Manual } from '@/lib/types'
 
-export const CW = ['classic', 'twilight', 'meadow', 'rosewood', 'midnight', 'ocean']
+export const CW = ['classic']   // only the default Glim is used; the other colourways are retired
 export const asset = (p: string) => `/assets/${p}`
 
 // ---- Glim: the asset pack's live rig (<rhemlo-glim rig>), with a static fallback -------------------
 const ONCE: Record<string, number> = { wave: 1300, jump: 1500, cheer: 1300, pop: 1700, bounce: 1100, nudge: 1500 }
 const reduced = () => (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) || document.documentElement.classList.contains('reduce-motion')
 export function Glim({ pose = 'idle', size = 160, cw, motion, once, still, className = '', style }: { pose?: string; size?: number; cw?: string; motion?: string; once?: boolean; still?: boolean; className?: string; style?: CSSProperties }) {
-  const mine = useStore(s => s.profile.glim)
-  const c = cw ?? mine ?? 'classic'
+  void cw   // every Glim is the default one
+  const c = 'classic'
   const [m, setM] = useState(motion ?? 'auto')
   useEffect(() => {
     setM(motion ?? 'auto')
@@ -23,8 +23,8 @@ export function Glim({ pose = 'idle', size = 160, cw, motion, once, still, class
       : <img width={size} height={size} alt="" src={asset(c === 'classic' ? `characters/glim/poses/square-256/glim-${pose}.webp` : `characters/glim/colorways/${c}/glim-${pose}-${size > 256 ? 512 : 256}.webp`)} />}
   </span>
 }
-export const GlimHead = ({ cw = 'classic', size = 44 }: { cw?: string; size?: number }) =>
-  <img className="avatar" style={{ width: size, height: size }} src={asset(`characters/glim/avatars/avatar-${cw}-${size > 64 ? 128 : 64}.png`)} alt="" />
+export const GlimHead = ({ size = 44 }: { cw?: string; size?: number }) =>
+  <img className="avatar" style={{ width: size, height: size }} src={asset(`characters/glim/avatars/avatar-classic-${size > 64 ? 128 : 64}.png`)} alt="" />
 
 // ---- icons (24px stroke set) ------------------------------------------------------------------------
 const P: Record<string, ReactNode> = {

@@ -145,7 +145,7 @@ export function Reader() {
       <p className="eyebrow">Lesson {meta.n} · {date}</p>
       <div className="row gap8 mobonly"><span className={`chip ${mc}`}>{mt}</span></div>
       <h1 style={{ fontSize: 32, lineHeight: '36px' }}>{niceTitle(l.title)}</h1>
-      <div className="mvcard"><p className="eyebrow">Memory verse</p><q>{mvText}</q><p className="src">{verseRef(meta)} · Bible passage {l.bp}</p></div>
+      <div className="mvcard"><p className="eyebrow">Memory verse</p><q>{mvText}</q><p className="src"><button className="reflink" onClick={e => openRef(verseRef(meta), e.currentTarget)}>{verseRef(meta)}</button> · Bible passage {l.bp ? <button className="reflink" onClick={e => openRef(l.bp, e.currentTarget)}>{l.bp}</button> : null}</p></div>
       {tab === 'read' && <div className="reader" style={{ ['--rh-text-scale' as string]: scale }}>
         {l.sections.map((s, si) => <section key={s.k + si} className={`rsec ${s.k}`}><h2 className="rhead">{headOf(l, s)}</h2>{s.k === 'questions' && <p className="tiny muted" style={{ margin: '-6px 0 10px' }}>For class discussion · never graded</p>}
           {s.b.map((b, j) => b.t === 'l' ? <ol key={j} className={s.k === 'questions' ? 'qlist' : ''}>{b.i?.map((x, k) => <li key={k}>{linkify(x, openRef)}</li>)}</ol> : <p key={j}>{linkify(b.x ?? '', openRef)}</p>)}</section>)}

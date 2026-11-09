@@ -4,7 +4,7 @@ import { categoryOf, daysUntil, dueInfo, lessonDate, niceTitle, readinessGap, sh
 import { loadItems, loadLesson, readPassage } from '@/lib/data'
 import { day, lessonStats, masteryOf, streakInfo, useStore, type SessionSpec } from '@/lib/store'
 import type { LessonMeta, Manual, ManualCode } from '@/lib/types'
-import { BackBar, Glim, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
+import { BackBar, ContextSheet, Glim, Icon, Loading, Sheet, StatPills, asset, useManualData } from '@/ui/bits'
 import { GuideTip } from './Guide'
 import { lessonLevel, readinessFor, DIRECTIONS } from '@/lib/mastery'
 import { nextMockDate } from './Mock'
@@ -176,7 +176,7 @@ function JourneyInner({ m }: { m: Manual }) {
 type JT = ReturnType<typeof useJourney>
 function ChapterPanel({ m, l, J, onGo }: { m: Manual; l: LessonMeta; J: JT; onGo?: () => void }) {
   const start = useStart(); const nav = useNavigate(); const { cards, sessionSize, readings } = J
-  const [words, setWords] = useState<number | null>(null)
+  const [words, setWords] = useState<number | null>(null); const [ctx, setCtx] = useState<string[] | null>(null)
   useEffect(() => { let on = true; loadLesson(m.code, l.id).then(x => on && setWords(x.sections.reduce((a, s) => a + s.b.reduce((b, k) => b + ((k.x ?? '') + ' ' + (k.i ?? []).join(' ')).split(/\s+/).filter(Boolean).length, 0), 0))); return () => { on = false } }, [m.code, l.id])
   const st = lessonStats(cards, m, l.id)
   const seen = Object.entries(cards).filter(([k, c]) => k.startsWith(`${m.code}|${m.code}:${l.id}.`) && c.seen > 0).length
@@ -187,7 +187,8 @@ function ChapterPanel({ m, l, J, onGo }: { m: Manual; l: LessonMeta; J: JT; onGo
     <p className="eyebrow">Chapter {l.n} · {lessonDate(l.date)?.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) ?? l.date}</p>
     <h2>{niceTitle(l.title)}</h2>
     <div className="row gap8 wrap"><span className={`chip ${lv.mastered ? 'ok' : lv.level >= 3 ? 'str' : lv.level ? '' : 'plain'}`}>{lv.mastered ? 'Mastered' : `L${lv.level} · ${lv.name}`}</span><button className="btn link xs" onClick={() => { onGo?.(); nav(`/practice/learn/${l.id}`) }}>Four-day cycle</button></div>
-    <p className="small muted">Memory verse · {verseRef(l)} · Bible passage · {l.bp}</p>
+    <p className="small muted">Memory verse · <button className="reflink" onClick={() => setCtx([verseRef(l)])}>{verseRef(l)}</button> · Bible passage · {l.bp ? <button className="reflink" onClick={() => setCtx([l.bp])}>{l.bp}</button> : null}</p>
+    {ctx && <ContextSheet refs={ctx} onClose={() => setCtx(null)} />}
     <div className="mt8">
       <button className="cyc" onClick={() => { onGo?.(); nav(`/library/${l.id}`) }}><span className="tile green"><Icon n="book" /></span><span className="grow"><span className="nm">Learn</span><span className="tiny muted" style={{ display: 'block' }}>Read the lesson{words ? ` · ${words} words` : ''}</span></span>{read ? <Icon n="check" style={{ color: 'var(--rh-correct)' }} /> : <Icon n="chev" className="faint" />}</button>
       <button className="cyc" disabled={!open} onClick={() => go(recallSpec(m, l, sessionSize))}><span className="tile"><Icon n="feather" /></span><span className="grow"><span className="nm">Recall</span><span className="tiny muted" style={{ display: 'block' }}>{seen} of {l.ic} questions</span></span>{!open ? <Icon n="lock" className="faint" /> : done ? <Icon n="check" style={{ color: 'var(--rh-correct)' }} /> : <span className="chip">Next</span>}</button>
