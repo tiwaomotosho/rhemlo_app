@@ -13,7 +13,7 @@ export interface League { id: string; week: string; tier: Tier; endsAt: number; 
 export interface WeekResult { week: string; tier: Tier; newTier: Tier; rank: number; points: number; moved: 'up' | 'down' | 'stay' }
 
 export interface ChallengeAnswer { u: string; value: string; ms: number }
-export interface ChallengeAttempt { id: string; day: string; manual: string; items: string[]; state: 'open' | 'pending' | 'final'; accepted: number; correct?: number; points?: number; startedAt: number }
+export interface ChallengeAttempt { id: string; day: string; manual: string; items: string[]; state: 'open' | 'pending' | 'final'; accepted: number; correct?: number; points?: number; startedAt: number; lessons?: string[] }
 
 export interface FeedItem { id: string; user: PublicUser; text: string; badge: string; at: number; cheers: number; mine?: string }
 export interface Coop { id: string; partner: PublicUser; endsAt: number; you: number; them: number; goal: number; reward: string; pendingOffline: number }
@@ -40,7 +40,7 @@ export interface Backend {
   pushSnapshot(data: Record<string, unknown>): Promise<number>
   pullSnapshot(): Promise<Snapshot | null>
   // arena
-  join_league(): Promise<void>
+  join_league(manual?: string): Promise<void>
   leave_league(): Promise<void>
   league_standings(): Promise<League | null>
   last_week_result(): Promise<WeekResult | null>

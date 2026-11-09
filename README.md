@@ -43,7 +43,7 @@ VITE_SUPABASE_URL=https://<project>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon key>
 ```
 
-`src/lib/backend/live.ts` maps each call onto the RPCs in the bundle's `db/migrations` (0003–0006). Those migrations have never been deployed, so check each parameter name against them on first deploy.
+The live backend is in `supabase/`: the bundle's migrations 0001–0006 plus `0007_app_api.sql` (the app's server API), a `send-mail` Edge Function, and tests. `src/lib/backend/live.ts` and the live half of `social.ts` call the `app_*` functions. Step-by-step deployment is in [supabase/README.md](supabase/README.md) and the phone-friendly [go-live guide](docs/Rhemlo_Go_Live_Guide.pdf). `supabase/tests/run_local.sh` runs every database check and the adapter contract test on a throwaway local database.
 
 ## Offline, reminders and sound
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DEFAULT_PREFS, useStore, type Goal as GoalT, type Pace as PaceT } from '@/lib/store'
 import type { ManualCode } from '@/lib/types'
@@ -119,7 +119,7 @@ function PasswordlessRow({ email, onDone, onErr }: { email: string; onDone: () =
 export function Account() {
   const nav = useNavigate(); const d = read(); const [name, setName] = useState(d.name); const [handle, setHandle] = useState(d.handle)
   const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [signin, setSignin] = useState(false)
-  const clean = (h: string) => h.toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20)
+  const clean = (h: string) => h.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20)
   const create = async () => {
     setBusy(true); setErr('')
     try { await signUp(email, pw, clean(handle) || name.toLowerCase().replace(/[^a-z0-9]/g, ''), name.trim()); save({ name: name.trim(), handle: clean(handle), account: true }); nav('/join/manual') }
@@ -190,4 +190,13 @@ export function Pace() {
     </div>
     <div className="foot"><button className="btn block" onClick={go}>Start my first quest</button></div>
   </div>
+}
+
+/** Where an email sign-in link lands (live): finish signing in, then continue. */
+export function AuthCallback() {
+  const nav = useNavigate(); const [err, setErr] = useState('')
+  useEffect(() => { const h = location.hash; history.replaceState(null, '', location.pathname); redeemLink(h).then(() => nav('/journey', { replace: true })).catch(e => setErr((e as Error).message)) }, []) // eslint-disable-line
+  return <div className="ob col center" style={{ alignItems: 'center', gap: 12 }}><Glim pose={err ? 'peek' : 'read'} size={120} />
+    {err ? <><h2>That link did not work</h2><p className="muted">{err}</p><button className="btn" onClick={() => nav('/welcome', { replace: true })}>Back to sign in</button></>
+      : <><h2>Signing you in…</h2><p className="muted">One moment.</p></>}</div>
 }

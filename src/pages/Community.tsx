@@ -2,7 +2,7 @@
 // under-18 safeguards, and host rooms of up to 100 (PRD 9.12–9.14, CP-12).
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { isDemo, social, type BoardRow, type BoardScope, type DM, type InboxItem, type PrivateLeague, type Room, type RoomOptions, type Thread, type PublicUser } from '@/lib/backend'
+import { isDemo, social, type BoardRow, type BoardScope, type DM, type InboxItem, type PrivateLeague, type Room, type RoomOptions, type RoomReveal, type RoomState, type Thread, type PublicUser } from '@/lib/backend'
 import { readPassage } from '@/lib/data'
 import { niceTitle } from '@/lib/engine'
 import { play } from '@/lib/sound'
@@ -89,14 +89,19 @@ export function JoinLeague() {
 
 // ---- Inbox (CP-12) ------------------------------------------------------------------------------------
 export function Inbox() {
-  const { account } = useStore(); const nav = useNavigate(); const [items, setItems] = useState<InboxItem[] | null>(null)
+  const { account } = useStore(); const nav = useNavigate(); const [items, setItems] = useState<InboxItem[] | null>(null); const [answered, setAnswered] = useState<Record<string, string>>({})
   useEffect(() => { if (account) social.inbox().then(x => { setItems(x); social.mark_read(x.filter(i => !i.read).map(i => i.id)) }) }, [account])
   const ic: Record<InboxItem['kind'], [string, string]> = { system: ['info', ''], moderation: ['shield', 'red'], assignment: ['flag', 'apricot'], league: ['trophy', ''], consent: ['you', 'green'], dm: ['chat', ''] }
   return <div className="page col gap16" style={{ maxWidth: 640 }}>
     <div className="pagehead"><h1>Inbox</h1><Link to="/messages" className="btn sec sm"><Icon n="chat" className="s" />Messages</Link></div>
     {!account ? <NeedAccount what="your inbox" /> : !items ? <div className="skel" style={{ height: 200 }} /> : !items.length ? <StateCard img="caughtup" title="All caught up" body="Notices from your coach, leagues and safety team arrive here." /> :
-      <div className="col gap8">{items.map(i => <button key={i.id} className="card row" style={{ textAlign: 'left', color: 'inherit', alignItems: 'flex-start', borderColor: i.read ? undefined : 'var(--rh-action)' }} onClick={() => i.link && nav(i.link)}>
-        <span className={`tile ${ic[i.kind][1]}`}><Icon n={ic[i.kind][0]} /></span><div className="grow"><b className="small">{i.title}</b><p className="small muted" style={{ margin: '2px 0' }}>{i.body}</p><span className="tiny faint">{new Date(i.at).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>{!i.read && <span className="chip">New</span>}</button>)}</div>}
+      <div className="col gap8">{items.map(i => <div key={i.id} className="card row" role={i.link ? 'link' : undefined} tabIndex={i.link ? 0 : undefined} style={{ textAlign: 'left', color: 'inherit', alignItems: 'flex-start', cursor: i.link ? 'pointer' : undefined, borderColor: i.read ? undefined : 'var(--rh-action)' }}
+        onClick={() => i.link && nav(i.link)} onKeyDown={e => { if (e.key === 'Enter' && i.link) nav(i.link) }}>
+        <span className={`tile ${ic[i.kind][1]}`}><Icon n={ic[i.kind][0]} /></span><div className="grow"><b className="small">{i.title}</b><p className="small muted" style={{ margin: '2px 0' }}>{i.body}</p><span className="tiny faint">{new Date(i.at).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+          {i.action?.type === 'connection' && (answered[i.id] ? <p className="small" role="status">{answered[i.id]}</p> : <div className="row gap8 mt8">
+            <button className="btn xs" onClick={async e => { e.stopPropagation(); await social.respond_connection(i.action!.user, true); setAnswered(a => ({ ...a, [i.id]: 'Connected. You can now see each other’s milestones.' })) }}>Accept</button>
+            <button className="btn sec xs" onClick={async e => { e.stopPropagation(); await social.respond_connection(i.action!.user, false); setAnswered(a => ({ ...a, [i.id]: 'Declined.' })) }}>Decline</button></div>)}</div>
+          {!i.read && <span className="chip">New</span>}</div>)}</div>}
     <DemoNote t="notices are generated for the demo" />
   </div>
 }
@@ -162,7 +167,64 @@ export function HostRoom() {
     <DemoNote t="players in rooms are simulated" />
   </div>
 }
-export function RoomPlay() {
+export function RoomPlay() { return isDemo ? <DemoRoomPlay /> : <LiveRoom /> }
+
+/** Live rooms, friendly matches and Quiz Night: the server keeps the clock, marks every answer and reveals together. */
+function LiveRoom() {
+  const { code = '' } = useParams(); const nav = useNavigate()
+  const [room, setRoom] = useState<Room | null | undefined>(undefined); const [err, setErr] = useState(''); const [st, setSt] = useState<RoomState | null>(null)
+  const [now, setNow] = useState(Date.now()); const [skew, setSkew] = useState(0); const [typed, setTyped] = useState(''); const [mine, setMine] = useState<Record<number, string>>({})
+  const [rev, setRev] = useState<Record<number, RoomReveal>>({}); const [final, setFinal] = useState<{ name: string; score: number; correct: number; rank: number | null }[] | null>(null)
+  const load = async () => { try { let r = await social.room(code); if (r && !r.amPlayer && r.status === 'lobby') r = await social.join_room(code); setRoom(r) } catch (e) { setErr((e as Error).message) } }
+  useEffect(() => { load() }, [code]) // eslint-disable-line
+  useEffect(() => { if (!room || room.status !== 'lobby') return; const t = setInterval(load, 2000); return () => clearInterval(t) }, [room?.status]) // eslint-disable-line
+  useEffect(() => { if (!room?.id || room.status === 'lobby' || final) return
+    const tick = async () => { try { const s = await social.room_state(room.id!); setSkew(Date.parse(s.server_time) - Date.now()); setSt(s) } catch (e) { setErr((e as Error).message) } }
+    tick(); const t = setInterval(tick, 1000); return () => clearInterval(t) }, [room?.id, room?.status, final])
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(t) }, [])
+  const at = now + skew, pos = st?.position ?? 0, closes = st?.closes_at ? Date.parse(st.closes_at) : 0, inReveal = !!st?.question && at >= closes
+  useEffect(() => { if (!room?.id || !inReveal || rev[pos]) return; social.room_reveal(room.id, pos).then(r => { setRev(x => ({ ...x, [pos]: r })); play(r.mine?.is_correct ? 'correct' : 'wrong') }).catch(() => {}) }, [inReveal, pos]) // eslint-disable-line
+  useEffect(() => { setTyped('') }, [pos])
+  useEffect(() => { if (room?.id && st && st.position > st.question_count && !final) social.finish_room(room.id).then(f => { setFinal(f.standings ?? []); play('complete') }).catch(e => setErr((e as Error).message)) }, [st?.position]) // eslint-disable-line
+  if (room === undefined && !err) return <Loading />
+  if (!room) return <div className="page" style={{ maxWidth: 520 }}><BackBar title="Room" onBack={() => nav('/arena')} /><StateCard img="error" title="No room uses that code" body={err || 'Check the code with your host.'} /></div>
+  const answer = async (opt: number | null, text: string | null) => { if (!st?.question || mine[pos] !== undefined) return
+    setMine(m => ({ ...m, [pos]: text ?? st.question!.options![opt! - 1] })); const r = await social.answer_room(room.id!, pos, text, opt).catch(e => ({ accepted: false, reason: (e as Error).message }))
+    if (!r.accepted) setErr(r.reason === 'question not open' ? 'That answer arrived after the question closed.' : r.reason ?? '') }
+  if (final) return <div className="page col gap16 center" style={{ maxWidth: 560, alignItems: 'center' }}><Glim pose="champion" motion="cheer" once size={140} /><h1>{room.kind === 'duel' ? 'Match complete.' : 'Room complete.'}</h1>
+    <div className="card list" style={{ width: '100%', padding: '2px 14px' }}>{final.map((p, k) => <div key={p.name + k} className="li"><b style={{ width: 24 }}>{p.rank ?? k + 1}</b><span className="grow small b">{p.name}</span><span className="tiny muted">{p.correct} right</span><b style={{ width: 60, textAlign: 'right' }}>{p.score.toLocaleString()}</b></div>)}</div>
+    <p className="tiny muted">Rooms and friendly matches never add league points.</p><button className="btn block" onClick={() => nav('/arena')}>Back to Arena</button></div>
+  if (room.status === 'lobby') return <div className="page col gap16 center" style={{ maxWidth: 560, alignItems: 'center' }}>
+    <BackBar title={`Room ${room.code}`} onBack={() => nav('/arena')} /><Glim pose="announce" size={120} />
+    <h1>{room.amHost ? 'Your room is open.' : `You joined ${room.hostName}’s ${room.kind === 'duel' ? 'match' : 'room'}.`}</h1>
+    <p className="muted">{room.players} of {room.options.cap} players · {room.options.count} questions · {room.options.seconds}s each</p>
+    {room.amHost && <div className="card center col gap8"><p className="eyebrow">Room code</p><b className="disp" style={{ fontSize: 40, lineHeight: '44px', letterSpacing: '.3em' }}>{room.code}</b></div>}
+    <div className="row wrap gap8" style={{ justifyContent: 'center' }}>{(room.playerList ?? []).slice(0, 24).map(p => <span key={p.id} className="chip plain"><GlimHead cw={p.cw} size={22} />{p.handle}</span>)}</div>
+    {room.amHost ? <button className="btn block" disabled={room.kind === 'duel' && (room.players ?? 0) < 2} onClick={async () => { try { setRoom(await social.start_room(room.id!)) } catch (e) { setErr((e as Error).message) } }}>{room.kind === 'duel' && (room.players ?? 0) < 2 ? 'Waiting for your friend…' : 'Start'}</button>
+      : <p className="hint"><Icon n="clock" />Waiting for {room.hostName} to start.</p>}
+    {err && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{err}</p>}</div>
+  if (!st) return <Loading />
+  if (!st.question) return <div className="page col gap16 center" style={{ maxWidth: 560, alignItems: 'center' }}><Glim pose="announce" size={110} /><h2>Starting…</h2><p className="muted">Get ready. The first question opens in a moment.</p></div>
+  const q = st.question, left = Math.max(0, Math.ceil((closes - at) / 1000)), r = rev[pos], picked = mine[pos]
+  return <div className="page col gap16" style={{ maxWidth: room.amHost ? 960 : 640 }}>
+    <div className="row between"><span className="chip lg">Q {pos} / {st.question_count}</span><Timer left={inReveal ? 0 : left} total={st.seconds} /><span className="chip lg plain"><Icon n="people" />{st.players.length}</span></div>
+    <h2>{q.prompt.instruction}</h2>{(q.prompt.text || q.prompt.ref || q.prompt.title) && <div className="pcard">{q.prompt.text ?? q.prompt.ref ?? q.prompt.title}</div>}
+    {q.format === 'mcq' && q.options ? <div className="grid2" style={{ gap: 10 }}>{q.options.map((o, k) => {
+        const right = !!r && r.correct_option === k + 1, wrong = !!r && picked === o && !right
+        return <button key={k} className={`opt ${picked === o ? 'sel' : ''}`} disabled={picked !== undefined || inReveal} onClick={() => answer(k + 1, null)} style={{ opacity: r && !right ? .55 : 1, borderColor: right ? 'var(--rh-correct)' : wrong ? 'var(--rh-incorrect)' : undefined }}>
+          <b style={{ width: 22 }}>{'ABCDE'[k]}</b><span className="grow">{o}</span>{right && <Icon n="check" />}{r?.option_counts?.[k + 1] ? <span className="tiny muted">{r.option_counts[k + 1]}</span> : null}</button> })}</div>
+      : <form className="row gap8" onSubmit={e => { e.preventDefault(); if (typed.trim()) answer(null, typed) }}><input className="field" value={picked ?? typed} disabled={picked !== undefined || inReveal} onChange={e => setTyped(e.target.value)} placeholder={q.answer_kind === 'reference' ? 'e.g. Colossians 1:17' : q.answer_kind === 'lesson' ? 'Lesson number' : 'Type your answer'} aria-label="Your answer" autoComplete="off" spellCheck={false} /><button className="btn" disabled={!typed.trim() || picked !== undefined || inReveal}>Lock in</button></form>}
+    {!inReveal && picked !== undefined && <p className="hint"><Icon n="lock" />Answer locked. Everyone sees the answer together when time is up.</p>}
+    {inReveal && <div className="card col gap8"><p className="eyebrow">Answer</p>{r ? <><b>{r.answer}</b>
+      <div className="row wrap gap8"><span className="chip ok">{r.answered ? Math.round(r.correct / r.answered * 100) : 0}% of the room right</span>{r.lesson && <span className="chip plain">Lesson {+r.lesson.slice(1)}</span>}{r.mine && <span className={`chip ${r.mine.is_correct ? 'ok' : 'bad'}`}>{r.mine.is_correct ? `+${r.mine.points}` : 'Not this time'}</span>}</div>
+      {r.scripture?.filter(x => x.verses?.length).slice(0, 1).map(x => <p key={x.ref} className="small muted">{x.ref.replace(/\b\w/g, c => c.toUpperCase())} (KJV): {x.verses!.map(v => v.t).join(' ').slice(0, 320)}</p>)}</> : <div className="skel" style={{ height: 40 }} />}
+      <div className="list">{st.players.slice(0, 5).map((p, k) => <div key={p.name + k} className="li small" style={{ background: p.me ? 'var(--rh-raised)' : undefined, borderRadius: 10 }}><b style={{ width: 24 }}>{k + 1}</b><span className="grow">{p.name}{p.me ? ' (you)' : ''}</span><b>{p.score.toLocaleString()}</b></div>)}</div>
+      <p className="tiny muted">Next question in a moment.</p></div>}
+    {err && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{err}</p>}
+  </div>
+}
+
+function DemoRoomPlay() {
   const { code = '' } = useParams(); const nav = useNavigate(); const host = new URLSearchParams(location.search).has('host'); const { profile } = useStore()
   const [room, setRoom] = useState<Room | null | undefined>(undefined); const [qs, setQs] = useState<LiveQ[] | null>(null); const [i, setI] = useState(-1)
   const [pick, setPick] = useState<string | null>(null); const [typed, setTyped] = useState(''); const [ms, setMs] = useState(0); const [reveal, setReveal] = useState(false); const [scores, setScores] = useState<Record<string, number>>({}); const [verse, setVerse] = useState('')

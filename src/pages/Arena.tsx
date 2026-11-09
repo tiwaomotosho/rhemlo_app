@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { api, isDemo, type ChallengeAttempt, type League, type MatchState, type PublicUser, type WeekResult } from '@/lib/backend'
+import { api, isDemo, type ChallengeAttempt, type League, type MatchState, type PublicUser, type WeekResult, social } from '@/lib/backend'
 import { loadItems } from '@/lib/data'
 import { day, useStore } from '@/lib/store'
 import { play } from '@/lib/sound'
@@ -27,7 +27,7 @@ export function Arena() {
   const { account, arenaOptIn, set, prefs, history, manual } = useStore(); const nav = useNavigate()
   const [league, setLeague] = useState<League | null | undefined>(undefined); const [result, setResult] = useState<WeekResult | null>(null); const [skip, setSkip] = useState(false)
   useEffect(() => { if (!account) return; api.league_standings().then(setLeague).catch(() => setLeague(null)); api.last_week_result().then(r => { if (r && localStorage.getItem('rhemlo.result') !== r.week) setResult(r) }).catch(() => {}) }, [account])
-  const join = async () => { if (account) await api.join_league(); set({ arenaOptIn: true, prefs: { ...prefs, leagues: true } }); if (account) setLeague(await api.league_standings()) }
+  const join = async () => { if (account) await api.join_league(manual); set({ arenaOptIn: true, prefs: { ...prefs, leagues: true } }); if (account) setLeague(await api.league_standings()) }
   if (result) return <WeekResultView r={result} onDone={() => { localStorage.setItem('rhemlo.result', result.week); setResult(null) }} />
   if (!arenaOptIn && !skip) return <div className="page col gap16 center" style={{ maxWidth: 520, alignItems: 'stretch' }}>
     <div className="pagehead"><h1>Arena</h1><StatPills /></div>
@@ -116,7 +116,7 @@ export function DailyChallenge() {
   const [a, setA] = useState<ChallengeAttempt | null>(null); const [err, setErr] = useState('')
   const lessons = m ? m.lessons.filter(l => done[`${m.code}|${l.id}`]) : []
   useEffect(() => {
-    if (!m || !account || !lessons.length) return
+    if (!m || !account || (isDemo && !lessons.length)) return
     ;(async () => { try { const its = (await Promise.all(lessons.slice(-12).map(l => loadItems(m.code, l.id)))).flat().filter(i => !['Q04', 'Q27', 'Q28', 'Q24'].includes(i.t)).map(i => i.u); setA(await api.daily_challenge(m.code, its)) } catch (e) { setErr((e as Error).message) } })()
   }, [m?.code, account, lessons.length]) // eslint-disable-line
   useEffect(() => { if (a?.state !== 'pending') return; const t = setInterval(async () => { const x = await api.challenge_state(a.id); if (x.state !== 'pending') { setA({ ...x }); play('complete') } }, 1000); return () => clearInterval(t) }, [a?.state, a?.id])
@@ -140,7 +140,7 @@ export function DailyChallenge() {
     <div className="col gap8" style={{ textAlign: 'left' }}>{[['listn', '10 questions · 10 verified points each'], ['star', 'One ranked attempt today'], ['wifi', 'Needs a connection · marked on the server'], ['refresh', 'Disconnect? Accepted answers are kept; resume within 30 min'], ['eyeoff', 'Explanations appear after you finish']].map(([i, t]) =>
       <div key={t} className="card row" style={{ padding: '10px 14px' }}><Icon n={i} style={{ color: 'var(--rh-action)' }} /><span className="small">{t}</span></div>)}</div>
     {err && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{err}</p>}
-    <button className="btn block" disabled={!a || !lessons.length} onClick={() => a && start({ kind: 'daily', manual: m.code, lessons: lessons.slice(-12).map(l => l.id), count: 10, only: a.items, ranked: true, attemptId: a.id, title: 'Daily challenge · ranked' })}>{lessons.length ? 'Begin ranked attempt' : 'Clear a first lesson to play'}</button>
+    <button className="btn block" disabled={!a || (isDemo && !lessons.length)} onClick={() => a && start({ kind: 'daily', manual: m.code, lessons: a.lessons?.length ? a.lessons : lessons.slice(-12).map(l => l.id), count: 10, only: a.items, ranked: true, attemptId: a.id, title: 'Daily challenge · ranked' })}>{lessons.length ? 'Begin ranked attempt' : 'Clear a first lesson to play'}</button>
     <p className="tiny faint">Extra-time accommodation is available in settings.</p><DemoNote />
   </div>
 }
@@ -154,9 +154,11 @@ export function FriendlyMatch() {
   if (!m) return <Loading />
   if (!account) return <div className="page col gap16" style={{ maxWidth: 520 }}><BackBar title="Friendly match" onBack={() => nav('/arena')} /><NeedAccount what="friendly matches" /></div>
   const lessons = m.lessons.filter(l => done[`${m.code}|${l.id}`]).slice(-8)
-  const invite = async (f: PublicUser) => setMatch(await api.create_match(f.id, []))
+  const [err, setErr] = useState('')
+  const invite = async (f: PublicUser) => { if (!isDemo) { try { const r = await social.create_duel(m.code, f.id, (lessons.length ? lessons : m.lessons.slice(0, 1)).map(l => l.id)); nav(`/arena/room/${r.code}`) } catch (e) { setErr((e as Error).message) } return } setMatch(await api.create_match(f.id, [])) }
   return <div className="page col gap16" style={{ maxWidth: 520 }}>
     <BackBar title="Friendly match" onBack={() => nav('/arena')} />
+    {err && <p className="small" role="alert" style={{ color: 'var(--rh-incorrect)' }}>{err}</p>}
     {!match ? <><h2>Who would you like to play?</h2><p className="small muted">Same manual, 10 questions, 20 seconds each. Matches never add league points.</p>
       {friends === null ? <div className="skel" style={{ height: 120 }} /> : friends.length ? <div className="card list" style={{ padding: '2px 14px' }}>{friends.map(f => <button key={f.id} className="li" onClick={() => invite(f)}><GlimHead cw={f.cw} size={40} /><span className="grow"><b className="small">{f.handle}</b><span className="tiny muted" style={{ display: 'block' }}>{f.name}</span></span><span className="btn sec xs">Invite</span></button>)}</div>
         : <p className="muted">Add a friend in Circle first.</p>}</>
@@ -209,7 +211,7 @@ export function MatchPlay() {
 // ---- Quiz Night (live room) ---------------------------------------------------------------------
 export function QuizNight() {
   const nav = useNavigate(); const { account } = useStore(); const [code, setCode] = useState(''); const [err, setErr] = useState('')
-  const join = () => { if (code.toUpperCase() !== 'LAMP') { setErr(isDemo ? 'No live room uses that code. In this demo, the Grace Youth room is LAMP.' : 'No live room uses that code.'); return } nav('/arena/quiz-night/LAMP') }
+  const join = () => { if (!isDemo) { nav(`/arena/room/${code.toUpperCase()}`); return } if (code.toUpperCase() !== 'LAMP') { setErr(isDemo ? 'No live room uses that code. In this demo, the Grace Youth room is LAMP.' : 'No live room uses that code.'); return } nav('/arena/quiz-night/LAMP') }
   return <div className="page col gap16" style={{ maxWidth: 520 }}>
     <BackBar title="" onBack={() => nav('/arena')} />
     <div style={{ position: 'relative', borderRadius: 24, overflow: 'hidden', minHeight: 330, background: '#241B2E' }}>

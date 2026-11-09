@@ -9,7 +9,7 @@ const DAY = 86400000, WEEK = 7 * DAY
 export type BoardScope = 'week' | 'season' | 'all' | 'friends' | 'org'
 export interface BoardRow { rank: number; user: PublicUser; points: number; you: boolean; hidden?: boolean }
 export interface PrivateLeague { id: string; name: string; code: string; owner: string; members: string[]; createdAt: number; note?: string }
-export interface InboxItem { id: string; at: number; kind: 'system' | 'moderation' | 'assignment' | 'league' | 'consent' | 'dm'; title: string; body: string; read?: boolean; link?: string }
+export interface InboxItem { id: string; at: number; kind: 'system' | 'moderation' | 'assignment' | 'league' | 'consent' | 'dm'; title: string; body: string; read?: boolean; link?: string; action?: { type: 'connection'; user: string } }
 export interface DM { id: string; from: string; to: string; text: string; sticker?: string; at: number; deleted?: boolean }
 export interface Thread { with: PublicUser; last: DM | null; unread: number }
 export interface Season { id: string; name: string; from: string; to: string; active: boolean }
@@ -20,7 +20,16 @@ export interface Sanction { id: string; uid: string; kind: 'warn' | 'mute' | 'su
 export interface Verification { u: string; state: 'approved' | 'corrected' | 'flagged'; note: string; correction?: string; by: string; at: number }
 export interface Anomaly { id: string; manual: string; lesson: string; where: string; kind: string; detail: string; state: 'open' | 'kept' | 'fixed'; at: number }
 export interface RoomOptions { lessons: string[]; formats: ('mcq' | 'typed')[]; count: number; seconds: number; cap: number }
-export interface Room { code: string; host: string; hostName: string; options: RoomOptions; createdAt: number; manual: string }
+export interface Room { code: string; host: string; hostName: string; options: RoomOptions; createdAt: number; manual: string
+  // live only: the server's match behind the room
+  id?: string; kind?: 'room' | 'duel'; status?: 'lobby' | 'live' | 'finished' | 'cancelled'; players?: number; playerList?: PublicUser[]; amHost?: boolean; amPlayer?: boolean; startsAt?: number | null }
+/** Server-timed play (live): what match_state returns. */
+export interface RoomState { status: string; position: number; question_count: number; seconds: number; reveal_seconds: number; server_time: string; base: string | null
+  opens_at: string | null; closes_at: string | null
+  question: { position: number; format: 'mcq' | 'typed'; prompt: { instruction: string; text?: string; ref?: string; title?: string }; options: string[] | null; answer_kind: string } | null
+  players: { name: string; score: number; me: boolean }[] }
+export interface RoomReveal { answer: string; correct_option: number | null; lesson: string; answered: number; correct: number; option_counts: Record<string, number> | null
+  mine: { is_correct: boolean; points: number } | null; scripture: { ref: string; verses: { c: number; v: number; t: string }[] | null }[] }
 export interface MockSet { id: string; group: string; title: string; lessons: string[]; count: number; minutes: number; due: number; by: string; at: number }
 export interface Submission { uid: string; user: PublicUser; score: number; at: number; usedS: number; flagged?: string }
 export interface Safety { birthYear?: number; guardian?: boolean; dmFrom: 'everyone' | 'connections' | 'nobody'; visibility: 'public' | 'hidden' }
@@ -65,6 +74,15 @@ export interface Social {
   anomalies(manual: string): Promise<Anomaly[]>
   set_anomaly(id: string, state: Anomaly['state']): Promise<void>
   magic_link(email: string): Promise<void>
+  // connections and live play (server-timed; the demo simulates these on the device instead)
+  respond_connection(userId: string, accept: boolean): Promise<void>
+  create_duel(manual: string, opponent: string, lessons: string[]): Promise<Room>
+  join_room(code: string): Promise<Room>
+  start_room(id: string): Promise<Room>
+  room_state(id: string): Promise<RoomState>
+  answer_room(id: string, position: number, answer: string | null, option: number | null): Promise<{ accepted: boolean; is_correct?: boolean; points?: number; reason?: string }>
+  room_reveal(id: string, position: number): Promise<RoomReveal>
+  finish_room(id: string): Promise<{ standings: { name: string; score: number; correct: number; rank: number | null }[] }>
 }
 
 // ---- demo ----------------------------------------------------------------------------------------
@@ -207,6 +225,9 @@ export const demoSocial: Social = {
   async verify(manual, v) { const u = me(), d = load(); (d.verify[manual] ??= {})[v.u] = { ...v, by: u.user.name, at: Date.now() }; save() },
   async anomalies(manual) { return load().anomalies.filter(a => a.manual === manual) },
   async set_anomaly(id, state) { const a = load().anomalies.find(x => x.id === id); if (a) a.state = state; save() },
+  async respond_connection() { /* demo connections are accepted at once */ },
+  ...(Object.fromEntries(['create_duel', 'join_room', 'start_room', 'room_state', 'answer_room', 'room_reveal', 'finish_room'].map(k =>
+    [k, async () => { throw new Error('In the demo, rooms and friendly matches are simulated on this device.') }])) as unknown as Pick<Social, 'create_duel' | 'join_room' | 'start_room' | 'room_state' | 'answer_room' | 'room_reveal' | 'finish_room'>),
   async magic_link(email) {
     await wait(400); const box = JSON.parse(localStorage.getItem('rhemlo.demo.magic') ?? '[]') as { email: string; token: string; at: number }[]
     const token = crypto.randomUUID().slice(0, 8); box.unshift({ email: email.trim().toLowerCase(), token, at: Date.now() }); localStorage.setItem('rhemlo.demo.magic', JSON.stringify(box.slice(0, 10)))
@@ -216,4 +237,51 @@ export const demoMagicLinks = () => { try { return JSON.parse(localStorage.getIt
 void utcDay
 
 // ---- live: one RPC per method, same names and arguments --------------------------------------------
-export const liveSocial = new Proxy({} as Social, { get: (_t, name: string) => (...args: unknown[]) => rpc(name, { args }) })
+export const liveSocial: Social = {
+  leaderboard: (scope, manual) => rpc('app_leaderboard', { p_scope: scope, p_edition: manual }),
+  seasons: () => rpc('app_seasons'),
+  my_leagues: () => rpc('app_my_leagues'),
+  create_league: (name, note) => rpc('app_create_league', { p_name: name, p_note: note ?? null }),
+  league_preview: (code) => rpc('app_league_preview', { p_code: code }),
+  join_league_code: (code) => rpc('app_join_league_code', { p_code: code }),
+  leave_private: (id) => rpc('app_leave_private', { p_league: id }),
+  league_table: (id) => rpc('app_league_table', { p_league: id }),
+  inbox: () => rpc('app_inbox'),
+  mark_read: (ids) => rpc('app_mark_read', { p_ids: ids }),
+  set_safety: (s) => rpc('app_set_safety', { p_s: s }),
+  can_message: (id) => rpc('app_can_message', { p_user: id }),
+  threads: () => rpc('app_threads'),
+  dm: (id) => rpc('app_dm', { p_user: id }),
+  send_dm: (id, text, sticker) => rpc('app_send_dm', { p_user: id, p_text: text, p_sticker: sticker ?? null }),
+  delete_dm: (id) => rpc('app_delete_dm', { p_id: id }),
+  request_consent: (contact) => rpc('app_request_consent', { p_contact: contact }),
+  create_room: (manual, o) => rpc('app_create_room', { p_edition: manual, p_options: o }),
+  room: (code) => rpc('app_room', { p_code: code }),
+  set_mock: (group, m) => rpc('app_set_mock', { p_group: group, p_m: m }),
+  mocks_for: (group) => rpc('app_mocks_for', { p_group: group }),
+  submit_mock: (id, score, usedS) => rpc('app_submit_mock', { p_assignment: id, p_score: score, p_used_s: usedS }),
+  submissions: (id) => rpc('app_submissions', { p_assignment: id }),
+  catalogue: () => rpc('app_catalogue'),
+  set_manual: (code, p) => rpc('app_set_manual', { p_code: code, p }),
+  save_season: (s) => rpc('app_save_season', { p_s: s }),
+  orgs: () => rpc('app_orgs'),
+  save_org: (o) => rpc('app_save_org', { p_o: o }),
+  consents: () => rpc('app_consents'),
+  decide_consent: (id, granted) => rpc('app_decide_consent', { p_id: id, p_granted: granted }),
+  people: (q) => rpc('app_people', { p_q: q }),
+  sanction: (uid, kind, reason, days) => rpc('app_sanction', { p_user: uid, p_kind: kind, p_reason: reason, p_days: days ?? null }),
+  my_sanctions: () => rpc('app_my_sanctions'),
+  verifications: (manual) => rpc('app_verifications', { p_edition: manual }),
+  verify: (manual, v) => rpc('app_verify', { p_edition: manual, p_v: v }),
+  anomalies: (manual) => rpc('app_anomalies', { p_edition: manual }),
+  set_anomaly: (id, state) => rpc('app_set_anomaly', { p_id: id, p_state: state }),
+  magic_link: async () => { /* live sign-in links are sent by Supabase Auth (api.sendLink) */ },
+  respond_connection: async (id, accept) => { await rpc('app_respond_connection', { p_user: id, p_accept: accept }) },
+  create_duel: (manual, opponent, lessons) => rpc('app_create_duel', { p_edition: manual, p_opponent: opponent, p_lessons: lessons }),
+  join_room: (code) => rpc('app_join_room', { p_code: code }),
+  start_room: (id) => rpc('app_start_room', { p_match: id }),
+  room_state: (id) => rpc('match_state', { p_match: id }),
+  answer_room: (id, position, answer, option) => rpc('answer_match', { p_match: id, p_position: position, p_answer: answer, p_option: option }),
+  room_reveal: (id, position) => rpc('app_room_reveal', { p_match: id, p_position: position }),
+  finish_room: (id) => rpc('finish_match', { p_match: id }),
+}

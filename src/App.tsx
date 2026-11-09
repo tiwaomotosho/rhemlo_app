@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useStore } from '@/lib/store'
 import { GlimHead, Glim, Icon, useManualData } from '@/ui/bits'
-import { Welcome, Account, Goal, ManualPick, Pace } from '@/pages/Onboarding'
+import { Welcome, Account, Goal, ManualPick, Pace, AuthCallback } from '@/pages/Onboarding'
 import Journey, { Readings, StageCountdown, MasteryCheck } from '@/pages/Journey'
 import Practice, { TargetBuilder, MemoryLadder } from '@/pages/Practice'
 import Session, { Done } from '@/pages/Session'
@@ -75,6 +75,7 @@ export default function App() {
   useEffect(() => startSync(), [])
 
   if (!onboarded) return <Routes>
+    <Route path="/auth/callback" element={<AuthCallback />} />
     <Route path="/welcome" element={<Welcome />} />
     <Route path="/join/account" element={<Account />} />
     <Route path="/join/goal" element={<Goal />} />
