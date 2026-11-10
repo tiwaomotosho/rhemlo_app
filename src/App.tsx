@@ -3,7 +3,7 @@ import { NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-rou
 import { useStore } from '@/lib/store'
 import { GlimHead, Glim, Icon, useManualData } from '@/ui/bits'
 import { Welcome, Account, Goal, ManualPick, Pace, AuthCallback } from '@/pages/Onboarding'
-import Journey, { Readings, StageCountdown, MasteryCheck } from '@/pages/Journey'
+import Journey, { StageCountdown, MasteryCheck } from '@/pages/Journey'
 import Practice, { TargetBuilder, MemoryLadder } from '@/pages/Practice'
 import Session, { Done } from '@/pages/Session'
 import { Arena, ArenaRules, DailyChallenge, FriendlyMatch, LeagueView, MatchPlay, QuizNight, QuizNightPlay } from '@/pages/Arena'
@@ -92,7 +92,7 @@ export default function App() {
       <Route path="/journey/planner" element={<Planner />} />
       <Route path="/journey/progress" element={<Progress />} />
       <Route path="/journey/insights" element={<Insights />} />
-      <Route path="/journey/readings" element={<Readings />} />
+      <Route path="/journey/readings" element={<Navigate to="/journey" replace />} />
       <Route path="/journey/stages/:i" element={<StageCountdown />} />
       <Route path="/journey/check/:id" element={<MasteryCheck />} />
       <Route path="/library" element={<Library />} />

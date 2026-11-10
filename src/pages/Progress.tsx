@@ -73,7 +73,7 @@ export function Planner() {
   const recall: SessionSpec = { kind: 'quest', manual: m.code, lessons: [cur.id], count: size, title: `Lesson ${cur.n} · Recall` }
   const review: SessionSpec | undefined = due.count ? { kind: 'review', manual: m.code, lessons: due.lessons.slice(0, 8), count: size, title: 'Due review' } : undefined
   const plan: Act[][] = [
-    [{ label: `Recall L${cur.n}`, tone: 'str', spec: recall, min: mins }, { label: 'Reading', tone: 'plain', min: 3 }],
+    [{ label: `Recall L${cur.n}`, tone: 'str', spec: recall, min: mins }],
     [{ label: due.count ? `Review ${due.count}` : 'Review', tone: 'due', spec: review, min: 5 }, ...(prevL ? [{ label: `Check L${prevL.n}`, tone: 'plain', min: 10 }] : [])],
     [{ label: `Recall L${cur.n}`, tone: 'str', spec: recall, min: mins }],
     [{ label: due.count ? `Review ${due.count}` : 'Review', tone: 'due', spec: review, min: 5 }, { label: `Recall L${cur.n}`, tone: 'plain', spec: recall, min: mins }],
@@ -87,7 +87,7 @@ export function Planner() {
   const overdue = Object.entries(S.cards).filter(([k, c]) => k.startsWith(m.code + '|') && c.seen > 0 && c.due < Date.now() - 2 * DAY)
   const ovL = overdue.length ? overdue.map(([k]) => +(k.match(/:L(\d+)/)?.[1] ?? 0)).sort((a, b) => a - b)[0] : 0
   const planned = dates.filter(d => S.activeDays.includes(day(d.getTime()))).length
-  const go = (a: Act) => a.spec ? start(a.spec) : a.label.startsWith('Reading') ? nav('/journey/readings') : a.label.startsWith('Learn') && nextL ? nav(`/library/${nextL.id}`) : a.label.startsWith('Check') ? nav(`/journey/check/${(a.label.includes(String(prevL?.n)) ? prevL : wl)?.id}`) : undefined
+  const go = (a: Act) => a.spec ? start(a.spec) : a.label.startsWith('Learn') && nextL ? nav(`/library/${nextL.id}`) : a.label.startsWith('Check') ? nav(`/journey/check/${(a.label.includes(String(prevL?.n)) ? prevL : wl)?.id}`) : undefined
   return <div className="page col gap16">
     <div className="mobonly2"><BackBar title="Planner" onBack={() => nav('/journey')} /></div>
     <div className="pagehead"><div><p className="eyebrow">Planner · Lesson {wl.n} week</p><h1>This week</h1></div>
@@ -100,8 +100,8 @@ export function Planner() {
     <div className="grid-today">
       <div className="card col"><p className="eyebrow">Today · {dates[ti].toLocaleDateString(undefined, { weekday: 'long' })}</p>
         {today.map((a, i) => <button key={i} className="li row" style={{ border: 0, background: 'transparent', textAlign: 'left', color: 'inherit', padding: '6px 0' }} onClick={() => go(a)}>
-          <span className={`tile ${a.tone === 'due' ? 'apricot' : a.label.startsWith('Learn') || a.label.startsWith('Reading') ? 'green' : ''}`}><Icon n={a.tone === 'due' ? 'refresh' : a.label.startsWith('Learn') || a.label.startsWith('Reading') ? 'book' : 'feather'} /></span>
-          <span className="grow"><b>{a.label.replace(/^Recall L(\d+)/, 'Lesson $1 · Recall').replace(/^Review(.*)/, 'Due review')}</b><span className="tiny muted" style={{ display: 'block' }}>{a.spec ? `${a.spec.count} questions` : a.label.startsWith('Reading') ? 'Further reading · never graded' : a.label.startsWith('Check') ? 'Lesson mastery check · 25 questions' : 'Read the lesson'}</span></span><span className="small b">{a.min} min</span></button>)}
+          <span className={`tile ${a.tone === 'due' ? 'apricot' : a.label.startsWith('Learn') ? 'green' : ''}`}><Icon n={a.tone === 'due' ? 'refresh' : a.label.startsWith('Learn') ? 'book' : 'feather'} /></span>
+          <span className="grow"><b>{a.label.replace(/^Recall L(\d+)/, 'Lesson $1 · Recall').replace(/^Review(.*)/, 'Due review')}</b><span className="tiny muted" style={{ display: 'block' }}>{a.spec ? `${a.spec.count} questions` : a.label.startsWith('Check') ? 'Lesson mastery check · 25 questions' : 'Read the lesson'}</span></span><span className="small b">{a.min} min</span></button>)}
         {today.length ? <button className="btn block" onClick={() => go(today.find(a => a.spec) ?? today[0])}>Start today’s work</button> : null}</div>
       {overdue.length > 0 ? <div className="card row" style={{ borderStyle: 'dashed' }}><span className="tile"><Icon n="history" /></span><div><b>{overdue.length} overdue point{overdue.length === 1 ? '' : 's'} · Lesson {ovL}</b><div className="tiny muted">Kept visible, never deleted to tidy the plan. Still here whenever you are ready.</div></div></div>
         : <div className="card row"><span className="tile green"><Icon n="check" /></span><div><b>Nothing overdue</b><div className="tiny muted">Reviews are on schedule.</div></div></div>}

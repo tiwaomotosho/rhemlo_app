@@ -94,7 +94,6 @@ function JourneyInner({ m }: { m: Manual }) {
   const mockAt = nextMockDate(S2.mocks.filter(x => x.manual === m.code))
   const todaySpec: SessionSpec = { kind: 'today', manual: m.code, lessons: m.lessons.filter(l => J.isDone(l) || l.id === J.cur.id).map(l => l.id), count: sessionSize, title: catchUp ? 'Catch-up' : 'Today' }
   const doneQ = J.quests.filter(q => q.done).length
-  const wl = weekLesson(m), dow = new Date().getDay(), reading = wl.readings[dow] ?? wl.readings[0]
   const open = (l: LessonMeta) => { setPanel(l); if (matchMedia('(min-width:640px) and (max-width:1023px)').matches) return; setSel(l) }
 
   if (back) return <WelcomeBack m={m} onDone={() => { try { sessionStorage.setItem('rhemlo.wb', '1') } catch { /* */ } setBack(false) }} />
@@ -161,8 +160,7 @@ function JourneyInner({ m }: { m: Manual }) {
            <Link to={`/journey/stages/${m.stages.indexOf(q1)}`} className="card col gap8" style={{ color: 'inherit' }}><p className="eyebrow">{q1.name}</p>
             <div className="row" style={{ alignItems: 'flex-end' }}><b className="disp" style={{ fontSize: 34, lineHeight: '34px', color: 'var(--rh-action)' }}>{Math.max(0, daysUntil(q1.date))}</b><div className="tiny muted">days · {shortDate(new Date(q1.date + 'T00:00'))}<br />Lessons {q1.lessons[0]}–{q1.lessons[1]}</div></div>
             <div className="bar thin"><i style={{ width: `${Math.min(100, gap.readiness / .95 * 100)}%` }} /></div><p className="tiny muted">Readiness {Math.round(gap.readiness * 100)}% · target 95% · next mock {mockAt <= Date.now() ? 'due now' : shortDate(new Date(mockAt))}</p></Link>
-          {reading && <Link to="/journey/readings" className="card col gap8" style={{ color: 'inherit', background: 'var(--rh-apricot-bg)', borderColor: 'transparent' }}>
-            <p className="eyebrow" style={{ color: 'var(--rh-apricot-deep)' }}>Further reading · {reading.d}</p><b className="disp" style={{ fontSize: 17 }}>{reading.r}</b><Passage refText={reading.r} clamp /><p className="tiny muted">For devotion · never graded</p></Link>}
+          
         </div>
       </aside>
     </div>
@@ -244,24 +242,6 @@ function Passage({ refText, clamp }: { refText: string; clamp?: boolean }) {
   if (p === undefined) return <div className="skel" style={{ height: 48 }} />
   if (!p) return <p className="small muted">Open your Bible at {refText}.</p>
   return <p className="small" style={clamp ? { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : { font: 'var(--rh-type-reader)' }}>{p.verses.map(v => <span key={v.n}>{p.verses.length > 1 && <sup className="faint b">{v.n} </sup>}{v.t} </span>)}</p>
-}
-
-// ---- Further readings (devotional track) -------------------------------------------------------------
-export function Readings() {
-  const m = useManualData(); const nav = useNavigate(); const { readings, set } = useStore()
-  if (!m) return <Loading />
-  const l = weekLesson(m), dow = new Date().getDay(), today = l.readings[dow] ?? l.readings[0]
-  const k = (d: string) => `${m.code}|${l.id}|${d}`
-  return <div className="page col" style={{ maxWidth: 560 }}>
-    <BackBar title="Further readings" onBack={() => nav('/journey')} right={<Icon n="calendar" className="faint" />} />
-    {today && <div className="mvcard"><p className="eyebrow">{['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dow]} · Lesson {l.n} week</p><h2 className="mt8">{today.r}</h2><div className="mt8"><Passage refText={today.r} /></div><p className="tiny muted mt8">King James Version · public domain</p></div>}
-    <div className="card list" style={{ padding: '4px 14px' }}>{l.readings.map((r, i) => <div key={r.d} className="li">
-      <span className="chip plain" style={{ width: 52, justifyContent: 'center' }}>{r.d}</span><span className={`grow ${i === dow ? 'b' : ''}`}>{r.r}</span>
-      {i === dow && <span className="chip due">Today</span>}
-      <button className="iconbtn" aria-label={readings[k(r.d)] ? `Mark ${r.d} unread` : `Mark ${r.d} read`} aria-pressed={!!readings[k(r.d)]} onClick={() => { const n = { ...readings }; if (n[k(r.d)]) delete n[k(r.d)]; else n[k(r.d)] = true; set({ readings: n }) }}>
-        {readings[k(r.d)] ? <Icon n="check" style={{ color: 'var(--rh-correct)' }} /> : <span style={{ width: 20, height: 20, borderRadius: 99, border: '2px solid var(--rh-line2)' }} />}</button></div>)}</div>
-    <p className="hint"><Icon n="info" />Further readings are for devotion. They are never graded.</p>
-  </div>
 }
 
 function TodayCard({ catchUp, overdue, onGo }: { catchUp: boolean; overdue: number; onGo: () => void }) {

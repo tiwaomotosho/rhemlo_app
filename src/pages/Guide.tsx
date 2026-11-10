@@ -50,7 +50,7 @@ function sections(demo: boolean, accounts: { email: string; password: string; wh
     { id: 'library', title: 'Reading the manual', icon: 'book', body: <>
       <P><b>Library</b> holds every lesson exactly as printed. Search by title, verse or reference.</P>
       <P>In a lesson, <b>Read</b> shows the text with labelled sections (Introduction, Outline 1, Outline 2, Conclusion, Lesson questions). <b>Outline</b> shows the structure and <b>References</b> lists every citation.</P>
-      <P>Tap any purple reference to read the verse in context. On a computer it floats beside the verse; on a phone a drawer opens above the menu and you can keep reading. Further readings are for devotion and are never graded.</P></> },
+      <P>Tap any purple reference to read the verse in context. On a computer it floats beside the verse; on a phone a drawer opens above the menu and you can keep reading.</P></> },
     { id: 'progress', title: 'Progress and planner', icon: 'chart', body: <>
       <P>Every point you study is <b>Learning</b>, <b>Strengthening</b> or <b>Secure</b>. Secure means you got it right on spaced reviews until the gap reached 14 days. A Secure point can still come due again.</P>
       <P><b>Readiness</b> is today’s chance of recall across every point of a test, plus your latest mastery check and coverage. Only real recall moves it. The target is 95% before each test date.</P>
