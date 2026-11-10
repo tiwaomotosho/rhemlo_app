@@ -568,9 +568,8 @@ html,body{overflow-x:clip}
 .lnum{flex:none;width:34px;font:800 17px/1 var(--rh-font-display);letter-spacing:-.02em;color:var(--rh-text3);font-variant-numeric:tabular-nums}
 .lnum.ok{color:var(--rh-correct)}.lnum.str{color:var(--rh-action)}
 
-/* labels: sentence case with a short rule mark, instead of tiny spaced-out capitals */
+/* labels: sentence case in the section colour, instead of tiny spaced-out capitals */
 .eyebrow{font:800 12.5px/16px var(--rh-font-display);letter-spacing:0;text-transform:none}
-.eyebrow::before{content:"";display:inline-block;vertical-align:middle;width:12px;height:2px;border-radius:2px;background:currentColor;margin:-2px 7px 0 0;opacity:.75}
 .reader .rhead{letter-spacing:.03em}
 
 /* index lists: rows with rules, used instead of grids of equal cards */
