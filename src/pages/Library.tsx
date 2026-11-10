@@ -91,7 +91,7 @@ function ManualCard() {
   if (!m) return null
   return <><button className="row" onClick={open} aria-label="Switch manual" style={{ width: '100%', border: 0, textAlign: 'left', padding: 16, borderRadius: 20, color: '#fff', background: 'linear-gradient(135deg,#7041D9,#9A70F0)', boxShadow: '0 4px 0 #4C27A8' }}>
     <span className="tile" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', width: 46, height: 52 }}><Icon n="book" /></span>
-    <span className="grow"><b className="disp" style={{ fontSize: 16 }}>{m.code === 'AD2627' ? 'Sunday School Student’s Manual' : 'YAYA Student’s Manual'}</b><span className="tiny" style={{ display: 'block', opacity: .9 }}>{m.short} · {m.lessons.length} lessons · {m.bible}</span></span><span className="chip" style={{ background: 'rgba(255,255,255,.22)', color: '#fff', height: 34 }}><Icon n="swap" />Switch</span></button>{sheet}</>
+    <span className="grow"><b className="disp" style={{ fontSize: 16 }}>{m.code === 'AD2627' ? 'Sunday School Student’s Manual' : 'YAYA Student’s Manual'}</b><span className="tiny" style={{ display: 'block', opacity: .9 }}>{m.short} · {m.lessons.length} lessons · {m.bible} · all lessons approved</span></span><span className="chip" style={{ background: 'rgba(255,255,255,.22)', color: '#fff', height: 34 }}><Icon n="swap" />Switch</span></button>{sheet}</>
 }
 
 export function Library() {
@@ -109,7 +109,7 @@ export function Library() {
     {!f && <div className="tabs" role="tablist">{Object.keys(m.groups).map(k => <button key={k} role="tab" aria-selected={quarter === +k} className={quarter === +k ? 'on' : ''} onClick={() => toQuarter(+k)}>Q{k}</button>)}</div>}
     <div key={slide.key} {...(f ? {} : swipe)} className={`card list ${f ? '' : slide.cls}`} style={{ padding: '2px 14px' }}>{rows.map(l => { const [t, c] = masteryChip(cards, m, l.id); return <Link key={l.id} to={`/library/${l.id}`} className="li">
       <span className={`lnum ${c}`}>{String(l.n).padStart(2, '0')}</span>
-      <span className="grow"><b>{niceTitle(l.title)}</b><span className="row gap8 mt8"><Approved /><span className={`chip ${c}`}>{t}</span>{(() => { const lv = lessonLevel(m, l.id, cards, log, checks, !!readings[`${m.code}|read|${l.id}`], learn[`${m.code}|${l.id}`] ?? []); return lv.level > 0 && <span className={`chip ${lv.mastered ? 'ok' : 'plain'}`} title="Mastery level">{lv.mastered ? 'Mastered' : `L${lv.level} ${lv.name}`}</span> })()}</span></span><Icon n="chev" className="faint" /></Link> })}
+      <span className="grow"><b>{niceTitle(l.title)}</b><span className="row gap8 mt8"><span className={`chip ${c}`}>{t}</span>{(() => { const lv = lessonLevel(m, l.id, cards, log, checks, !!readings[`${m.code}|read|${l.id}`], learn[`${m.code}|${l.id}`] ?? []); return lv.level > 0 && <span className={`chip ${lv.mastered ? 'ok' : 'plain'}`} title="Mastery level">{lv.mastered ? 'Mastered' : `L${lv.level} ${lv.name}`}</span> })()}</span></span><Icon n="chev" className="faint" /></Link> })}
       {!rows.length && <p className="muted" style={{ padding: 14 }}>No lessons match “{q}”.</p>}</div>
   </div>
 }
