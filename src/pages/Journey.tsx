@@ -81,6 +81,16 @@ function JourneyInner({ m }: { m: Manual }) {
   const pos = useMemo(() => anchors ? spread(anchors[key].nodes_norm, g.lessons.length + 1) : [], [anchors, key, g])
   const allDone = g.lessons.every(J.isDone)
   const scroller = useRef<HTMLDivElement>(null)
+  // the map's width in pixels, so lessons near an edge, Glim and the bubble can be kept fully on screen
+  const [W, setW] = useState(0)
+  useEffect(() => {
+    const el = scroller.current; if (!el) return
+    const measure = () => setW(el.clientWidth), ro = new ResizeObserver(measure)
+    ro.observe(el); addEventListener('resize', measure); addEventListener('orientationchange', measure); measure()
+    return () => { ro.disconnect(); removeEventListener('resize', measure); removeEventListener('orientationchange', measure) }
+  }, [back])   // the map only exists once Welcome back is closed
+  const nodeX = (p: [number, number]) => W ? Math.min(Math.max(p[0] * W, 34), W - 34) : null
+  const left = (p: [number, number]) => { const x = nodeX(p); return x === null ? `${p[0] * 100}%` : `${x}px` }
   // glide to the current stop (instant on first paint)
   useEffect(() => {
     const el = scroller.current; if (!el || !pos.length) return
@@ -121,16 +131,28 @@ function JourneyInner({ m }: { m: Manual }) {
               const cls = d ? (rev ? 'review' : 'done') : isCur ? 'current' : ''
               const state = d ? (rev ? 'review due' : 'done') : isCur ? 'current quest' : 'locked'
               return <div key={l.id}>
-                <button className={`node ${cls}`} style={{ left: `${p[0] * 100}%`, top: `${p[1] * 100}%` }} onClick={() => open(l)} aria-label={`Lesson ${l.n}, ${niceTitle(l.title)}, ${state}`}>
+                <button className={`node ${cls}`} style={{ left: left(p), top: `${p[1] * 100}%` }} onClick={() => open(l)} aria-label={`Lesson ${l.n}, ${niceTitle(l.title)}, ${state}`}>
                   <Icon n={d ? (rev ? 'refresh' : 'check') : isCur ? 'star' : 'lock'} /></button>
-                <span className="nodetag" style={{ left: `${p[0] * 100}%`, top: `${p[1] * 100}%` }}>L{l.n}</span>
-                {isCur && <>
-                  <button className="bubble" style={{ left: `calc(${p[0] * 100}% - 44px)`, top: `${p[1] * 100}%` }} onClick={() => start(recallSpec(m, l, sessionSize))}>{draft ? 'Continue quest' : `Recall · ${sessionSize} questions`}</button>
-                  <Glim pose="point" size={92} className="mapglim" style={{ left: `calc(${p[0] * 100}% + 26px)`, top: `${p[1] * 100}%` }} /></>}
+                <span className="nodetag" style={{ left: left(p), top: `${p[1] * 100}%` }}>L{l.n}</span>
+                {isCur && (() => {
+                  // Glim goes on whichever side has room and faces the lesson; the bubble takes the other side,
+                  // or sits under the lesson when neither side is wide enough
+                  const label = draft ? 'Continue quest' : `Recall · ${sessionSize} questions`, x = nodeX(p) ?? p[0] * 400, w = W || 400
+                  const G = 92, bw = label.length * 8.4 + 34
+                  const glimRight = x + 26 + G <= w - 2 || x - 26 - G < 2
+                  const bubbleSide = glimRight ? (x - 44 - bw >= 4 ? 'left' : 'below') : (x + 44 + bw <= w - 4 ? 'right' : 'below')
+                  const bubbleStyle: React.CSSProperties = bubbleSide === 'left' ? { left: x - 44, top: `${p[1] * 100}%` }
+                    : bubbleSide === 'right' ? { left: x + 44, top: `${p[1] * 100}%`, transform: 'translate(0,-50%)' }
+                    : { left: Math.min(Math.max(x, bw / 2 + 4), w - bw / 2 - 4), top: `calc(${p[1] * 100}% + 62px)`, transform: 'translate(-50%,0)' }
+                  return <>
+                    <button className="bubble" style={bubbleStyle} onClick={() => start(recallSpec(m, l, sessionSize))}>{label}</button>
+                    <Glim pose="point" size={G} className="mapglim" style={glimRight ? { left: x + 26, top: `${p[1] * 100}%` }
+                      : { left: x - 26, top: `${p[1] * 100}%`, transform: 'translate(-100%,-80%) scaleX(-1)' }} /></>
+                })()}
               </div>
             })}
-            {pos[g.lessons.length] && <><button className={`node stage ${allDone ? '' : 'locked'}`} style={{ left: `${pos[g.lessons.length][0] * 100}%`, top: `${pos[g.lessons.length][1] * 100}%` }} onClick={() => setSel('stage')} aria-label={`Quarter ${g.q} check, ${allDone ? 'open' : 'locked until every lesson is cleared'}`}><Icon n={allDone ? 'flag' : 'lock'} /></button>
-              <span className="nodetag" style={{ left: `${pos[g.lessons.length][0] * 100}%`, top: `${pos[g.lessons.length][1] * 100}%` }}>Q{g.q} check</span></>}
+            {pos[g.lessons.length] && <><button className={`node stage ${allDone ? '' : 'locked'}`} style={{ left: left(pos[g.lessons.length]), top: `${pos[g.lessons.length][1] * 100}%` }} onClick={() => setSel('stage')} aria-label={`Quarter ${g.q} check, ${allDone ? 'open' : 'locked until every lesson is cleared'}`}><Icon n={allDone ? 'flag' : 'lock'} /></button>
+              <span className="nodetag" style={{ left: left(pos[g.lessons.length]), top: `${pos[g.lessons.length][1] * 100}%` }}>Q{g.q} check</span></>}
           </div>
         </div>
         <div className="chap-float"><div className="card glass col gap8" style={{ padding: 16 }}>
