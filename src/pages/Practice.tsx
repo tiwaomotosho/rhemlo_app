@@ -55,18 +55,27 @@ export default function Practice() {
       <Link className="btn apricot sm" to="/practice/mock">Set up</Link></div>
     <p className="eyebrow mt8">Study modes</p>
     <ScopeBar m={m} />
-    <div className="modegrid">{([
-      ['bolt', 'Quick-fire', 'Rapid answers, 12 s each', () => start({ kind: 'quickfire', manual: m.code, lessons: learned, count: 20, perItem: 12, title: 'Quick-fire' })],
-      ['refresh', 'Repair drill', leeches ? `${leeches} stubborn point${leeches === 1 ? '' : 's'} and recent misses` : 'Recent misses', () => start({ kind: 'repair', manual: m.code, lessons: learned, count: sessionSize, title: 'Repair drill' })],
-      ['alert', 'Trap gauntlet', 'Near-miss references, swaps, look-alikes', () => start({ kind: 'trap', manual: m.code, lessons: learned, count: 15, title: 'Trap gauntlet' })],
-      ['scale', 'Discrimination', 'Lessons you mix up, side by side', () => nav('/practice/discrimination')],
-      ['speaker', 'Listen', 'Hear a point, give its reference', () => start({ kind: 'listen', manual: m.code, lessons: learned, count: 10, title: 'Listen' })],
-      ['puzzle', 'Matching', 'Lessons, numbers, verses, references', () => nav('/practice/match')],
-      ['book', 'Flashcards', 'Flip, then rate yourself', () => nav('/practice/flashcards')],
-      ['journey', 'Learn a lesson', `Guided four-day cycle · Lesson ${cur.n}`, () => nav(`/practice/learn/${cur.id}`)],
-      ['flag', 'Mastery check', `25 questions across Lesson ${cur.n}`, () => nav(`/journey/check/${cur.id}`)],
-      ['ladder', 'Memory palace', 'Optional: places for long lists', () => nav('/practice/palace')],
-    ] as const).map(([i, t, d, go]) => <button key={t} className="card col gap8" style={{ textAlign: 'left', color: 'inherit', minHeight: 116 }} onClick={go}><span className="tile"><Icon n={i} /></span><b className="small">{t}</b><span className="tiny muted">{d}</span></button>)}</div>
+    {([
+      ['Speed and accuracy', [
+        ['bolt', 'Quick-fire', 'Rapid answers, 12 s each', () => start({ kind: 'quickfire', manual: m.code, lessons: learned, count: 20, perItem: 12, title: 'Quick-fire' })],
+        ['refresh', 'Repair drill', leeches ? `${leeches} stubborn point${leeches === 1 ? '' : 's'} and recent misses` : 'Recent misses', () => start({ kind: 'repair', manual: m.code, lessons: learned, count: sessionSize, title: 'Repair drill' })],
+        ['alert', 'Trap gauntlet', 'Near-miss references, swaps, look-alikes', () => start({ kind: 'trap', manual: m.code, lessons: learned, count: 15, title: 'Trap gauntlet' })],
+        ['scale', 'Discrimination', 'Lessons you mix up, side by side', () => nav('/practice/discrimination')],
+      ]],
+      ['Other ways in', [
+        ['speaker', 'Listen', 'Hear a point, give its reference', () => start({ kind: 'listen', manual: m.code, lessons: learned, count: 10, title: 'Listen' })],
+        ['puzzle', 'Matching', 'Lessons, numbers, verses, references', () => nav('/practice/match')],
+        ['book', 'Flashcards', 'Flip, then rate yourself', () => nav('/practice/flashcards')],
+      ]],
+      ['Mastery', [
+        ['journey', 'Learn a lesson', `Guided four-day cycle · Lesson ${cur.n}`, () => nav(`/practice/learn/${cur.id}`)],
+        ['flag', 'Mastery check', `25 questions across Lesson ${cur.n}`, () => nav(`/journey/check/${cur.id}`)],
+        ['ladder', 'Memory palace', 'Optional: places for long lists', () => nav('/practice/palace')],
+      ]],
+    ] as const).map(([g, modes]) => <section key={g} className="col gap8">
+      <p className="tiny b muted" style={{ margin: '4px 0 0' }}>{g}</p>
+      <div className="index two">{modes.map(([i, t, d, go]) => <button key={t} className="ix" onClick={go}><span className="tile"><Icon n={i} /></span><span className="grow"><span className="t">{t}</span><span className="d">{d}</span></span><Icon n="chev" /></button>)}</div>
+    </section>)}
     <p className="eyebrow mt8">Weak spots</p>
     {weak.length ? <div className="card list" style={{ padding: '2px 14px' }}>{weak.map(w => <button key={w.key} className="li" onClick={() => start({ kind: 'target', manual: m.code, lessons: w.lessons, count: sessionSize, focus: w.focus, title: w.key === 'spell' ? 'Spelling traps' : w.title })}>
       <span className={`tile ${w.tone}`} style={{ width: 38, height: 38 }}><Icon n={w.ico} className="s" /></span><span className="grow"><b className="small">{w.title}</b><span className="tiny muted" style={{ display: 'block' }}>{w.sub}</span></span><Icon n="chev" className="faint" /></button>)}</div>

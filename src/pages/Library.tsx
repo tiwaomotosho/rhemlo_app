@@ -108,7 +108,7 @@ export function Library() {
     <div className="fwrap"><Icon n="search" className="s" /><input className="field" style={{ paddingLeft: 42 }} type="search" placeholder="Search lessons, verses, references" aria-label="Search the manual" value={q} onChange={e => setQ(e.target.value)} autoComplete="off" spellCheck={false} /></div>
     {!f && <div className="tabs" role="tablist">{Object.keys(m.groups).map(k => <button key={k} role="tab" aria-selected={quarter === +k} className={quarter === +k ? 'on' : ''} onClick={() => toQuarter(+k)}>Q{k}</button>)}</div>}
     <div key={slide.key} {...(f ? {} : swipe)} className={`card list ${f ? '' : slide.cls}`} style={{ padding: '2px 14px' }}>{rows.map(l => { const [t, c] = masteryChip(cards, m, l.id); return <Link key={l.id} to={`/library/${l.id}`} className="li">
-      <span className="tile" style={{ background: c === 'ok' || c === 'str' ? 'var(--rh-pistachio-bg)' : 'var(--rh-raised)', color: c === 'ok' || c === 'str' ? 'var(--rh-pistachio-deep)' : 'var(--rh-action)' }}><b className="disp">{l.n}</b></span>
+      <span className={`lnum ${c}`}>{String(l.n).padStart(2, '0')}</span>
       <span className="grow"><b>{niceTitle(l.title)}</b><span className="row gap8 mt8"><Approved /><span className={`chip ${c}`}>{t}</span>{(() => { const lv = lessonLevel(m, l.id, cards, log, checks, !!readings[`${m.code}|read|${l.id}`], learn[`${m.code}|${l.id}`] ?? []); return lv.level > 0 && <span className={`chip ${lv.mastered ? 'ok' : 'plain'}`} title="Mastery level">{lv.mastered ? 'Mastered' : `L${lv.level} ${lv.name}`}</span> })()}</span></span><Icon n="chev" className="faint" /></Link> })}
       {!rows.length && <p className="muted" style={{ padding: 14 }}>No lessons match “{q}”.</p>}</div>
   </div>

@@ -53,13 +53,15 @@ export function Arena() {
         <div className="tiny muted">{me?.points ?? 0} verified points · ends {new Date(league.endsAt).toLocaleDateString(undefined, { weekday: 'short' })} {new Date(league.endsAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div></div><Icon n="chev" className="faint" /></Link>
       : league === null ? <button className="card row" onClick={join} style={{ textAlign: 'left', color: 'inherit' }}><img src={asset('emblems/tiers/tier-bronze-128.webp')} width={56} height={64} alt="" /><div className="grow"><b>Join this week’s league</b><div className="tiny muted">Start in Bronze · no demotion in your first week</div></div><Icon n="chev" /></button> : <div className="skel" style={{ height: 88 }} />)
       : <NeedAccount what="weekly leagues" />}
-    <Link to="/arena/quiz-night" className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n="radio" /></span><div className="grow"><b>Quiz Night · Friday 7pm</b><div className="tiny muted">Grace Youth Circle · room LAMP</div></div><span className="btn sec xs">Join</span></Link>
-    <Link to="/arena/match" className="card row" style={{ color: 'inherit' }}><span className="tile"><Icon n="people" /></span><div className="grow"><b>Friendly match</b><div className="tiny muted">Same manual · no league points</div></div><span className="btn sec xs">Invite</span></Link>
-    <div className="grid2">
-      <Link to="/arena/boards" className="card row" style={{ color: 'inherit' }}><span className="tile"><Icon n="trophy" /></span><div className="grow"><b>Leaderboards</b><div className="tiny muted">Week · season · all time · friends · parish</div></div></Link>
-      <Link to="/arena/leagues" className="card row" style={{ color: 'inherit' }}><span className="tile apricot"><Icon n="flag" /></span><div className="grow"><b>Private leagues</b><div className="tiny muted">Your own table, shared by invite link</div></div></Link>
-      <Link to="/arena/host" className="card row" style={{ color: 'inherit' }}><span className="tile green"><Icon n="radio" /></span><div className="grow"><b>Host a room</b><div className="tiny muted">Up to 100 players · choice or typed</div></div></Link>
-      <Link to="/inbox" className="card row" style={{ color: 'inherit' }}><span className="tile"><Icon n="inbox" /></span><div className="grow"><b>Inbox and messages</b><div className="tiny muted">Notices, coach notes, direct messages</div></div></Link></div>
+    <p className="eyebrow mt8">More in Arena</p>
+    <div className="index">{([
+      ['radio', 'Quiz Night', 'Friday 7pm · Grace Youth Circle · room LAMP', '/arena/quiz-night', 'apricot'],
+      ['people', 'Friendly match', 'Same manual · no league points', '/arena/match', ''],
+      ['trophy', 'Leaderboards', 'Week · season · all time · friends · parish', '/arena/boards', ''],
+      ['flag', 'Private leagues', 'Your own table, shared by invite link', '/arena/leagues', 'apricot'],
+      ['radio', 'Host a room', 'Up to 100 players · choice or typed', '/arena/host', 'green'],
+      ['inbox', 'Inbox and messages', 'Notices, coach notes, direct messages', '/inbox', ''],
+    ] as const).map(([i, t, d, to, tone]) => <Link key={t} to={to} className="ix"><span className={`tile ${tone}`}><Icon n={i} /></span><span className="grow"><span className="t">{t}</span><span className="d">{d}</span></span><Icon n="chev" /></Link>)}</div>
     <Link to="/arena/rules" className="btn link">League rules</Link>
     <DemoNote />
   </div>
